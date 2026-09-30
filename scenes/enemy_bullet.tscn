@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/bullet.gd" id="1"]
+
+[sub_resource type="SphereShape3D" id="shape"]
+radius = 0.125
+
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(1, 0.2, 0.15, 1)
+emission_enabled = true
+emission = Color(1, 0.2, 0.15, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="SphereMesh" id="mesh"]
+material = SubResource("mat")
+radius = 0.125
+height = 0.25
+radial_segments = 24
+rings = 12
+
+[node name="EnemyBullet" type="Area3D"]
+collision_layer = 8
+collision_mask = 17
+monitorable = false
+script = ExtResource("1")
+from_player = false
+damage = 10
+trail_start = Color(1, 0.5, 0.4, 1)
+trail_end = Color(1, 0.1, 0.05, 1)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh")
+cast_shadow = 0

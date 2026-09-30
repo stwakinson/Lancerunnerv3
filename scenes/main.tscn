@@ -1,0 +1,159 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/player/camera_follow.gd" id="1_cam"]
+[ext_resource type="Script" path="res://scripts/player/player_ship_controller.gd" id="2_ship"]
+[ext_resource type="Script" path="res://scripts/player/player_health.gd" id="3_health"]
+[ext_resource type="Script" path="res://scripts/player/ship_banking.gd" id="4_bank"]
+[ext_resource type="Script" path="res://scripts/combat/enemy_spawner.gd" id="5_waves"]
+[ext_resource type="Script" path="res://scripts/core/game_manager.gd" id="6_gm"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="7_hud"]
+[ext_resource type="Script" path="res://scripts/world/starfield.gd" id="8_stars"]
+[ext_resource type="Shader" path="res://shaders/milky_way_sky.gdshader" id="9_skysh"]
+[ext_resource type="Texture2D" path="res://assets/textures/MilkyWay_Skybox.jpg" id="10_skytex"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/Planet_Jupiter_4k.jpg" id="11_jup"]
+[ext_resource type="Shader" path="res://shaders/planet_surface.gdshader" id="13_psh"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/moon_meteor_01_diff_2k.jpg" id="14_mdiff"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/moon_meteor_01_nor_gl_2k.jpg" id="15_mnor"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/moon_meteor_01_arm_2k.jpg" id="16_marm"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/rocks_ground_05_diff_2k.jpg" id="17_rdiff"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/rocks_ground_05_nor_gl_2k.jpg" id="18_rnor"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/rocks_ground_05_arm_2k.jpg" id="19_rarm"]
+[ext_resource type="Script" path="res://scripts/world/planet.gd" id="12_planet"]
+[ext_resource type="Script" path="res://scripts/ui/pause_menu.gd" id="20_pause"]
+[ext_resource type="Script" path="res://scripts/player/player_on_foot.gd" id="21_foot"]
+[ext_resource type="Script" path="res://scripts/combat/ally_spawner.gd" id="22_allies"]
+
+[sub_resource type="ShaderMaterial" id="sky_mat"]
+shader = ExtResource("9_skysh")
+shader_parameter/panorama = ExtResource("10_skytex")
+shader_parameter/exposure = 1.0
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+process_mode = 1
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.3, 0.32, 1)
+ambient_light_energy = 1.0
+reflected_light_source = 2
+tonemap_mode = 0
+
+[sub_resource type="ShaderMaterial" id="planet_mat"]
+shader = ExtResource("13_psh")
+shader_parameter/global_albedo = ExtResource("11_jup")
+shader_parameter/macro_albedo = ExtResource("14_mdiff")
+shader_parameter/macro_normal = ExtResource("15_mnor")
+shader_parameter/macro_arm = ExtResource("16_marm")
+shader_parameter/micro_albedo = ExtResource("17_rdiff")
+shader_parameter/micro_normal = ExtResource("18_rnor")
+shader_parameter/micro_arm = ExtResource("19_rarm")
+
+[sub_resource type="SphereMesh" id="planet_mesh"]
+material = SubResource("planet_mat")
+radius = 1200.0
+height = 2400.0
+radial_segments = 1024
+rings = 512
+
+[sub_resource type="SphereShape3D" id="player_shape"]
+radius = 0.72
+
+[sub_resource type="CapsuleShape3D" id="pilot_shape"]
+radius = 0.04
+height = 0.18
+
+[node name="Game" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.383022, 0.321394, 0, 0.642788, 0.766044, -0.5, -0.663414, 0.556670, 0, 3, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="MainCamera" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
+fov = 55.0
+near = 0.3
+far = 4000.0
+script = ExtResource("1_cam")
+target = NodePath("../Player")
+
+[node name="Starfield" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("8_stars")
+
+[node name="DistantPlanet" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 645, -1075, -502)
+mesh = SubResource("planet_mesh")
+script = ExtResource("12_planet")
+
+[node name="Player" type="Area3D" parent="." node_paths=PackedStringArray("aim_camera", "fire_point", "pilot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+collision_layer = 1
+collision_mask = 2
+script = ExtResource("2_ship")
+aim_camera = NodePath("../MainCamera")
+fire_point = NodePath("FirePoint")
+pilot = NodePath("../Pilot")
+
+[node name="Health" type="Node" parent="Player"]
+script = ExtResource("3_health")
+
+[node name="ShipVisual" type="Node3D" parent="Player"]
+script = ExtResource("4_bank")
+
+[node name="FirePoint" type="Node3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.3)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("player_shape")
+
+[node name="Pilot" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+script = ExtResource("21_foot")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pilot"]
+shape = SubResource("pilot_shape")
+
+[node name="EnemySpawner" type="Node3D" parent="."]
+script = ExtResource("5_waves")
+
+[node name="AllySpawner" type="Node3D" parent="."]
+script = ExtResource("22_allies")
+
+[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("player", "spawner")]
+script = ExtResource("6_gm")
+player = NodePath("../Player")
+spawner = NodePath("../EnemySpawner")
+
+[node name="HUDLayer" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="HUDLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_hud")
+
+[node name="PauseLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="PauseMenu" type="Control" parent="PauseLayer"]
+process_mode = 3
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("20_pause")

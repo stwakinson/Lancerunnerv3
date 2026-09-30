@@ -1,0 +1,14 @@
+Space textures by Solar System Scope - https://www.solarsystemscope.com/textures/
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+
+- MilkyWay_Skybox.jpg: from "8k_stars_milky_way.jpg", reprojected so the galactic
+  core faces the game camera, brightened, and with point stars filtered out
+  (3D particle stars replace them so stars move past as you fly).
+- planet/Planet_Jupiter_4k.jpg: "8k_jupiter.jpg" (4096x2048), unmodified.
+
+Attribution must be kept (e.g. in the game's credits) if the game is distributed.
+
+Planet surface detail from Poly Haven (https://polyhaven.com), CC0 (public domain):
+- planet/moon_meteor_01_*: "Moon Meteor 01" (craters)
+- planet/rocks_ground_05_*: "Rocks Ground 05" (close-up rock and gravel)

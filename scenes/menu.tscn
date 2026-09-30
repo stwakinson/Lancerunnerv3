@@ -1,0 +1,81 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/world/starfield.gd" id="2_stars"]
+[ext_resource type="Shader" path="res://shaders/milky_way_sky.gdshader" id="3_skysh"]
+[ext_resource type="Texture2D" path="res://assets/textures/MilkyWay_Skybox.jpg" id="4_skytex"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/Planet_Jupiter_4k.jpg" id="5_jup"]
+[ext_resource type="Shader" path="res://shaders/planet_surface.gdshader" id="6_psh"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/moon_meteor_01_diff_2k.jpg" id="7_mdiff"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/moon_meteor_01_nor_gl_2k.jpg" id="8_mnor"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/moon_meteor_01_arm_2k.jpg" id="9_marm"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/rocks_ground_05_diff_2k.jpg" id="10_rdiff"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/rocks_ground_05_nor_gl_2k.jpg" id="11_rnor"]
+[ext_resource type="Texture2D" path="res://assets/textures/planet/rocks_ground_05_arm_2k.jpg" id="12_rarm"]
+[ext_resource type="Script" path="res://scripts/world/planet.gd" id="13_planet"]
+
+[sub_resource type="ShaderMaterial" id="sky_mat"]
+shader = ExtResource("3_skysh")
+shader_parameter/panorama = ExtResource("4_skytex")
+shader_parameter/exposure = 1.0
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+process_mode = 1
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.3, 0.32, 1)
+ambient_light_energy = 1.0
+reflected_light_source = 2
+tonemap_mode = 0
+
+[sub_resource type="ShaderMaterial" id="planet_mat"]
+shader = ExtResource("6_psh")
+shader_parameter/global_albedo = ExtResource("5_jup")
+shader_parameter/macro_albedo = ExtResource("7_mdiff")
+shader_parameter/macro_normal = ExtResource("8_mnor")
+shader_parameter/macro_arm = ExtResource("9_marm")
+shader_parameter/micro_albedo = ExtResource("10_rdiff")
+shader_parameter/micro_normal = ExtResource("11_rnor")
+shader_parameter/micro_arm = ExtResource("12_rarm")
+
+[sub_resource type="SphereMesh" id="planet_mesh"]
+material = SubResource("planet_mat")
+radius = 1200.0
+height = 2400.0
+radial_segments = 256
+rings = 128
+
+[node name="Menu" type="Node3D"]
+script = ExtResource("1_menu")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.383022, 0.321394, 0, 0.642788, 0.766044, -0.5, -0.663414, 0.556670, 0, 3, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.984808, -0.173648, 0, 0.173648, 0.984808, 0, 2.5, 9)
+fov = 55.0
+near = 0.3
+far = 4000.0
+current = true
+
+[node name="Starfield" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("2_stars")
+
+[node name="DistantPlanet" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 645, -1075, -502)
+mesh = SubResource("planet_mesh")
+script = ExtResource("13_planet")
+
+[node name="ShipPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 2)
+
+[node name="ShipVisual" type="Node3D" parent="ShipPivot"]
