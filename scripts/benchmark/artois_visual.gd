@@ -32,6 +32,7 @@ var _smoke := false
 
 
 func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_smoke = "--benchmark-smoke" in OS.get_cmdline_user_args()
 	_build_views()
@@ -152,7 +153,7 @@ func _build_ui() -> void:
 	_pixel_button = _button(ui, "", Vector2(270, 634), 190, toggle_pixels)
 	_weather_button = _button(ui, "F  LANDING RAIN: ON", Vector2(474, 634), 190, toggle_weather)
 	_button(ui, "ESC  MAIN MENU", Vector2(1044, 634), 200, _menu)
-	_text(ui, "W/S thrust   ·   A/D strafe   ·   Q/E climb   ·   Shift boost   ·   Space fire   /   Mouse: landing parallax", Vector2(38, 689), 11, MUTED)
+	_text(ui, "W/S thrust   ·   A/D strafe   ·   Q/E climb   ·   Shift boost   ·   Space fire   ·   RMB drag: look   ·   R: reset view", Vector2(38, 689), 11, MUTED)
 	_fade = ColorRect.new()
 	_fade.color = Color(INK, 0)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -230,6 +231,11 @@ func _update_labels() -> void:
 	_status.text = "DOCKED   /   MOVE THE MOUSE TO EXPLORE THE LAYERS   /   PLACEHOLDER ART" if landed else "EMBRY FIELD EDGE   /   DOCKING PREVIEW AVAILABLE"
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not landed and not transitioning and event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		space_world.orbit(event.relative)
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo() or transitioning:
 		return
@@ -238,6 +244,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match key.physical_keycode:
 		KEY_ENTER: toggle_docking()
+		KEY_R: space_world.reset_view()
 		KEY_P: toggle_pixels()
 		KEY_F: toggle_weather()
 		KEY_ESCAPE: _menu()
@@ -262,6 +269,12 @@ func _run_smoke() -> void:
 	space_world.advance(0.25, Vector2(1, 1), 1.0, true, true)
 	assert(space_world.ship.position.x > before.x, "Steering must move the ship")
 	assert(space_world.speed > 0 and space_world.shots.size() == 1, "Thrust and firing must work")
+	assert(space_world.asteroid_count == 355, "Near and distant asteroid populations must be present")
+	assert(space_world.sky_material.get_shader_parameter("panorama") != null, "Generated nebula must be assigned")
+	for i in 20:
+		space_world.advance(1.0 / 60.0, Vector2.ZERO, 0.0, true, false)
+		await get_tree().process_frame
+	assert(space_world.get_node("EngineTrails").get_child(0).mesh != null, "Exhaust ribbon must build geometry")
 	await _capture(capture_dir, "artois-space.png")
 	toggle_pixels()
 	assert(space_view.size.x >= 640 and not pixel_mode)
@@ -281,6 +294,18 @@ func _run_smoke() -> void:
 	await _capture(capture_dir, "artois-landing.png")
 	await toggle_docking()
 	assert(not landed and _space_image.visible and not transitioning)
+	var camera_before: Vector3 = space_world.camera.position
+	space_world.orbit(Vector2(120, 20))
+	space_world.advance(0.1, Vector2.ZERO, 0.0, false, false)
+	assert(not space_world.camera.position.is_equal_approx(camera_before), "Orbit must change the camera")
+	space_world.reset_view()
+	for i in 180:
+		space_world.advance(1.0 / 60.0, Vector2.ZERO, 0.0, false, false)
+	var effects := space_world.get_node("EngineTrails")
+	for lane in effects._samples:
+		assert(lane.size() <= effects.CAPACITY, "Exhaust history must remain bounded")
+		for sample in lane:
+			assert(sample.age <= effects.LIFETIME, "Expired exhaust samples must be removed")
 	print("PASS: benchmark movement, weapons, rendering modes, docking, parallax, weather and launch")
 	get_tree().quit()
 

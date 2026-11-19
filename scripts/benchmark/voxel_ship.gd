@@ -23,7 +23,7 @@ func _ready() -> void:
 		_box(Vector3(side * 0.48, 0, 2.8), Vector3(0.48, 0.45, 0.55), "303843")
 		var engine := _box(Vector3(side * 0.48, 0, 3.12), Vector3(0.3, 0.27, 0.08), "63dcf4", true)
 		engines.append(engine)
-		var plume := _box(Vector3(side * 0.48, 0, 3.5), Vector3(0.18, 0.16, 0.7), "3484b4", true)
+		var plume := _box(Vector3(side * 0.48, 0, 3.5), Vector3(0.12, 0.1, 0.35), "83d7f0", true)
 		engines.append(plume)
 		# Stepped panel details keep the texture-free placeholder visibly pixel-like.
 		for i in 7:
