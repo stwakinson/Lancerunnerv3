@@ -27,6 +27,10 @@ var _render_label: Label
 var _dock_button: Button
 var _pixel_button: Button
 var _weather_button: Button
+var _depth_button: Button
+var _motion_button: Button
+var _hint: Label
+var _section: Label
 var _fade: ColorRect
 var _smoke := false
 
@@ -139,7 +143,7 @@ func _build_ui() -> void:
 	_text(ui, "ARTOIS   /   ART DIRECTION BENCHMARK", Vector2(38, 55), 10, MUTED)
 	_text(ui, "1415   /   THE ROAD TO AGINCOURT", Vector2(916, 28), 11, ACCENT, 600)
 	_render_label = _text(ui, "", Vector2(916, 51), 10, MUTED)
-	_text(ui, "01  /  ATMOSPHERE & SILHOUETTE", Vector2(38, 118), 11, ACCENT, 600)
+	_section = _text(ui, "01  /  ATMOSPHERE & SILHOUETTE", Vector2(38, 118), 11, ACCENT, 600)
 	_heading = _text(ui, "", Vector2(34, 139), 42, PAPER, 700)
 	_subheading = _text(ui, "", Vector2(38, 194), 13, MUTED)
 	var footer := ColorRect.new()
@@ -151,9 +155,11 @@ func _build_ui() -> void:
 	_status = _text(ui, "", Vector2(38, 588), 11, ACCENT)
 	_dock_button = _button(ui, "", Vector2(36, 634), 220, toggle_docking)
 	_pixel_button = _button(ui, "", Vector2(270, 634), 190, toggle_pixels)
+	_motion_button = _button(ui, "C  DRIFT: ON", Vector2(270, 634), 190, toggle_motion)
+	_depth_button = _button(ui, "L  DEPTH: ON", Vector2(678, 634), 190, toggle_depth)
 	_weather_button = _button(ui, "F  LANDING RAIN: ON", Vector2(474, 634), 190, toggle_weather)
 	_button(ui, "ESC  MAIN MENU", Vector2(1044, 634), 200, _menu)
-	_text(ui, "W/S thrust   ·   A/D strafe   ·   Q/E climb   ·   Shift boost   ·   Space fire   ·   RMB drag: look   ·   R: reset view", Vector2(38, 689), 11, MUTED)
+	_hint = _text(ui, "W/S thrust   ·   A/D strafe   ·   Q/E climb   ·   Shift boost   ·   Space fire   ·   RMB drag: look   ·   R: reset view", Vector2(38, 689), 11, MUTED)
 	_fade = ColorRect.new()
 	_fade.color = Color(INK, 0)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -176,7 +182,8 @@ func _process(delta: float) -> void:
 		return
 	var pointer := get_local_mouse_position() / size * 2.0 - Vector2.ONE
 	if landed:
-		landing_world.advance(delta, pointer.clamp(Vector2(-1, -1), Vector2.ONE))
+		var pan := float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
+		landing_world.advance(delta, pointer.clamp(Vector2(-1, -1), Vector2.ONE), pan)
 	else:
 		var steering := Vector2(float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)),
 			float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q)))
@@ -192,6 +199,18 @@ func toggle_pixels() -> void:
 	_space_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if pixel_mode else CanvasItem.TEXTURE_FILTER_LINEAR
 	# Landing art stays at its authored pixel grid in both space-render modes.
 	_update_labels()
+
+
+func toggle_depth() -> void:
+	if landed:
+		landing_world.parallax_enabled = not landing_world.parallax_enabled
+		_update_labels()
+
+
+func toggle_motion() -> void:
+	if landed:
+		landing_world.cinematic_motion = not landing_world.cinematic_motion
+		_update_labels()
 
 
 func toggle_weather() -> void:
@@ -224,11 +243,22 @@ func toggle_docking() -> void:
 
 func _update_labels() -> void:
 	_heading.text = "THE LOWER MARKET" if landed else "AGINCOURT APPROACH"
+	_heading.position = Vector2(36, 102) if landed else Vector2(34, 139)
+	_heading.add_theme_font_size_override("font_size", 28 if landed else 42)
+	_subheading.position = Vector2(38, 142) if landed else Vector2(38, 194)
+	_subheading.add_theme_font_size_override("font_size", 11 if landed else 13)
+	_section.visible = not landed
+	_pixel_button.visible = not landed
+	_motion_button.visible = landed
+	_depth_button.visible = landed
+	_depth_button.text = "L  DEPTH: " + ("ON" if landing_world.parallax_enabled else "OFF")
+	_motion_button.text = "C  DRIFT: " + ("ON" if landing_world.cinematic_motion else "OFF")
+	_hint.text = "Mouse: look around   ·   A/D: pan   ·   R: centre view   ·   C: cinematic drift   ·   L: depth   ·   F: rain" if landed else "W/S thrust   ·   A/D strafe   ·   Q/E climb   ·   Shift boost   ·   Space fire   ·   RMB drag: look   ·   R: reset view"
 	_subheading.text = "AGINCOURT CASTLE  /  ARTOIS  /  VALOIS SPACE" if landed else "ARTOIS SYSTEM  /  EMBRY FIELD EDGE  /  VALOIS SPACE"
 	_dock_button.text = "ENTER  LAUNCH TO SPACE" if landed else "ENTER  PREVIEW DOCKING"
 	_pixel_button.text = "P  SPACE: " + ("PIXEL" if pixel_mode else "SMOOTH")
 	_render_label.text = "SPACE 640 × 360 · NEAREST" if pixel_mode else "SPACE NATIVE RESOLUTION · MSAA"
-	_status.text = "DOCKED   /   MOVE THE MOUSE TO EXPLORE THE LAYERS   /   PLACEHOLDER ART" if landed else "EMBRY FIELD EDGE   /   DOCKING PREVIEW AVAILABLE"
+	_status.text = "DOCKED   /   AGINCOURT MARKET   /   MOVE THE MOUSE OR HOLD A / D TO EXPLORE" if landed else "EMBRY FIELD EDGE   /   DOCKING PREVIEW AVAILABLE"
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -244,7 +274,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match key.physical_keycode:
 		KEY_ENTER: toggle_docking()
-		KEY_R: space_world.reset_view()
+		KEY_R:
+			if landed:
+				landing_world.reset_camera()
+			else:
+				space_world.reset_view()
+		KEY_L: toggle_depth()
+		KEY_C: toggle_motion()
 		KEY_P: toggle_pixels()
 		KEY_F: toggle_weather()
 		KEY_ESCAPE: _menu()
@@ -285,6 +321,27 @@ func _run_smoke() -> void:
 	assert(landed and _landing_image.visible and not _space_image.visible)
 	landing_world.advance(0.1, Vector2(1, 0.5))
 	assert(landing_world.layers[3].position.x != landing_world.layers[1].position.x)
+	assert(landing_world.layers.size() == 6, "Landing must have independent art and ambience planes")
+	assert(landing_world.layers[3].texture.get_image().detect_alpha() != Image.ALPHA_NONE, "Market art must retain transparent cutouts")
+	assert(landing_world.layers[5].texture.get_image().detect_alpha() != Image.ALPHA_NONE, "Foreground art must retain transparent cutouts")
+	var prior_drift: bool = landing_world.cinematic_motion
+	toggle_motion()
+	assert(landing_world.cinematic_motion != prior_drift, "Drift control must toggle")
+	toggle_motion()
+	toggle_depth()
+	landing_world.advance(0.1, Vector2.ONE, 1.0)
+	for layer in landing_world.layers:
+		assert(layer.position == Vector2.ZERO, "Depth off must flatten every plane")
+	toggle_depth()
+	for i in 60:
+		landing_world.advance(1.0 / 60.0, Vector2.ONE, 1.0)
+	assert(landing_world.manual_pan > 0.0, "Keyboard pan must move the viewpoint")
+	assert(absf(landing_world.camera_position.x) <= landing_world.MAX_PAN.x, "Camera must stay inside overscan bounds")
+	assert(landing_world.layers[3].position == landing_world.layers[4].position, "Street actors must stay attached to their ground plane")
+	landing_world.reset_camera()
+	assert(landing_world.manual_pan == 0.0 and landing_world.camera_position == Vector2.ZERO)
+	landing_world.advance(0.1, Vector2.ZERO)
+
 	toggle_weather()
 	assert(not landing_world.weather_enabled)
 	toggle_weather()

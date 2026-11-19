@@ -12,7 +12,9 @@ not concept art or a claim of final production artwork.
 
 ![Pixel-rendered space blockout](benchmark-previews/artois-space.png)
 
-![Layered landing blockout](benchmark-previews/artois-landing.png)
+![Layered landing scene](benchmark-previews/artois-landing.png)
+
+[Watch the recorded parallax preview](benchmark-previews/landing-parallax.mp4).
 
 [Compare the native-resolution space capture](benchmark-previews/artois-space-smooth.png).
 
@@ -35,7 +37,8 @@ godot --path . res://scenes/benchmark/artois_visual.tscn
   Landing art keeps its own 640×360 pixel grid in both modes.
 - **F:** toggle landing rain and mist.
 - **Right mouse drag:** orbit the space camera; **R:** reset its view.
-- **Mouse:** subtle parallax while landed.
+- **Landed:** mouse look and **A / D** camera pan; **R** recentres.
+- **C / DRIFT:** cinematic camera drift; **L / DEPTH:** parallax comparison.
 - **Esc:** return to the original main menu.
 
 The space test uses bounded local movement; it has no collision, damage, targeting,
@@ -50,8 +53,10 @@ or rules are changed.
 4. Do the warm landing lights and cool weather feel related to the space palette?
 5. Is the docking transition convincing enough to justify separate landing artwork?
 
-The current geometry and landing drawings are original procedural placeholders
-inspired by the supplied references. They do not embed or reproduce the attached
+The space geometry remains an original procedural blockout. Landing art uses three
+original generated plates with real alpha separation, inspired by the supplied
+cinematic pixel-art and medieval science-fiction references. See the
+[landing art and depth guide](landing-art.md). They do not embed or reproduce the attached
 ship model or detailed city illustration. Production polish still depends on the
 replacement artwork, animation, audio and subsequent lighting work.
 
@@ -61,14 +66,17 @@ replacement artwork, animation, audio and subsequent lighting work.
 | --- | --- |
 | `benchmark_space.gd` | Seeded asteroid composition, station blockout, camera and bounded movement. |
 | `voxel_ship.gd` | Original red/white placeholder. Replace its box geometry with your model, preserving forward **-Z**, up **+Y**, and a roughly six-unit length. Keep `engines` as an array of nodes to animate, or leave it empty. |
-| `landing_layer.gd` | Four original drawing layers: sky, fortress, town/landing pad, market foreground. Replace drawings with transparent PNG layers or Sprite2D children. |
-| `benchmark_landing.gd` | Layer offsets, rain and mist. Parallax is intentionally shallow so hidden scenery need not be authored. |
+| `landing_art_layer.gd` | Overscanned source artwork and non-destructive framing. |
+| `landing_ambience.gd` | Bounded runtime traffic, mist, people, fire, rain and splashes. |
+| `benchmark_landing.gd` | Six depth planes, camera easing, keyboard pan and depth/drift controls. |
+| `assets/benchmark/landing/` | Opaque distant art plus transparent market and foreground PNGs. |
 | `artois_visual.gd` | Viewports, readable UI, render comparison, transition and automated smoke check. |
 | `space_effects.gd` | Bounded, short-lived world-space exhaust ribbons. |
 | `assets/benchmark/artois_nebula.png` | Generated 2:1 LDR panorama, **1774×887**, not native 4K. See its adjacent README for provenance. |
 | `shaders/benchmark/` | Panorama wrapping, textured planet, atmosphere shell, depth-tested sun corona, rock haze and exhaust. |
 
-Author landing artwork on a **640×360** canvas. Give layers at least 16 pixels
+The landing view is composed on a **640×360** logical canvas. Current generated
+source plates are **1672×941**, drawn into overscanned framing rectangles. Give layers at least 16 pixels
 of overscan at the sides and 8 at top/bottom for parallax. The sky must be opaque;
 nearer layers should have transparent backgrounds. Keep key scene content clear
 of the top 43 and bottom 53 pixels used by the interface. The preview is composed
@@ -104,7 +112,8 @@ godot --headless --path . --script res://tests/benchmark_navigation.gd
 ```
 
 The smoke mode checks movement, boost, firing, pixel/smooth rendering settings,
-docking, parallax offsets, weather toggles, camera orbit/reset, asteroid population,
+docking, layer alpha, depth/drift controls, pan bounds, shared actor/pavement
+positions, weather toggles, camera orbit/reset, asteroid population,
 nebula assignment, exhaust geometry/history bounds and returning to space. A rendered
 run can also save PNG captures (requires a graphical display):
 
