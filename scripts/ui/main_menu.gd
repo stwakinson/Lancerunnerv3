@@ -166,6 +166,13 @@ func _build_ui() -> void:
 	_place(hint, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, -56.0, -26.0)
 	_hint = hint
 
+	var benchmark := UiStyle.button("ARTOIS  /  VISUAL BENCHMARK", 16)
+	benchmark.pressed.connect(func() -> void:
+		if not _launching and not SceneFader.busy:
+			SceneFader.change_scene("res://scenes/benchmark/artois_visual.tscn"))
+	_ui.add_child(benchmark)
+	_place(benchmark, 0.5, 0.5, 0.87, 0.87, -210.0, 210.0, -22.0, 22.0)
+
 	_build_picker()
 
 
