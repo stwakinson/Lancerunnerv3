@@ -1,0 +1,241 @@
+class_name ArtoisSpace
+extends BenchmarkSpace
+
+const Layout = preload("res://scripts/artois/artois_layout.gd")
+const Shapes = preload("res://scripts/artois/artois_placeholders.gd")
+const DOCK_RANGE := 90.0
+const DOCK_SPEED := 20.0
+const DOCK_ID := "planet_dock"
+
+var layout := Layout.new()
+var landmarks := {}
+var field_nodes := {}
+var selected_id := DOCK_ID
+var velocity := Vector3.ZERO
+var cruise := false
+var autopilot := false
+var arrival_message := ""
+var _yaw := 0.0
+var _pitch := 0.0
+var _shapes := Shapes.new()
+
+
+func _build_world() -> void:
+	camera.near = 0.3
+	camera.far = 40000
+	for entry in layout.locations:
+		var node := _shapes.make(entry)
+		node.position = layout.world(entry)
+		add_child(node)
+		landmarks[entry.id] = node
+	station = landmarks.agincourt
+	for field in layout.fields:
+		_build_field(field)
+	super._make_planet()
+	var planet_node := get_node("ArtoisPlanet") as MeshInstance3D
+	planet_node.position = layout.world(layout.planet)
+	planet_node.scale = Vector3.ONE * (float(layout.planet.radius) / 290.0)
+	super._make_sun()
+	_sun.position *= 20.0
+	_sun.scale = Vector3.ONE * 20.0
+	ship.name = "ArtoisPlayer"
+	ship.position = launch_position()
+
+
+func _build_field(field: Dictionary) -> void:
+	var random := RandomNumberGenerator.new()
+	random.seed = int(field.seed)
+	var source := SphereMesh.new()
+	source.radius = 1
+	source.height = 2
+	source.radial_segments = 7
+	source.rings = 3
+	var instances := MultiMesh.new()
+	instances.transform_format = MultiMesh.TRANSFORM_3D
+	instances.mesh = _faceted(source)
+	instances.instance_count = int(field.count)
+	var node := MultiMeshInstance3D.new()
+	node.name = field.id
+	node.multimesh = instances
+	node.material_override = _rock_material("685369" if field.id == "central_field" else "534b65")
+	node.position = layout.world(field)
+	var radii := Layout.point(field.radii) * layout.scale_factor
+	for i in instances.instance_count:
+		var local := Vector3.ZERO
+		for attempt in 64:
+			var flat := Vector2(random.randf_range(-1, 1), random.randf_range(-1, 1))
+			if flat.length_squared() > 1: continue
+			local = Vector3(flat.x * radii.x, random.randf_range(-1, 1) * float(field.height) * sqrt(1.0 - flat.length_squared()), flat.y * radii.y)
+			var clear := true
+			for landmark in landmarks.values():
+				if (node.position + local).distance_to(landmark.position) < 85:
+					clear = false
+					break
+			if clear: break
+		var rotation := Basis.from_euler(Vector3(random.randf() * TAU, random.randf() * TAU, random.randf() * TAU))
+		var size := random.randf_range(2.0, 8.0)
+		instances.set_instance_transform(i, Transform3D(rotation.scaled(Vector3(size, size * 0.75, size * 1.2)), local))
+		asteroid_count += 1
+	add_child(node)
+	field_nodes[field.id] = node
+
+
+func target_position(id: String = "") -> Vector3:
+	var entry := layout.target(selected_id if id.is_empty() else id)
+	return layout.world(entry) if not entry.is_empty() else ship.position
+
+
+func select_target(id: String) -> void:
+	if layout.target(id).is_empty(): return
+	selected_id = id
+	autopilot = false
+	arrival_message = ""
+
+
+func navigate_to(id: String) -> void:
+	if layout.target(id).is_empty(): return
+	select_target(id)
+	autopilot = true
+	cruise = false
+
+
+func align_to_target() -> void:
+	var direction := target_position() - ship.position
+	if direction.length_squared() < 0.01: return
+	var up := Vector3.FORWARD if absf(direction.normalized().dot(Vector3.UP)) > 0.98 else Vector3.UP
+	ship.basis = Basis.looking_at(direction.normalized(), up)
+	_sync_angles()
+
+
+func toggle_cruise() -> void:
+	cruise = not cruise
+	autopilot = false
+
+
+func brake() -> void:
+	cruise = false
+	autopilot = false
+	velocity = Vector3.ZERO
+	speed = 0.0
+
+
+func launch_position() -> Vector3:
+	return layout.world(layout.target(DOCK_ID)) + Vector3(0, 12, 140)
+
+
+func prepare_launch() -> void:
+	ship.position = launch_position()
+	ship.rotation = Vector3.ZERO
+	_yaw = 0
+	_pitch = 0
+	brake()
+	selected_id = DOCK_ID
+	arrival_message = "LAUNCH COMPLETE"
+	# Old trails and shots must not connect across the landing transition.
+	for shot in shots: shot.queue_free()
+	shots.clear()
+	_effects.clear_trails()
+	_update_camera(0.0)
+
+
+func docking_error() -> String:
+	if ship.position.distance_to(target_position(DOCK_ID)) > DOCK_RANGE:
+		return "APPROACH AGINCOURT PLANET PORT  /  WITHIN 90 m TO LAND"
+	if velocity.length() > DOCK_SPEED:
+		return "SLOW BELOW 20 m/s TO DOCK  /  X TO BRAKE"
+	return ""
+
+
+func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, firing: bool) -> void:
+	elapsed += delta
+	if steering != Vector2.ZERO or thrust != 0:
+		autopilot = false
+	var forward := -ship.basis.z
+	var desired := Vector3.ZERO
+	if autopilot:
+		var to_target := target_position() - ship.position
+		var distance := to_target.length()
+		var stopping_distance := 55.0 if selected_id == DOCK_ID else 75.0
+		if distance > 0.01:
+			var direction := to_target / distance
+			var up := Vector3.FORWARD if absf(direction.dot(Vector3.UP)) > 0.98 else Vector3.UP
+			ship.basis = Basis(ship.basis.get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * 3.0)))
+			desired = direction * minf(280.0, sqrt(2.0 * 70.0 * maxf(0.0, distance - stopping_distance)))
+		if distance <= stopping_distance + 4 and velocity.length() < 4:
+			autopilot = false
+			desired = Vector3.ZERO
+			arrival_message = "ARRIVED  /  " + str(layout.target(selected_id).name).to_upper()
+		_sync_angles()
+	else:
+		var top_speed := 280.0 if cruise else (105.0 if boosting else 35.0)
+		desired = forward * (1.0 if cruise else thrust) * top_speed
+		desired += (ship.basis.x * steering.x + ship.basis.y * steering.y) * (40.0 if boosting else 25.0)
+	velocity = velocity.move_toward(desired, (110.0 if autopilot or cruise else 85.0) * delta)
+	ship.position += velocity * delta
+	_avoid_planet()
+	speed = velocity.length()
+	for i in ship.engines.size():
+		ship.engines[i].scale.z = 1.0 + (0.6 if boosting or cruise or autopilot else 0.12) * (1.0 + sin(elapsed * 23))
+	_fire_wait -= delta
+	if firing and _fire_wait <= 0:
+		_fire_wait = 0.16
+		_fire_shot()
+	for i in range(shots.size() - 1, -1, -1):
+		var shot := shots[i]
+		shot.position += (shot.get_meta("velocity") as Vector3) * delta
+		var remaining := float(shot.get_meta("remaining")) - delta
+		shot.set_meta("remaining", remaining)
+		if remaining <= 0:
+			shot.queue_free()
+			shots.remove_at(i)
+	camera.fov = lerpf(camera.fov, 60.0 if cruise or autopilot else (58.0 if boosting else 54.0), 1.0 - exp(-delta * 3.0))
+	_update_camera(delta)
+	_effects.advance(delta, ship, camera, boosting or cruise or autopilot)
+
+
+func _fire_shot() -> void:
+	var shot := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.08, 0.08, 2.0)
+	shot.mesh = mesh
+	shot.material_override = _material("8ae5ed", true)
+	shot.position = ship.position - ship.basis.z * 3.2
+	shot.basis = ship.basis
+	shot.set_meta("velocity", -ship.basis.z * 150.0 + velocity)
+	shot.set_meta("remaining", 3.0)
+	add_child(shot)
+	shots.append(shot)
+
+
+func _avoid_planet() -> void:
+	var centre := layout.world(layout.planet)
+	var offset := ship.position - centre
+	var radius := float(layout.planet.radius) + 8
+	if offset.length() < radius:
+		var up := offset.normalized() if offset.length_squared() > 0.001 else Vector3.UP
+		ship.position = centre + up * radius
+		if velocity.dot(up) < 0: velocity -= up * velocity.dot(up)
+
+
+func _update_camera(delta: float) -> void:
+	var target := ship.position + ship.basis * Vector3(4.8, 3.7, 11.7)
+	camera.position = camera.position.lerp(target, 1.0 - exp(-delta * 7.0)) if delta > 0 else target
+	camera.look_at(ship.position - ship.basis.z * 16, ship.basis.y)
+	if _sun != null: _sun.look_at(camera.position, Vector3.UP)
+
+
+func _sync_angles() -> void:
+	var forward := -ship.basis.z
+	_yaw = atan2(-forward.x, -forward.z)
+	_pitch = asin(clampf(forward.y, -1, 1))
+
+
+func orbit(relative: Vector2) -> void:
+	autopilot = false
+	_yaw -= relative.x * 0.004
+	_pitch = clampf(_pitch - relative.y * 0.003, -1.35, 1.35)
+	ship.rotation = Vector3(_pitch, _yaw, 0)
+
+
+func reset_view() -> void:
+	_update_camera(0.0)

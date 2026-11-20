@@ -2,6 +2,13 @@
 
 Godot 4.7 port of the Unity "ShipGame" space shooter. Open the folder in Godot and press F5.
 
+## Artois system
+
+Choose **ARTOIS SYSTEM / EXPLORE** to fly the new map blockout. **M** opens the
+system chart; select a destination and choose **NAVIGATE**. Approach **Agincourt
+Planet Port** within **90 m**, slow below **20 m/s**, then press **Enter** to land.
+Enter launches back from the planet market. See [the Artois guide](docs/artois-system.md).
+
 ## Lancerunner visual benchmark
 
 The main menu's **ARTOIS / VISUAL BENCHMARK** opens an isolated pixel-style 3D

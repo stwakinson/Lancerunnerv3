@@ -66,14 +66,18 @@ func _ready() -> void:
 	camera.far = 1800
 	add_child(camera)
 	camera.current = true
-	_make_station()
-	_make_rocks()
-	_make_planet()
-	_make_sun()
+	_build_world()
 	_effects = Effects.new()
 	_effects.name = "EngineTrails"
 	add_child(_effects)
 	_update_camera(0.0)
+
+
+func _build_world() -> void:
+	_make_station()
+	_make_rocks()
+	_make_planet()
+	_make_sun()
 
 
 func _make_planet() -> void:

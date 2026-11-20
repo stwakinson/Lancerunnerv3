@@ -1,0 +1,272 @@
+{
+  "name": "Artois",
+  "map_size": [
+    1068,
+    807
+  ],
+  "map_origin": [
+    540,
+    340
+  ],
+  "units_per_map_pixel": 8,
+  "planet": {
+    "name": "Agincourt Planet",
+    "map": [
+      280,
+      300
+    ],
+    "altitude": -420,
+    "radius": 300
+  },
+  "locations": [
+    {
+      "id": "calais_gate",
+      "name": "Calais Gate",
+      "kind": "gate",
+      "map": [
+        554,
+        66
+      ],
+      "notes": "Northern system exit. Jump connection placeholder."
+    },
+    {
+      "id": "border_post",
+      "name": "Border Post",
+      "kind": "outpost",
+      "map": [
+        510,
+        128
+      ],
+      "notes": "Northern border checkpoint."
+    },
+    {
+      "id": "renty",
+      "name": "Renty",
+      "kind": "village",
+      "map": [
+        510,
+        160
+      ],
+      "notes": "Settlement near the Calais approach."
+    },
+    {
+      "id": "embry",
+      "name": "Embry Village",
+      "kind": "village",
+      "map": [
+        346,
+        154
+      ],
+      "notes": "Settlement inside the Embry asteroid field."
+    },
+    {
+      "id": "asques_gate",
+      "name": "Asques Gate",
+      "kind": "gate",
+      "map": [
+        128,
+        309
+      ],
+      "notes": "Western system exit. Jump connection placeholder."
+    },
+    {
+      "id": "caulers",
+      "name": "Caulers Village",
+      "kind": "village",
+      "map": [
+        334,
+        309
+      ],
+      "notes": "Settlement on the western approach."
+    },
+    {
+      "id": "agincourt",
+      "name": "Agincourt Castle",
+      "kind": "castle",
+      "map": [
+        298,
+        354
+      ],
+      "notes": "Fortress landmark. Space reserved for a later battle."
+    },
+    {
+      "id": "arras",
+      "name": "Arras (Ruined Planet Gate)",
+      "kind": "ruin_gate",
+      "map": [
+        510,
+        270
+      ],
+      "notes": "Abandoned planetary gate inside the central wreck field."
+    },
+    {
+      "id": "fressin",
+      "name": "Fressin Castle (Ruined)",
+      "kind": "ruin_castle",
+      "map": [
+        510,
+        306
+      ],
+      "notes": "Broken fortress in the central field."
+    },
+    {
+      "id": "wrecked_shipyard",
+      "name": "Wrecked Shipyard",
+      "kind": "shipyard",
+      "map": [
+        510,
+        334
+      ],
+      "notes": "Derelict construction berths."
+    },
+    {
+      "id": "merchant_guild",
+      "name": "Ruined Merchant Guild",
+      "kind": "guild",
+      "map": [
+        510,
+        363
+      ],
+      "notes": "Abandoned merchant station."
+    },
+    {
+      "id": "maroeuil_wreck",
+      "name": "Maroeuil Wreck",
+      "kind": "wreck",
+      "map": [
+        885,
+        227
+      ],
+      "notes": "Ship wreck in the northern part of Maroeuil Field."
+    },
+    {
+      "id": "freebooter_base",
+      "name": "Freebooter Base",
+      "kind": "pirate_base",
+      "map": [
+        819,
+        441
+      ],
+      "notes": "Hidden base in the southern part of Maroeuil Field."
+    },
+    {
+      "id": "acheau",
+      "name": "Acheau Village",
+      "kind": "village",
+      "map": [
+        480,
+        455
+      ],
+      "notes": "Settlement south of the central field."
+    },
+    {
+      "id": "southern_outpost",
+      "name": "Southern Outpost (Unnamed)",
+      "kind": "outpost",
+      "map": [
+        510,
+        541
+      ],
+      "notes": "Map working label: sdfsdfsdf. Name remains unassigned."
+    },
+    {
+      "id": "southern_ship",
+      "name": "Southern Capital Ship (Unnamed)",
+      "kind": "capital_ship",
+      "map": [
+        510,
+        574
+      ],
+      "notes": "Map working label: sdfsdf. Earlier draft identified a capital ship here."
+    },
+    {
+      "id": "picardie_gate",
+      "name": "Picardie Gate",
+      "kind": "gate",
+      "map": [
+        560,
+        660
+      ],
+      "notes": "Southern system exit. Jump connection placeholder."
+    },
+    {
+      "id": "st_paul",
+      "name": "St Paul Cathedral",
+      "kind": "cathedral",
+      "map": [
+        74,
+        782
+      ],
+      "notes": "Isolated cathedral station in the southwest."
+    },
+    {
+      "id": "planet_dock",
+      "name": "Agincourt Planet Port",
+      "kind": "planet_dock",
+      "map": [
+        326,
+        385
+      ],
+      "notes": "Approach within 90 m and slow below 20 m/s. Enter lands at the existing lower market."
+    }
+  ],
+  "fields": [
+    {
+      "id": "embry_field",
+      "name": "Embry Asteroid Field",
+      "map": [
+        373,
+        160
+      ],
+      "radii": [
+        116,
+        116
+      ],
+      "label_map": [
+        263,
+        243
+      ],
+      "height": 150,
+      "count": 220,
+      "seed": 1415
+    },
+    {
+      "id": "central_field",
+      "name": "Asteroid / Wreck Field",
+      "map": [
+        610,
+        309
+      ],
+      "radii": [
+        140,
+        116
+      ],
+      "label_map": [
+        540,
+        224
+      ],
+      "height": 120,
+      "count": 260,
+      "seed": 1416
+    },
+    {
+      "id": "maroeuil_field",
+      "name": "Maroeuil Field",
+      "map": [
+        854,
+        350
+      ],
+      "radii": [
+        112,
+        262
+      ],
+      "label_map": [
+        772,
+        346
+      ],
+      "height": 180,
+      "count": 300,
+      "seed": 1417
+    }
+  ]
+}
