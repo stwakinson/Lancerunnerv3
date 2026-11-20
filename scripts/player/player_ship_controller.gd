@@ -23,8 +23,6 @@ extends Area3D
 # curve of the ground (level flight goes around the world, not off into
 # space), and gravity pulls it down whenever it's too slow to stay up.
 
-var bullet_scene: PackedScene = load("res://scenes/bullet.tscn")
-
 @export_group("Movement")
 ## Top cruising speed.
 @export var move_speed := 8.0
@@ -117,12 +115,13 @@ enum State { FLYING, LANDED, TAKING_OFF }
 var gear: LandingGear
 # Solid body in the shape of the hull, so the pilot can't walk through the
 # ship but can stand on it.
-var _hull: StaticBody3D
-var _skirt: CollisionShape3D
+var _hull: ShipHull
 ## Height of the top of the hull above the ship's center.
-var hull_top := 0.5
+var hull_top: float:
+	get:
+		return _hull.top_height if _hull != null else 0.5
 
-var fire_cooldown := 0.0
+var _weapons := ShipWeapons.new()
 var enabled := true
 var state := State.FLYING
 var velocity := Vector3.ZERO
@@ -184,7 +183,8 @@ func _ready() -> void:
 	if aim_camera == null:
 		aim_camera = get_viewport().get_camera_3d() as CameraFollow
 	ShipModel.attach(visual, ShipModel.PLAYER_THRUST_CORE, ShipModel.PLAYER_THRUST_TAIL)
-	_build_hull()
+	_hull = ShipHull.new()
+	_hull.build(visual, landing_clearance)
 	gear = LandingGear.new()
 	gear.name = "LandingGear"
 	visual.add_child(gear)
@@ -225,11 +225,9 @@ func _process(delta: float) -> void:
 		_handle_movement(delta)
 		_update_gear()
 		_handle_aiming(delta)
-		_handle_shooting(delta)
+		_weapons.update(self, delta)
 		_update_engines(delta)
-	var parked := state == State.LANDED
-	if _skirt.disabled == parked:
-		_skirt.disabled = not parked
+	_hull.update_parked(state == State.LANDED)
 	_update_chute(delta)
 
 
@@ -343,7 +341,7 @@ func wreck() -> void:
 	wrecked = true
 	replacement_wait = replacement_cooldown
 	cut_chute()
-	_hull.collision_layer = 0
+	_hull.set_solid(false)
 	Blast.spawn(global_position, 2.0)
 	visual.visible = false
 	velocity = Vector3.ZERO
@@ -392,7 +390,7 @@ func _deliver_replacement() -> void:
 		_hover_hold = true
 		gear.snap(false)
 	visual.visible = true
-	_hull.collision_layer = Layers.SHIP_HULL
+	_hull.set_solid(true)
 	pilot.climb_in()
 	var gm := GameManager.instance
 	if gm != null and not gm.is_game_over:
@@ -568,52 +566,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-# A solid copy of the model's triangles (following the visual as it banks).
-func _build_hull() -> void:
-	var model := visual.get_node_or_null("ShipModel") as Node3D
-	var to_visual := visual.global_transform.affine_inverse()
-	var faces := PackedVector3Array()
-	if model != null:
-		for n in model.find_children("*", "MeshInstance3D", true, false):
-			var mi := n as MeshInstance3D
-			if mi.mesh == null:
-				continue
-			var xf := to_visual * mi.global_transform
-			for f in mi.mesh.get_faces():
-				faces.append(xf * f)
-	var shape := ConcavePolygonShape3D.new()
-	shape.backface_collision = true
-	shape.set_faces(faces)
-	var bounds := AABB()
-	if not faces.is_empty():
-		bounds = AABB(faces[0], Vector3.ZERO)
-		for f in faces:
-			bounds = bounds.expand(f)
-		hull_top = bounds.end.y
-	_hull = StaticBody3D.new()
-	_hull.name = "Hull"
-	_hull.collision_layer = Layers.SHIP_HULL
-	_hull.collision_mask = 0
-	var cs := CollisionShape3D.new()
-	cs.shape = shape
-	_hull.add_child(cs)
-	# Parked, the gap under the belly is about the pilot's height: fill it in
-	# (under the fuselage, not the wings) so they walk round the ship, not under it.
-	var skirt := BoxShape3D.new()
-	var depth := landing_clearance + 0.3
-	skirt.size = Vector3(bounds.size.x * 0.35, depth, bounds.size.z * 0.8)
-	_skirt = CollisionShape3D.new()
-	_skirt.name = "Skirt"
-	_skirt.shape = skirt
-	_skirt.position = Vector3(bounds.get_center().x, bounds.position.y - depth * 0.5 + 0.05, bounds.get_center().z)
-	_skirt.disabled = true
-	_hull.add_child(_skirt)
-	visual.add_child(_hull)
-
-
 # Solid again (restarting the game).
 func restore_hull() -> void:
-	_hull.collision_layer = Layers.SHIP_HULL
+	_hull.set_solid(true)
 
 
 func deploy_chute() -> void:
@@ -700,33 +655,3 @@ func _ground_rotation() -> Quaternion:
 	if forward.length_squared() < 0.0001:
 		forward = up.cross(Vector3.RIGHT)
 	return Rotations.look_rotation(forward, up)
-
-
-func _handle_shooting(delta: float) -> void:
-	fire_cooldown -= delta
-	# Mouse only fires while the cursor is captured, so the click that re-captures it doesn't shoot.
-	var mouse_fires := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and (aim_camera == null or aim_camera.mouse_can_fire)
-	var wants_fire := mouse_fires or Input.is_physical_key_pressed(KEY_SPACE)
-
-	if wants_fire and fire_cooldown <= 0.0:
-		_fire()
-		fire_cooldown = 1.0 / maxf(0.01, fire_rate)
-
-
-func _fire() -> void:
-	if fire_point == null:
-		return
-	# Aim at the crosshair, not just along the nose, so shots land where you're
-	# looking even while the ship is still turning to catch up with the view.
-	var origin := fire_point.global_position
-	var dir := -fire_point.global_basis.z
-	if aim_camera != null:
-		var to_aim := aim_camera.aim_point() - origin
-		if to_aim.length_squared() > 0.01:
-			dir = to_aim.normalized()
-
-	var bullet := bullet_scene.instantiate() as Bullet
-	get_tree().current_scene.add_child(bullet)
-	bullet.global_position = origin
-	# Shots carry the ship's forward speed, so they don't lag behind while boosting.
-	bullet.launch(dir, bullet_speed + maxf(0.0, velocity.dot(dir)))

@@ -35,10 +35,9 @@ var _was_game_over := false
 @export var sweep_period := 2.5
 ## How long a blip glows after the sweep passes over it.
 @export var blip_fade := 2.2
-const RADAR_GREEN := Color(0.3, 1.0, 0.45)
-const ALLY_BLUE := Color(0.45, 0.72, 1.0)
+const ALLY_BLUE := HudRadar.ALLY_BLUE
 
-var _sweep := 0.0            # sweep angle, radians clockwise from straight ahead
+var _radar := HudRadar.new()
 
 # Missile camera: a picture-in-picture view from a camera mounted on the side
 # of the nearest missile chasing you, looking ahead at your ship.
@@ -46,8 +45,6 @@ var _missile_cam_box: SubViewportContainer
 var _missile_cam_view: SubViewport
 var _missile_cam: Camera3D
 var _cam_missile: Missile
-# Instance id -> [angle on the scope, seconds since the sweep last lit it].
-var _pings := {}
 var _bold: SystemFont
 
 
@@ -66,15 +63,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	queue_redraw()
 	_update_missile_cam()
-	var previous := _sweep
-	_sweep = fposmod(_sweep + TAU * delta / sweep_period, TAU)
-	# Light up every blip the sweep line passed over since last frame.
-	var swept := fposmod(_sweep - previous, TAU)
-	for id in _pings:
-		var ping: Array = _pings[id]
-		ping[1] += delta
-		if fposmod(ping[0] - previous, TAU) <= swept:
-			ping[1] = 0.0
+	_radar.advance(delta, sweep_period)
 	var gm := GameManager.instance
 	var over := gm != null and gm.game_over_screen
 	if over != _was_game_over:
@@ -171,7 +160,8 @@ func _draw() -> void:
 					_label(prompt_rect, "TAKING OFF", ls, Color(1, 1, 1, 0.85), HORIZONTAL_ALIGNMENT_CENTER, 1, true)
 
 	if cam != null and gm != null and not gm.is_game_over and gm.player != null:
-		_draw_radar(gm.player, cam, w, h, pad)
+		var range_units := radar_range_on_foot if gm.player.on_foot else radar_range_ship
+		_radar.draw_scope(self, gm.player, cam, radar_size, range_units, blip_fade, _bold)
 		_draw_missile_warning(gm.player, w, h)
 		_draw_missile_cam_frame(gm.player, h)
 	if cam != null and (gm == null or not gm.is_game_over):
@@ -350,119 +340,6 @@ func _draw_foot_panel(ship: PlayerShipController, pad: float, h: float) -> void:
 	_draw_keys(keys, x, y - fs * 3.1, fs)
 
 
-# Bottom-right: a green radar scope, turned with the view (ahead is up). A
-# sweep line goes round trailing a fading glow; enemies within range light up
-# as it passes over them, then fade until the next pass. Hunters show as
-# bigger, brighter blips; a tick above or below a blip means it's higher or
-# lower than you.
-func _draw_radar(ship: PlayerShipController, cam: CameraFollow, w: float, h: float, pad: float) -> void:
-	var r := radar_size * h
-	var c := Vector2(w - pad - r, h - pad - r)
-	var me: Node3D = ship.pilot if ship.on_foot else ship
-	var range_units := radar_range_on_foot if ship.on_foot else radar_range_ship
-
-	# Scope: dark glass, rim, range rings and crosshair.
-	draw_circle(c, r + 3.0, Color(0, 0, 0, 0.5))
-	draw_circle(c, r, Color(0.02, 0.12, 0.05, 0.75))
-	for ring in [0.33, 0.66]:
-		draw_arc(c, r * ring, 0.0, TAU, 48, Color(RADAR_GREEN, 0.18), 1.0, true)
-	draw_line(c + Vector2(-r, 0), c + Vector2(r, 0), Color(RADAR_GREEN, 0.15), 1.0)
-	draw_line(c + Vector2(0, -r), c + Vector2(0, r), Color(RADAR_GREEN, 0.15), 1.0)
-
-	# Sweep: a glowing wedge fading out behind the line.
-	var steps := 24
-	var trail := deg_to_rad(70.0)
-	for i in steps:
-		var a0 := _sweep - trail * float(i) / steps
-		var a1 := _sweep - trail * float(i + 1) / steps
-		var alpha := 0.28 * (1.0 - float(i) / steps)
-		draw_colored_polygon(PackedVector2Array([c, c + _polar(a0, r), c + _polar(a1, r)]), Color(RADAR_GREEN, alpha))
-	draw_line(c, c + _polar(_sweep, r), Color(RADAR_GREEN, 0.9), 2.0, true)
-
-	# Blips, placed relative to where you're looking.
-	var up := cam.up_direction
-	var forward := -cam.global_basis.z
-	forward = (forward - up * forward.dot(up)).normalized()
-	var right := forward.cross(up)
-	var seen := {}
-	for enemy in Enemy.active(get_tree()):
-		var rel := enemy.global_position - me.global_position
-		var flat := Vector2(rel.dot(right), -rel.dot(forward))
-		if flat.length() > range_units:
-			continue
-		var id := enemy.get_instance_id()
-		seen[id] = true
-		var p := flat / range_units * r
-		var angle := atan2(p.x, -p.y)
-		if not _pings.has(id):
-			_pings[id] = [angle, blip_fade]
-		var ping: Array = _pings[id]
-		ping[0] = angle
-		var glow := clampf(1.0 - (ping[1] as float) / blip_fade, 0.0, 1.0)
-		if glow <= 0.0:
-			continue
-		var size := (3.2 if enemy.attacking else 2.0) * maxf(1.0, h / 720.0)
-		var col := Color(RADAR_GREEN.lightened(0.4) if enemy.attacking else RADAR_GREEN, glow)
-		if enemy is MissileTurret:
-			# Missile turrets: squares.
-			var q := size * 1.1
-			draw_rect(Rect2(c + p - Vector2(q, q), Vector2(q, q) * 2.0), col)
-		else:
-			draw_circle(c + p, size + 2.0, Color(RADAR_GREEN, glow * 0.25))
-			draw_circle(c + p, size, col)
-		# Higher or lower than you by a fair margin: a small tick above or below.
-		var height := rel.dot(up)
-		if absf(height) > range_units * 0.08:
-			var dir := -1.0 if height > 0.0 else 1.0
-			draw_line(c + p + Vector2(0, dir * size), c + p + Vector2(0, dir * (size + 5.0)), col, 1.5)
-	# Allies: blue blips, lit by the sweep like everything else.
-	for ally in get_tree().get_nodes_in_group("allies"):
-		var a := ally as Node3D
-		var rel := a.global_position - me.global_position
-		var flat := Vector2(rel.dot(right), -rel.dot(forward))
-		if flat.length() > range_units:
-			continue
-		var id := a.get_instance_id()
-		seen[id] = true
-		var p := flat / range_units * r
-		var angle := atan2(p.x, -p.y)
-		if not _pings.has(id):
-			_pings[id] = [angle, blip_fade]
-		var ping: Array = _pings[id]
-		ping[0] = angle
-		var glow := clampf(1.0 - (ping[1] as float) / blip_fade, 0.0, 1.0)
-		if glow > 0.0:
-			var size := 2.4 * maxf(1.0, h / 720.0)
-			draw_circle(c + p, size + 1.5, Color(ALLY_BLUE, glow * 0.25))
-			draw_circle(c + p, size, Color(ALLY_BLUE, glow))
-	for id in _pings.keys():
-		if not seen.has(id):
-			_pings.erase(id)
-
-	# You, at the center, pointing ahead.
-	var s := 5.0 * maxf(1.0, h / 720.0)
-	draw_colored_polygon(PackedVector2Array([c + Vector2(0, -s), c + Vector2(-s * 0.7, s * 0.7), c + Vector2(s * 0.7, s * 0.7)]), Color(1, 1, 1, 0.9))
-
-	# Missiles chasing you: blinking red diamonds, always shown (pinned to the
-	# rim if they're still out of range).
-	var blink := fmod(Time.get_ticks_msec() / 1000.0, 0.4) < 0.25
-	for m in Missile.active:
-		if not m.homing or not blink or m.target != ship:
-			continue
-		var rel := m.global_position - me.global_position
-		var p := Vector2(rel.dot(right), -rel.dot(forward)) / range_units * r
-		if p.length() > r - 4.0:
-			p = p.normalized() * (r - 4.0)
-		var d := 5.0 * maxf(1.0, h / 720.0)
-		var mc := c + p
-		draw_colored_polygon(PackedVector2Array([mc + Vector2(0, -d), mc + Vector2(d, 0), mc + Vector2(0, d), mc + Vector2(-d, 0)]), Color(1.0, 0.15, 0.1))
-		draw_polyline(PackedVector2Array([mc + Vector2(0, -d - 2), mc + Vector2(d + 2, 0), mc + Vector2(0, d + 2), mc + Vector2(-d - 2, 0), mc + Vector2(0, -d - 2)]), Color(1, 1, 1, 0.9), 1.0)
-
-	draw_arc(c, r, 0.0, TAU, 64, Color(RADAR_GREEN, 0.7), 2.0, true)
-	var fs := roundi(h * 0.016)
-	_label(Rect2(c.x - r, c.y - r - fs * 1.6, r * 2.0, fs * 1.4), "RADAR  %d" % roundi(range_units * 10.0), fs, Color(RADAR_GREEN, 0.8), HORIZONTAL_ALIGNMENT_CENTER, 1, true)
-
-
 # Top center: WARNING · MISSILE LOCK (flashing red) while a missile is chasing
 # the ship; MISSILE LOCKING (amber, with how close the lock is) while a turret
 # is locking on.
@@ -557,11 +434,6 @@ func _draw_missile_cam_frame(ship: PlayerShipController, h: float) -> void:
 	var fuel := maxf(0.0, _cam_missile.fuel_time - _cam_missile.age)
 	_label(Rect2(rect.position.x, rect.position.y - fs * 1.6, rect.size.x, fs * 1.4),
 		"MISSILE CAM   %d m   ·   fuel %.0fs" % [roundi(dist * 10.0), fuel], fs, Color(1.0, 0.4, 0.3), HORIZONTAL_ALIGNMENT_LEFT, 1, true)
-
-
-# Point on the scope at `angle` (clockwise from straight up) and distance `r`.
-static func _polar(angle: float, r: float) -> Vector2:
-	return Vector2(sin(angle), -cos(angle)) * r
 
 
 func _draw_game_over(gm: GameManager, w: float, h: float) -> void:

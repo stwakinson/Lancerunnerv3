@@ -35,6 +35,8 @@ You're not alone: 50 allied fighters (identical to your ship) patrol around the 
 50 walking T-800 robots wander the planet's surface. Land (or skim low over the ground) and up to 10 come for you (4 at first, one more every 10 seconds down there); any too far away to walk warp in nearby. They're slower than the fighters but take two shots, and they raise their cannon arm to shoot you whether you're landed or flying low.
 
 ## Layout
+
+See [Code organisation](docs/architecture.md) for component responsibilities and validation commands.
 - `scenes/menu.tscn`: the home screen (starts here), with the ship turning above START MISSION
 - `scenes/main.tscn`: the game (Unity `Game.unity`)
 - `scripts/core/scene_fader.gd`: autoload `SceneFader`, fades through black between scenes
