@@ -1,6 +1,7 @@
 class_name ArtoisSpace
 extends BenchmarkSpace
 
+const Traffic = preload("res://scripts/artois/artois_traffic.gd")
 const Highways = preload("res://scripts/artois/artois_highways.gd")
 const Combat = preload("res://scripts/artois/artois_combat.gd")
 const Layout = preload("res://scripts/artois/artois_layout.gd")
@@ -11,6 +12,7 @@ const DOCK_RANGE := 90.0
 const DOCK_SPEED := 20.0
 const DOCK_ID := "planet_dock"
 
+var traffic: ArtoisTraffic
 var highways: ArtoisHighways
 var combat: ArtoisCombat
 var disruption_remaining := 0.0
@@ -40,6 +42,10 @@ func _ready() -> void:
 	highways.name = "GoldenHighways"
 	add_child(highways)
 	highways.configure(self)
+	traffic = Traffic.new()
+	traffic.name = "LocalTraffic"
+	add_child(traffic)
+	traffic.configure(self)
 
 
 func tap_direction(key: int, now: float) -> bool:
@@ -126,6 +132,9 @@ func _build_field(field: Dictionary) -> void:
 
 func target_position(id: String = "") -> Vector3:
 	var resolved := selected_id if id.is_empty() else id
+	if traffic != null:
+		var local := traffic.get_actor(resolved)
+		if not local.is_empty(): return local.node.position
 	var hostile := combat.enemy(resolved) if combat != null else null
 	if hostile != null: return hostile.position
 	var entry := layout.target(resolved)
@@ -133,7 +142,7 @@ func target_position(id: String = "") -> Vector3:
 
 
 func select_target(id: String) -> void:
-	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()): return
 	if selected_id != id and combat != null: combat.ordnance.reset_lock()
 	selected_id = id
 	autopilot = false
@@ -142,7 +151,7 @@ func select_target(id: String) -> void:
 
 func navigate_to(id: String) -> void:
 	if highways.attached(): return
-	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()): return
 	select_target(id)
 	autopilot = true
 	cruise = false
@@ -238,6 +247,7 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 	speed = (velocity + dodge_velocity).length()
 	for i in ship.engines.size():
 		ship.engines[i].scale.z = 1.0 + (0.6 if boosting or cruise or autopilot or highways.attached() else 0.12) * (1.0 + sin(elapsed * 23))
+	traffic.advance(delta)
 	combat.advance(delta)
 	if firing and not cruise: _fire_shot()
 	camera.fov = lerpf(camera.fov, 66.0 if highways.attached() else (60.0 if cruise or autopilot else (58.0 if boosting else 54.0)), 1.0 - exp(-delta * 3.0))
@@ -318,6 +328,9 @@ func reset_view() -> void:
 
 
 func target_entry() -> Dictionary:
+	if traffic != null:
+		var entry := traffic.target_entry(selected_id)
+		if not entry.is_empty(): return entry
 	var hostile := combat.enemy(selected_id) if combat != null else null
 	if hostile != null:
 		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "Hull %d / Shield %d" % [roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield"))]}

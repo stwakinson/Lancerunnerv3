@@ -39,12 +39,16 @@ profile. An open shop blocks launch.
 | 3 (landed) | Talk to Fluellen for the five-enemy test sortie |
 | M | Open/close the system chart; flight pauses while it is open |
 | Tab | Cycle tracked destinations |
+| V | Cycle nearby local ships; inspect their faction, pilot, cargo and orders |
 | T | Align the ship toward the tracked destination |
 | G | Navigate toward the tracked destination and stop short of it |
 | Enter | Land at the planet port when range/speed permit; launch when landed |
 | P | Compare pixel/native space rendering |
 | R | Snap the chase camera back into position |
 | Esc | Close a chart/shop first, otherwise return to the menu |
+
+A [finite local population](artois-locals.md) now runs trade, salvage and pirate
+routines inside Artois, including while the player visits the planet.
 
 The chart lists **41 navigation targets**, including eighteen highway entrances. Click a location on the chart or use
 the destination picker, then **NAVIGATE** to engage course following. **TRACK
@@ -113,8 +117,8 @@ Artois reuses those instead of copying the entire visual controller. Landing is 
 separate scene resource shown in its 2D viewport through the existing fade; the
 3D system stays allocated, paused and hidden, preserving state for launch. Old
 projectiles and exhaust trails are cleared on launch so they cannot join across
-the transition. When configuring an export, include `data/artois.json` among the
-non-resource data files.
+the transition. When configuring an export, include `data/*.json` among the
+non-resource data files (system layout and population profiles).
 
 ## Validation and previews
 

@@ -1,0 +1,270 @@
+{
+  "seed": 1415,
+  "limit": 30,
+  "factions": [
+    {
+      "id": "hanseatic",
+      "name": "Hanseatic League",
+      "count": 6,
+      "role": "merchant",
+      "model": "cog",
+      "colour": "c9af83",
+      "speed": 34,
+      "hull": 220,
+      "shield": 45,
+      "radius": 16,
+      "cargo": [
+        "Grain",
+        "Refined alloy",
+        "Fine textiles"
+      ],
+      "ports": [
+        "planet_dock",
+        "caulers",
+        "embry",
+        "acheau",
+        "southern_outpost"
+      ],
+      "first": [
+        "Hermann",
+        "Konrad",
+        "Greta",
+        "Johann",
+        "Margarethe",
+        "Hinrik"
+      ],
+      "last": [
+        "Voss",
+        "Brecht",
+        "Pape",
+        "Witte",
+        "Berg",
+        "Lange"
+      ],
+      "ships": [
+        "Luebeck Rose",
+        "Honest Measure",
+        "Saint Ansgar",
+        "Salt Ledger",
+        "Baltic Star",
+        "Three Keys"
+      ]
+    },
+    {
+      "id": "britannian",
+      "name": "Britannian Traders",
+      "count": 5,
+      "role": "merchant",
+      "model": "britannian",
+      "colour": "e5dcd5",
+      "speed": 42,
+      "hull": 145,
+      "shield": 40,
+      "radius": 10,
+      "cargo": [
+        "Medical supplies",
+        "Reactor cells",
+        "Wool"
+      ],
+      "ports": [
+        "renty",
+        "border_post",
+        "caulers",
+        "planet_dock",
+        "embry"
+      ],
+      "first": [
+        "Thomas",
+        "Alice",
+        "William",
+        "Joan",
+        "Edmund"
+      ],
+      "last": [
+        "Hale",
+        "Mercer",
+        "Wyatt",
+        "Baker",
+        "Ashford"
+      ],
+      "ships": [
+        "Red Hart",
+        "Saint George",
+        "White Rose",
+        "Good Fortune",
+        "Northward"
+      ]
+    },
+    {
+      "id": "valois",
+      "name": "Valois Traders",
+      "count": 5,
+      "role": "merchant",
+      "model": "valois",
+      "colour": "79a8d9",
+      "speed": 40,
+      "hull": 145,
+      "shield": 40,
+      "radius": 10,
+      "cargo": [
+        "Fine textiles",
+        "Grain",
+        "Medical supplies"
+      ],
+      "ports": [
+        "acheau",
+        "southern_outpost",
+        "planet_dock",
+        "renty",
+        "caulers"
+      ],
+      "first": [
+        "Jehan",
+        "Margot",
+        "Pierre",
+        "Isabeau",
+        "Martin"
+      ],
+      "last": [
+        "Moreau",
+        "Dufour",
+        "Leclerc",
+        "Roux",
+        "Petit"
+      ],
+      "ships": [
+        "Belle Etoile",
+        "Saint Denis",
+        "Aube Claire",
+        "Bon Retour",
+        "Alouette"
+      ]
+    },
+    {
+      "id": "borderlander",
+      "name": "Borderlanders",
+      "count": 8,
+      "role": "haulier",
+      "model": "borderlander",
+      "colour": "b5bfac",
+      "speed": 38,
+      "hull": 120,
+      "shield": 30,
+      "radius": 9,
+      "cargo": [
+        "Salvaged parts",
+        "Reactor cells",
+        "Grain"
+      ],
+      "ports": [
+        "planet_dock",
+        "caulers",
+        "acheau",
+        "embry",
+        "southern_outpost"
+      ],
+      "salvage": [
+        "wrecked_shipyard",
+        "merchant_guild",
+        "maroeuil_wreck"
+      ],
+      "first": [
+        "Robin",
+        "Agnes",
+        "Colin",
+        "Perrin",
+        "Maud",
+        "Hugh",
+        "Ysabel",
+        "Giles"
+      ],
+      "last": [
+        "Marsh",
+        "Dubois",
+        "Reed",
+        "Acker",
+        "Fen",
+        "Ward",
+        "Bosc",
+        "Mill"
+      ],
+      "ships": [
+        "Second Chance",
+        "Patchwork",
+        "Moor Hen",
+        "Grey Heron",
+        "Little Lantern",
+        "Last Penny",
+        "Low Tide",
+        "Borrowed Time"
+      ]
+    },
+    {
+      "id": "freebooter",
+      "name": "Freebooters",
+      "count": 4,
+      "role": "pirate",
+      "model": "freebooter",
+      "colour": "dc8260",
+      "speed": 52,
+      "hull": 80,
+      "shield": 25,
+      "radius": 6,
+      "cargo": [
+        "Unregistered cargo"
+      ],
+      "ports": [
+        "freebooter_base",
+        "maroeuil_wreck"
+      ],
+      "first": [
+        "Jack",
+        "Bess",
+        "Rafe",
+        "Hobb"
+      ],
+      "last": [
+        "Crow",
+        "Blackwater",
+        "Rook",
+        "Flint"
+      ],
+      "ships": [
+        "Bad Penny",
+        "Red Knife",
+        "Carrion",
+        "No Quarter"
+      ]
+    },
+    {
+      "id": "raider",
+      "name": "Unidentified Raiders",
+      "count": 2,
+      "role": "raider",
+      "model": "raider",
+      "colour": "a695ae",
+      "speed": 56,
+      "hull": 100,
+      "shield": 35,
+      "radius": 6,
+      "cargo": [
+        "Unidentified stores"
+      ],
+      "ports": [
+        "arras",
+        "fressin"
+      ],
+      "first": [
+        "Unknown"
+      ],
+      "last": [
+        ""
+      ],
+      "ships": [
+        "Unmarked Vessel 17",
+        "Unmarked Vessel 23"
+      ],
+      "hidden_allegiance": "Valois military"
+    }
+  ]
+}

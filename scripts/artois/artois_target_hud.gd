@@ -21,7 +21,7 @@ func _draw() -> void:
 	var offset := (size - Vector2(source_view.size) * factor) * 0.5
 	var point := camera.unproject_position(target) * factor + offset
 	var safe := Rect2(30, 110, size.x - 60, size.y - 245)
-	var colour := Color("f57059") if world.target_entry().kind == "hostile" else Color("f1c78b")
+	var colour := Color("f57059") if world.target_entry().kind == "hostile" else (Color("8ed4d7") if world.target_entry().kind == "local" else Color("f1c78b"))
 	if camera.is_position_behind(target) or not safe.has_point(point):
 		var local := camera.global_transform.affine_inverse() * target
 		var direction := Vector2(local.x, -local.y)
@@ -39,7 +39,7 @@ func _draw() -> void:
 		draw_line(point + Vector2(14, 0), point + Vector2(20, 0), colour)
 	var entry := world.target_entry()
 	var text := "%s  ·  %d m" % [entry.name, roundi(world.ship.position.distance_to(target))]
-	if entry.kind == "hostile": text += "  /  " + str(entry.notes)
+	if entry.kind == "hostile" and not entry.has("pilot"): text += "  /  " + str(entry.notes)
 	var label_x := clampf(point.x - 140, 12, maxf(12, size.x - 330))
 	draw_string(_font, Vector2(label_x, point.y + 30), text, HORIZONTAL_ALIGNMENT_LEFT, 320, 14, colour)
 
@@ -79,6 +79,14 @@ func _draw_combat() -> void:
 		draw_string(_font, origin + Vector2(0, 179), "RECOVERY READY IN %.1fs" % ordnance.recovery_cooldown, HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("8babb9"))
 	if world.disruption_remaining > 0:
 		draw_string(_font, origin + Vector2(0, 200), "FETTERED / %.1fs" % world.disruption_remaining, HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("ff926c"))
+	if world.traffic != null:
+		for actor in world.traffic.actors.values():
+			if not actor.alive or not actor.node.visible or world.camera.is_position_behind(actor.node.position): continue
+			if world.ship.position.distance_to(actor.node.position) > 1000: continue
+			var at := world.camera.unproject_position(actor.node.position) * factor + offset
+			if Rect2(origin + Vector2(-12, -20), Vector2(272, 230)).has_point(at): continue
+			var colour := Color("e28262") if actor.hostile else Color("8ed4d7")
+			draw_rect(Rect2(at - Vector2(6, 6), Vector2(12, 12)), colour, false, 1)
 	for fighter in combat.enemies:
 		if world.camera.is_position_behind(fighter.position): continue
 		if world.ship.position.distance_to(fighter.position) > 900: continue

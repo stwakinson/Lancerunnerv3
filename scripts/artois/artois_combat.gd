@@ -132,6 +132,7 @@ func spawn_patrol(centre: Vector3) -> void:
 func enemy(id: String) -> Node3D:
 	for fighter in enemies:
 		if fighter.get_meta("id") == id: return fighter
+	if world.traffic != null: return world.traffic.hostile(id)
 	return null
 
 
@@ -225,6 +226,13 @@ func _advance_shots(list: Array, delta: float, friendly: bool) -> void:
 				if distance >= 0 and distance < nearest:
 					nearest = distance
 					victim = fighter
+			if world.traffic != null:
+				for actor in world.traffic.actors.values():
+					if not actor.alive or not actor.node.visible: continue
+					var distance := _segment_hit(shot.position, next, actor.node.position, actor.radius)
+					if distance >= 0 and distance < nearest:
+						nearest = distance
+						victim = actor.node
 			if victim != null:
 				if shot.has_meta("missile"):
 					apply_missile_to_enemy(str(victim.get_meta("id")), str(shot.get_meta("missile")))
@@ -269,6 +277,9 @@ func damage_player(amount: float, hull_amount: float = -1.0) -> void:
 
 
 func damage_enemy(id: String, amount: float, hull_amount: float = -1.0) -> void:
+	if world.traffic != null and not world.traffic.get_actor(id).is_empty():
+		world.traffic.damage(id, amount, amount if hull_amount < 0 else hull_amount)
+		return
 	var fighter := enemy(id)
 	if fighter == null or amount <= 0: return
 	var absorbed := minf(float(fighter.get_meta("shield")), amount)
@@ -276,6 +287,14 @@ func damage_enemy(id: String, amount: float, hull_amount: float = -1.0) -> void:
 	var health := maxf(0.0, float(fighter.get_meta("hull")) - (amount if hull_amount < 0 else hull_amount) * (1.0 - absorbed / amount))
 	fighter.set_meta("hull", health)
 	if health > 0: return
+	_explosion(fighter.position)
+	enemies.erase(fighter)
+	fighter.queue_free()
+	if world.selected_id == id: world.select_target("test_patrol")
+	enemy_destroyed.emit(id)
+
+
+func _explosion(at: Vector3) -> void:
 	var burst := MeshInstance3D.new()
 	var mesh := SphereMesh.new()
 	mesh.radius = 1.0
@@ -283,18 +302,17 @@ func damage_enemy(id: String, amount: float, hull_amount: float = -1.0) -> void:
 	burst.mesh = mesh
 	burst.material_override = world._material("ffc07c", true)
 	add_child(burst)
-	burst.position = fighter.position
+	burst.position = at
 	burst.set_meta("remaining", 0.3)
 	_bursts.append(burst)
-	enemies.erase(fighter)
-	fighter.queue_free()
-	if world.selected_id == id: world.select_target("test_patrol")
-	enemy_destroyed.emit(id)
 
 
 func apply_missile_to_enemy(id: String, type: String) -> void:
 	if not Ordnance.MISSILES.has(type): return
 	var stats: Dictionary = Ordnance.MISSILES[type]
+	if world.traffic != null and not world.traffic.get_actor(id).is_empty():
+		world.traffic.damage(id, float(stats.shield), float(stats.hull), "player", 6.0 if type == "fetter_missile" else 0.0)
+		return
 	damage_enemy(id, float(stats.shield), float(stats.hull))
 	var fighter := enemy(id)
 	if type == "fetter_missile" and fighter != null:
