@@ -268,5 +268,103 @@
       "count": 300,
       "seed": 1417
     }
+  ],
+  "highways": [
+    {
+      "id": "calais_renty",
+      "name": "Calais / Renty",
+      "from": [
+        554,
+        82
+      ],
+      "to": [
+        554,
+        179
+      ]
+    },
+    {
+      "id": "renty_arras",
+      "name": "Renty / Arras",
+      "from": [
+        554,
+        191
+      ],
+      "to": [
+        554,
+        246
+      ]
+    },
+    {
+      "id": "arras_junction",
+      "name": "Arras / Central Junction",
+      "from": [
+        554,
+        258
+      ],
+      "to": [
+        554,
+        303
+      ]
+    },
+    {
+      "id": "junction_acheau",
+      "name": "Central Junction / Acheau",
+      "from": [
+        554,
+        315
+      ],
+      "to": [
+        554,
+        410
+      ]
+    },
+    {
+      "id": "acheau_south",
+      "name": "Acheau / Southern Post",
+      "from": [
+        554,
+        422
+      ],
+      "to": [
+        554,
+        509
+      ]
+    },
+    {
+      "id": "south_picardie",
+      "name": "Southern Post / Picardie",
+      "from": [
+        554,
+        521
+      ],
+      "to": [
+        560,
+        640
+      ]
+    },
+    {
+      "id": "asques_caulers",
+      "name": "Asques / Caulers",
+      "from": [
+        150,
+        309
+      ],
+      "to": [
+        300,
+        309
+      ]
+    },
+    {
+      "id": "caulers_junction",
+      "name": "Caulers / Central Junction",
+      "from": [
+        368,
+        309
+      ],
+      "to": [
+        548,
+        309
+      ]
+    }
   ]
 }

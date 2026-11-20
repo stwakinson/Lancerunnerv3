@@ -14,10 +14,16 @@ const ITEMS := {
 	"fuel": {"name": "Reactor cells", "kind": "commodity", "buy": 95, "sell": 76, "stock": 60, "description": "Sealed industrial power cells, traded as cargo. One cargo space per unit."},
 	"pulse_laser": {"name": "Lance pulse laser", "kind": "weapon", "buy": 1400, "sell": 1050, "stock": 6, "description": "Class I energy weapon. A dependable primary armament. Fits either weapon hardpoint in the prototype loadout."},
 	"autocannon": {"name": "Longbow autocannon", "kind": "weapon", "buy": 2100, "sell": 1575, "stock": 4, "description": "Class I ballistic weapon. Intended for sustained close-range fire. Fits either prototype weapon hardpoint."},
-	"missile_rack": {"name": "Falcon missile rack", "kind": "weapon", "buy": 2600, "sell": 1950, "stock": 3, "description": "Guided missiles for Artois combat. Select a hostile and fire within the forward aiming cone. Prototype ammunition is unlimited."},
+	"missile_rack": {"name": "Falcon missile rack", "kind": "weapon", "buy": 2600, "sell": 1950, "stock": 3, "description": "Launches Pavise, Bodkin or Fetter rounds. Z selects ammo; F fires after a 1.5-second lock. Ammunition sold separately."},
 	"shield": {"name": "Aegis shield generator", "kind": "utility", "buy": 1800, "sell": 1350, "stock": 4, "description": "Raises Artois shields from 60 to 180 and regeneration from 8 to 22 per second after four seconds without damage. Fits the utility mount."},
 	"cargo_expander": {"name": "Cargo expansion module", "kind": "utility", "buy": 900, "sell": 675, "stock": 5, "description": "Adds 10 cargo spaces while fitted. Empty the extra cargo space before removing this module."},
+	"pavise_missile": {"name": "Pavise missile", "kind": "consumable", "buy": 120, "sell": 90, "stock": 40, "description": "Anti-shield round: 90 shield / 6 hull damage. Requires a Falcon rack and lock. Z selects; F launches."},
+	"bodkin_missile": {"name": "Bodkin missile", "kind": "consumable", "buy": 180, "sell": 135, "stock": 30, "description": "Anti-hull round: 8 shield / 80 hull damage. Shields must be stripped first. Z selects; F launches from a Falcon rack."},
+	"fetter_missile": {"name": "Fetter missile", "kind": "consumable", "buy": 90, "sell": 65, "stock": 40, "description": "Disruptor: 12 shield / 5 hull damage. Cancels cruise and caps speed at 12 m/s for six seconds. Requires a Falcon rack."},
+	"armourer_mites": {"name": "Armourer's Mites", "kind": "consumable", "buy": 180, "sell": 135, "stock": 25, "description": "Tiny repair servitors, an armourer's retinue for your hull. B restores 60 hull. Shared three-second recovery cooldown."},
+	"ward_phial": {"name": "Ward Phial", "kind": "consumable", "buy": 140, "sell": 105, "stock": 30, "description": "A sealed reserve of warding energy. N restores 90 shield. Shared three-second recovery cooldown."},
 }
+const LEGACY_IDS := ["grain", "alloy", "medicine", "textiles", "fuel", "pulse_laser", "autocannon", "missile_rack", "shield", "cargo_expander"]
 
 var credits := 7500
 var cargo := {"grain": 3, "alloy": 1}
@@ -77,7 +83,7 @@ func trade(id: String, quantity: int, buying: bool) -> String:
 
 
 func fit_error(id: String) -> String:
-	if not ITEMS.has(id) or ITEMS[id].kind == "commodity": return "Select equipment to fit."
+	if not ITEMS.has(id) or ITEMS[id].kind not in ["weapon", "utility"]: return "Select a weapon or utility to fit."
 	if owned(id) < 1: return "Buy an item or choose one in your locker first."
 	if ITEMS[id].kind == "weapon" and not weapons.has(""): return "Unmount a weapon to free a hardpoint."
 	if ITEMS[id].kind == "utility" and not utility.is_empty(): return "Unmount the current utility first."
@@ -128,7 +134,8 @@ func load_state() -> bool:
 	locker = _integer_inventory(data.locker)
 	weapons = data.weapons.duplicate()
 	utility = data.utility
-	stock = _integer_inventory(data.stock)
+	for id in ITEMS: stock[id] = int(ITEMS[id].stock)
+	stock.merge(_integer_inventory(data.stock), true)
 	return true
 
 
@@ -150,7 +157,9 @@ func _valid_save(data: Variant) -> bool:
 			if not ITEMS.has(id) or not _whole(data[key][id], 9999 if key == "stock" else 99): return false
 			if key == "cargo" and ITEMS[id].kind != "commodity": return false
 			if key == "locker" and ITEMS[id].kind == "commodity": return false
-	if data.stock.size() != ITEMS.size(): return false
+	# New supply stock is additive; preserve all original save validation.
+	for id in LEGACY_IDS:
+		if not data.stock.has(id): return false
 	if not data.get("weapons") is Array or data.weapons.size() != 2: return false
 	for id in data.weapons:
 		if not id is String or (not id.is_empty() and (not ITEMS.has(id) or ITEMS[id].kind != "weapon")): return false
@@ -159,3 +168,15 @@ func _valid_save(data: Variant) -> bool:
 	var used := 0
 	for amount in data.cargo.values(): used += int(amount)
 	return used <= BASE_CAPACITY + (10 if util == "cargo_expander" else 0)
+
+
+func consume(id: String) -> String:
+	if not ITEMS.has(id) or ITEMS[id].kind != "consumable": return "Invalid supply."
+	var before := owned(id)
+	if before < 1: return "No %s aboard. Buy supplies at the outfitter." % ITEMS[id].name
+	if before == 1: locker.erase(id)
+	else: locker[id] = before - 1
+	if not save_state():
+		locker[id] = before
+		return "Supply use could not be saved; nothing was consumed."
+	return ""
