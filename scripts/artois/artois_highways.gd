@@ -61,7 +61,7 @@ func tick(delta: float) -> void:
 
 
 func try_enter(from: Vector3, to: Vector3) -> bool:
-	if attached() or lockout > 0 or world.combat.dead: return false
+	if attached() or lockout > 0 or world.combat.dead or world.disruption_remaining > 0: return false
 	var movement := to - from
 	var best := INF
 	var chosen := ""

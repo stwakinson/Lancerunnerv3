@@ -4,6 +4,7 @@ extends Node3D
 signal enemy_destroyed(id: String)
 signal player_destroyed
 
+const Ordnance = preload("res://scripts/artois/artois_ordnance.gd")
 const Fighter = preload("res://scripts/benchmark/voxel_ship.gd")
 const WEAPONS := {
 	"pulse_laser": {"damage": 24.0, "interval": 0.24, "speed": 360.0, "colour": "8ae5ed", "life": 2.2},
@@ -12,6 +13,7 @@ const WEAPONS := {
 }
 const HULL_MAX := 120.0
 const AGGRO_RANGE := 420.0
+var ordnance := Ordnance.new()
 var world: Node3D
 var weapons: Array = ["pulse_laser", ""]
 var hull := HULL_MAX
@@ -32,6 +34,7 @@ var _bursts: Array[MeshInstance3D] = []
 func configure(space: Node3D, market: LandingMarketState) -> void:
 	world = space
 	weapons = market.weapons.duplicate()
+	ordnance.configure(self, market)
 	shield_max = 180.0 if market.utility == "shield" else 60.0
 	shield_regen = 22.0 if market.utility == "shield" else 8.0
 	if _mounts != null: _mounts.free()
@@ -44,6 +47,7 @@ func configure(space: Node3D, market: LandingMarketState) -> void:
 		var mesh := BoxMesh.new()
 		mesh.size = Vector3(0.28, 0.32, 1.8 if weapons[i] != "missile_rack" else 1.0)
 		gun.mesh = mesh
+		gun.set_meta("weapon", weapons[i])
 		gun.position = Vector3(-1.05 if i == 0 else 1.05, 0.12, -2.1)
 		gun.material_override = world._material(WEAPONS[weapons[i]].colour, false)
 		_mounts.add_child(gun)
@@ -68,6 +72,7 @@ func repair() -> void:
 	shield = shield_max
 	dead = false
 	_since_hit = 10.0
+	ordnance.reset_lock()
 	_cooldowns = [0.0, 0.0]
 	_shield_flash = 0.0
 	if _bubble != null: _bubble.visible = false
@@ -77,20 +82,16 @@ func fire() -> void:
 	if dead or world.cruise or (world.highways != null and world.highways.attached()): return
 	for slot in 2:
 		var id: String = weapons[slot]
-		if not WEAPONS.has(id) or _cooldowns[slot] > 0: continue
+		if id == "missile_rack" or not WEAPONS.has(id) or _cooldowns[slot] > 0: continue
 		var stats: Dictionary = WEAPONS[id]
 		_cooldowns[slot] = stats.interval
 		var at: Vector3 = world.ship.global_transform * Vector3(-1.05 if slot == 0 else 1.05, 0.12, -3.0)
-		var direction: Vector3 = -world.ship.basis.z
-		var target := enemy(world.selected_id)
-		# Small cone assist only for a selected hostile in front of the ship.
-		if target != null:
-			var lead: Vector3 = target.global_position + (target.get_meta("velocity") as Vector3) * at.distance_to(target.global_position) / float(stats.speed)
-			var aim := at.direction_to(lead)
-			if direction.dot(aim) > cos(deg_to_rad(7.0)): direction = aim
+		ordnance.update_aim()
+		var forward: Vector3 = -world.ship.basis.z
+		var direction := Ordnance.clamp_direction(forward, at.direction_to(ordnance.aim_point()), Ordnance.ARC, world.ship.basis.y)
 		var shot := _projectile(at, direction * float(stats.speed) + world.velocity, float(stats.damage), str(stats.colour), float(stats.life))
 		shot.set_meta("weapon", id)
-		shot.set_meta("target", world.selected_id if target != null else "")
+		shot.set_meta("target", "")
 		world.shots.append(shot)
 
 
@@ -148,12 +149,20 @@ func clear_projectiles() -> void:
 
 
 func advance(delta: float) -> void:
+	ordnance.advance(delta)
+	if _mounts != null:
+		for gun in _mounts.get_children():
+			if gun.get_meta("weapon") == "missile_rack": continue
+			var aim := Ordnance.clamp_direction(-world.ship.basis.z, gun.global_position.direction_to(ordnance.aim_point()), Ordnance.ARC, world.ship.basis.y)
+			gun.look_at(gun.global_position + aim, world.ship.basis.y)
 	for i in 2: _cooldowns[i] = maxf(0.0, float(_cooldowns[i]) - delta)
 	_since_hit += delta
 	if not dead and _since_hit > 4.0: shield = minf(shield_max, shield + shield_regen * delta)
 	_shield_flash = maxf(0.0, _shield_flash - delta)
 	if _bubble != null: _bubble.visible = _shield_flash > 0
 	for fighter in enemies:
+		var disruption := maxf(0.0, float(fighter.get_meta("disruption", 0.0)) - delta)
+		fighter.set_meta("disruption", disruption)
 		var to_player: Vector3 = world.ship.position - fighter.position
 		var distance := to_player.length()
 		if distance < AGGRO_RANGE: fighter.set_meta("active", true)
@@ -165,7 +174,10 @@ func advance(delta: float) -> void:
 			continue
 		if distance > 0.1:
 			var direction := to_player / distance
-			var desired := direction * (26.0 if distance > 130 else (-18.0 if distance < 75 else 0.0))
+			var cruising := distance > 300 and disruption <= 0
+			fighter.set_meta("cruise", cruising)
+			var desired := direction * ((130.0 if cruising else 26.0) if distance > 130 else (-18.0 if distance < 75 else 0.0))
+			if disruption > 0: desired = desired.limit_length(12.0)
 			var previous: Vector3 = fighter.get_meta("velocity")
 			var velocity := previous.move_toward(desired, delta * 32.0)
 			fighter.position += velocity * delta
@@ -198,8 +210,10 @@ func _advance_shots(list: Array, delta: float, friendly: bool) -> void:
 		if friendly and shot.get_meta("weapon", "") == "missile_rack":
 			var target := enemy(str(shot.get_meta("target", "")))
 			if target != null:
-				velocity = velocity.move_toward(shot.position.direction_to(target.position) * 140.0, delta * 180.0)
+				velocity = velocity.move_toward(shot.position.direction_to(target.position) * float(shot.get_meta("speed", 140.0)), delta * 320.0)
 				shot.set_meta("velocity", velocity)
+				if velocity.length_squared() > 0:
+					shot.look_at(shot.position + velocity, Vector3.RIGHT if absf(velocity.normalized().y) > 0.98 else Vector3.UP)
 		var next := shot.position + velocity * delta
 		var hit := false
 		# Sweep the segment, so fast rounds cannot tunnel through small ships.
@@ -212,10 +226,13 @@ func _advance_shots(list: Array, delta: float, friendly: bool) -> void:
 					nearest = distance
 					victim = fighter
 			if victim != null:
-				damage_enemy(str(victim.get_meta("id")), float(shot.get_meta("damage")))
+				if shot.has_meta("missile"):
+					apply_missile_to_enemy(str(victim.get_meta("id")), str(shot.get_meta("missile")))
+				else: damage_enemy(str(victim.get_meta("id")), float(shot.get_meta("damage")))
 				hit = true
 		elif not dead and _segment_hit(shot.position, next, world.ship.position, 3.2) >= 0:
-			damage_player(float(shot.get_meta("damage")))
+			if shot.has_meta("missile"): apply_missile_to_player(str(shot.get_meta("missile")))
+			else: damage_player(float(shot.get_meta("damage")))
 			hit = true
 		shot.position = next
 		var remaining := float(shot.get_meta("remaining")) - delta
@@ -239,24 +256,24 @@ static func _segment_hit(from: Vector3, to: Vector3, centre: Vector3, radius: fl
 	return distance if distance >= 0 and distance <= length else -1.0
 
 
-func damage_player(amount: float) -> void:
+func damage_player(amount: float, hull_amount: float = -1.0) -> void:
 	if dead or amount <= 0: return
 	_since_hit = 0
 	var absorbed := minf(shield, amount)
 	shield -= absorbed
-	hull = maxf(0.0, hull - (amount - absorbed))
+	hull = maxf(0.0, hull - (amount if hull_amount < 0 else hull_amount) * (1.0 - absorbed / amount))
 	if absorbed > 0: _shield_flash = 0.25
 	if hull <= 0:
 		dead = true
 		player_destroyed.emit()
 
 
-func damage_enemy(id: String, amount: float) -> void:
+func damage_enemy(id: String, amount: float, hull_amount: float = -1.0) -> void:
 	var fighter := enemy(id)
 	if fighter == null or amount <= 0: return
 	var absorbed := minf(float(fighter.get_meta("shield")), amount)
 	fighter.set_meta("shield", float(fighter.get_meta("shield")) - absorbed)
-	var health := maxf(0.0, float(fighter.get_meta("hull")) - (amount - absorbed))
+	var health := maxf(0.0, float(fighter.get_meta("hull")) - (amount if hull_amount < 0 else hull_amount) * (1.0 - absorbed / amount))
 	fighter.set_meta("hull", health)
 	if health > 0: return
 	var burst := MeshInstance3D.new()
@@ -273,3 +290,21 @@ func damage_enemy(id: String, amount: float) -> void:
 	fighter.queue_free()
 	if world.selected_id == id: world.select_target("test_patrol")
 	enemy_destroyed.emit(id)
+
+
+func apply_missile_to_enemy(id: String, type: String) -> void:
+	if not Ordnance.MISSILES.has(type): return
+	var stats: Dictionary = Ordnance.MISSILES[type]
+	damage_enemy(id, float(stats.shield), float(stats.hull))
+	var fighter := enemy(id)
+	if type == "fetter_missile" and fighter != null:
+		fighter.set_meta("disruption", 6.0)
+		fighter.set_meta("cruise", false)
+		fighter.set_meta("velocity", (fighter.get_meta("velocity") as Vector3).limit_length(12.0))
+
+
+func apply_missile_to_player(type: String) -> void:
+	if not Ordnance.MISSILES.has(type): return
+	var stats: Dictionary = Ordnance.MISSILES[type]
+	damage_player(float(stats.shield), float(stats.hull))
+	if type == "fetter_missile" and not dead: world.apply_disruption(6.0)

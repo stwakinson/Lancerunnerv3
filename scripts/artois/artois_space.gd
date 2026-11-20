@@ -13,6 +13,7 @@ const DOCK_ID := "planet_dock"
 
 var highways: ArtoisHighways
 var combat: ArtoisCombat
+var disruption_remaining := 0.0
 var dodge_velocity := Vector3.ZERO
 var dodge_cooldown := 0.0
 var _last_taps := {}
@@ -43,7 +44,7 @@ func _ready() -> void:
 
 func tap_direction(key: int, now: float) -> bool:
 	const DIRECTIONS := {KEY_A: Vector3.LEFT, KEY_D: Vector3.RIGHT, KEY_W: Vector3.FORWARD, KEY_S: Vector3.BACK, KEY_Q: Vector3.DOWN, KEY_E: Vector3.UP}
-	if not DIRECTIONS.has(key) or combat.dead: return false
+	if not DIRECTIONS.has(key) or combat.dead or disruption_remaining > 0: return false
 	var previous := float(_last_taps.get(key, -10.0))
 	_last_taps[key] = now
 	if now - previous > 0.27 or now < previous or dodge_cooldown > 0: return false
@@ -133,6 +134,7 @@ func target_position(id: String = "") -> Vector3:
 
 func select_target(id: String) -> void:
 	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null): return
+	if selected_id != id and combat != null: combat.ordnance.reset_lock()
 	selected_id = id
 	autopilot = false
 	arrival_message = ""
@@ -155,6 +157,9 @@ func align_to_target() -> void:
 
 
 func engage_cruise() -> void:
+	if disruption_remaining > 0:
+		combat.ordnance.notify("FETTERED / CRUISE DISABLED")
+		return
 	if highways.attached():
 		highways.escape(-ship.basis.z)
 		return
@@ -163,6 +168,7 @@ func engage_cruise() -> void:
 
 
 func toggle_cruise() -> void:
+	if disruption_remaining > 0: return
 	if highways.attached(): return
 	cruise = not cruise
 	autopilot = false
@@ -183,6 +189,7 @@ func launch_position() -> Vector3:
 
 
 func prepare_launch() -> void:
+	disruption_remaining = 0.0
 	highways.reset()
 	ship.position = launch_position()
 	ship.rotation = Vector3.ZERO
@@ -212,6 +219,7 @@ func docking_error() -> String:
 func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, firing: bool) -> void:
 	if combat.dead: return
 	elapsed += delta
+	disruption_remaining = maxf(0.0, disruption_remaining - delta)
 	dodge_cooldown = maxf(0.0, dodge_cooldown - delta)
 	highways.tick(delta)
 	var previous := ship.position
@@ -261,6 +269,7 @@ func _advance_manual(delta: float, steering: Vector2, thrust: float, boosting: b
 		desired = forward * (1.0 if cruise else thrust) * top_speed
 		desired += (ship.basis.x * steering.x + ship.basis.y * steering.y) * (40.0 if boosting else 25.0)
 	if cruise: desired = desired.limit_length(CRUISE_SPEED)
+	if disruption_remaining > 0: desired = desired.limit_length(12.0)
 	velocity = velocity.move_toward(desired, (110.0 if autopilot or cruise else 85.0) * delta)
 	# Integrate exponential dodge decay independently of normal thrust.
 	ship.position += velocity * delta + dodge_velocity * ((1.0 - exp(-delta * 6.0)) / 6.0)
@@ -310,3 +319,15 @@ func target_entry() -> Dictionary:
 	if hostile != null:
 		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "Hull %d / Shield %d" % [roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield"))]}
 	return layout.target(selected_id)
+
+
+func apply_disruption(duration: float) -> void:
+	disruption_remaining = maxf(disruption_remaining, duration)
+	highways.reset()
+	cruise = false
+	autopilot = false
+	dodge_velocity = Vector3.ZERO
+	velocity = velocity.limit_length(12.0)
+	reset_taps()
+	combat.ordnance.reset_lock()
+	combat.ordnance.notify("FETTER HIT / CRUISE CANCELLED / SPEED LIMITED FOR 6s")

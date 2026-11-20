@@ -47,6 +47,7 @@ func _draw() -> void:
 func _draw_combat() -> void:
 	var combat := world.combat
 	var origin := Vector2(size.x - 280, 122)
+	draw_rect(Rect2(origin + Vector2(-12, -20), Vector2(272, 230)), Color(0.025, 0.06, 0.09, 0.7))
 	for i in 2:
 		var value: float = combat.shield if i == 0 else combat.hull
 		var maximum: float = combat.shield_max if i == 0 else combat.HULL_MAX
@@ -55,18 +56,34 @@ func _draw_combat() -> void:
 		draw_string(_font, at, ("SHIELD %d / %d" if i == 0 else "HULL %d / %d") % [roundi(value), roundi(maximum)], HORIZONTAL_ALIGNMENT_LEFT, 240, 13, colour)
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230, 5)), Color("182c38"))
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230 * value / maximum, 5)), colour)
-	var weapon_text := "WEAPONS LOCKED / TRANSIT" if world.cruise or world.highways.attached() else "SPACE / " + (" + ".join(combat.weapons).replace("_", " ").to_upper())
+	var fitted := PackedStringArray()
+	for id in combat.weapons:
+		if not str(id).is_empty() and id != "missile_rack": fitted.append(str(id).replace("_", " ").to_upper())
+	var weapon_text := "WEAPONS LOCKED / TRANSIT" if world.cruise or world.highways.attached() else "SPACE / " + (" + ".join(fitted) if not fitted.is_empty() else "NO GUNS FITTED")
 	draw_string(_font, origin + Vector2(0, 84), weapon_text, HORIZONTAL_ALIGNMENT_LEFT, 260, 12, Color("bdd4dc"))
 	var factor := maxf(size.x / source_view.size.x, size.y / source_view.size.y)
 	var offset := (size - Vector2(source_view.size) * factor) * 0.5
-	var aim: Vector3 = world.ship.position - world.ship.basis.z * 150
+	var aim: Vector3 = combat.ordnance.aim_point()
 	var cross := world.camera.unproject_position(aim) * factor + offset
-	draw_line(cross - Vector2(5, 0), cross + Vector2(5, 0), Color("8db4be"))
-	draw_line(cross - Vector2(0, 5), cross + Vector2(0, 5), Color("8db4be"))
+	draw_line(cross - Vector2(5, 0), cross + Vector2(5, 0), Color("eeb76b") if combat.ordnance.aim_clamped else Color("8de4e5"))
+	draw_line(cross - Vector2(0, 5), cross + Vector2(0, 5), Color("eeb76b") if combat.ordnance.aim_clamped else Color("8de4e5"))
+	var ordnance := combat.ordnance
+	var count := ordnance.market.owned(ordnance.selected_missile)
+	draw_string(_font, origin + Vector2(0, 106), "F / %s  x%d     Z: CYCLE" % [ordnance.MISSILES[ordnance.selected_missile].name, count], HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("edc38d"))
+	var lock_text := "NO MISSILE RACK" if not combat.weapons.has("missile_rack") else ("LOCKED / F TO LAUNCH" if ordnance.lock_progress >= ordnance.LOCK_TIME else ("ACQUIRING %.1f / 1.5s" % ordnance.lock_progress if ordnance.lock_progress > 0 else "SELECT HOSTILE / WITHIN 20°"))
+	draw_string(_font, origin + Vector2(0, 126), lock_text, HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("8de4e5"))
+	draw_rect(Rect2(origin + Vector2(0, 134), Vector2(230, 4)), Color("182c38"))
+	draw_rect(Rect2(origin + Vector2(0, 134), Vector2(230 * ordnance.lock_progress / ordnance.LOCK_TIME, 4)), Color("8de4e5"))
+	draw_string(_font, origin + Vector2(0, 160), "B / MITES %d    N / PHIALS %d" % [ordnance.market.owned("armourer_mites"), ordnance.market.owned("ward_phial")], HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("edc38d"))
+	if ordnance.recovery_cooldown > 0:
+		draw_string(_font, origin + Vector2(0, 179), "RECOVERY READY IN %.1fs" % ordnance.recovery_cooldown, HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("8babb9"))
+	if world.disruption_remaining > 0:
+		draw_string(_font, origin + Vector2(0, 200), "FETTERED / %.1fs" % world.disruption_remaining, HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("ff926c"))
 	for fighter in combat.enemies:
 		if world.camera.is_position_behind(fighter.position): continue
 		if world.ship.position.distance_to(fighter.position) > 900: continue
 		var at := world.camera.unproject_position(fighter.position) * factor + offset
+		if Rect2(origin + Vector2(-12, -20), Vector2(272, 230)).has_point(at): continue
 		var colour := Color("ef715b")
 		draw_rect(Rect2(at - Vector2(10, 10), Vector2(20, 20)), colour, false, 1)
 		draw_rect(Rect2(at + Vector2(-14, 15), Vector2(28 * float(fighter.get_meta("hull")) / 65.0, 3)), colour)

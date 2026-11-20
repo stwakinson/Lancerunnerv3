@@ -134,6 +134,7 @@ func _build_ui() -> void:
 	contract_panel.mission = mission
 	contract_panel.market = market_state
 	contract_panel.closed.connect(_sync_shop_hotspots)
+	shop_panel.move_to_front()
 	chart.move_to_front()
 	contract_panel.move_to_front()
 	# Chart and target presentation sit below the transition fade.
@@ -151,7 +152,7 @@ func _update_labels() -> void:
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
 		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND"
-		_hint.text = "W/S thrust · A/D/Q/E strafe · RMB steer · Shift+W cruise · Double-tap dodge · Shift+direction: exit filament · Space fire · C exit · X brake · LMB select · M chart"
+		_hint.text = "RMB steer · Space guns · F missile · Z ammo · B hull · N shield · Shift+W cruise · Double-tap dodge · LMB select · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
 	if contact_button != null: contact_button.visible = landed
@@ -168,6 +169,8 @@ func _process(delta: float) -> void:
 		_sync_shop_hotspots()
 		return
 	if chart != null and chart.visible: return
+	if not landed and not transitioning and space_world.combat.ordnance.cursor_enabled:
+		space_world.combat.ordnance.cursor = _space_pixel(get_local_mouse_position())
 	super._process(delta)
 	if not landed and not transitioning:
 		target_hud.queue_redraw()
@@ -180,6 +183,7 @@ func _process(delta: float) -> void:
 		if world.highways.attached(): _status.text = world.highways.status()
 		elif _notice_time > 0: _status.text = _notice
 		elif world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND AT AGINCOURT PLANET PORT"
+		if world.combat.ordnance.message_time > 0: _status.text = world.combat.ordnance.message
 		_dock_button.disabled = not world.docking_error().is_empty()
 		_dock_button.tooltip_text = world.docking_error()
 
@@ -211,8 +215,17 @@ func toggle_docking() -> void:
 	_update_labels()
 
 
+func _space_pixel(local: Vector2) -> Vector2:
+	var factor := maxf(size.x / space_view.size.x, size.y / space_view.size.y)
+	var offset := (size - Vector2(space_view.size) * factor) * 0.5
+	return (local - offset) / factor
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if landed or transitioning or shop_panel.visible or (chart != null and chart.visible): return
+	if event is InputEventMouseMotion:
+		var local: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
+		space_world.combat.ordnance.set_cursor(_space_pixel(local))
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		var factor := maxf(size.x / space_view.size.x, size.y / space_view.size.y)
 		var offset := (size - Vector2(space_view.size) * factor) * 0.5
@@ -242,6 +255,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.physical_keycode in [KEY_W, KEY_S, KEY_A, KEY_D, KEY_Q, KEY_E]:
 			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
+			KEY_F: world.combat.ordnance.launch()
+			KEY_Z: world.combat.ordnance.cycle_missile()
+			KEY_B: world.combat.ordnance.use_recovery("armourer_mites")
+			KEY_N: world.combat.ordnance.use_recovery("ward_phial")
 			KEY_M: toggle_chart()
 			KEY_C: world.toggle_cruise()
 			KEY_X: world.brake()

@@ -32,7 +32,9 @@ profile. An open shop blocks launch.
 | C | Toggle cruise off/on |
 | Left click | Select a structure, wreck or planet; a rock selects its asteroid field |
 | X | Brake immediately and cancel cruise/course following |
-| Space | Fire fitted weapons along the ship's heading (disabled in cruise) |
+| Space | Fire cursor-directed guns within a 30° forward arc (disabled in transit) |
+| Z / F | Select missile type / launch after 1.5-second lock |
+| B / N | Use Armourer's Mites for hull / Ward Phial for shields |
 | Double-tap W/S/A/D/Q/E | Dodge in that local direction; 0.65-second cooldown |
 | 3 (landed) | Talk to Fluellen for the five-enemy test sortie |
 | M | Open/close the system chart; flight pauses while it is open |
