@@ -21,13 +21,21 @@
   "locations": [
     {
       "id": "calais_gate",
-      "name": "Calais Gate",
-      "kind": "gate",
+      "name": "Calais Hyper Gate",
+      "kind": "hyper_gate",
       "map": [
         554,
         66
       ],
-      "notes": "Northern system exit. Jump connection placeholder."
+      "notes": "OFFLINE / Destination unassigned. Reserved for future inter-system travel. The demo remains in Artois.",
+      "direction": "north",
+      "facing": [
+        0,
+        0,
+        -1
+      ],
+      "destination": null,
+      "enabled": false
     },
     {
       "id": "border_post",
@@ -181,13 +189,21 @@
     },
     {
       "id": "picardie_gate",
-      "name": "Picardie Gate",
-      "kind": "gate",
+      "name": "Picardie Hyper Gate",
+      "kind": "hyper_gate",
       "map": [
         560,
         660
       ],
-      "notes": "Southern system exit. Jump connection placeholder."
+      "notes": "OFFLINE / Destination unassigned. Reserved for future inter-system travel. The demo remains in Artois.",
+      "direction": "south",
+      "facing": [
+        0,
+        0,
+        1
+      ],
+      "destination": null,
+      "enabled": false
     },
     {
       "id": "st_paul",
@@ -208,6 +224,24 @@
         385
       ],
       "notes": "Approach within 90 m and slow below 20 m/s. Enter lands at the existing lower market."
+    },
+    {
+      "id": "east_gate",
+      "name": "Eastern Hyper Gate",
+      "kind": "hyper_gate",
+      "map": [
+        1010,
+        309
+      ],
+      "direction": "east",
+      "facing": [
+        1,
+        0,
+        0
+      ],
+      "destination": null,
+      "enabled": false,
+      "notes": "OFFLINE / Destination unassigned. Eastern terminus beyond Maroeuil. The demo remains in Artois."
     }
   ],
   "fields": [
@@ -267,6 +301,116 @@
       "height": 180,
       "count": 300,
       "seed": 1417
+    }
+  ],
+  "highways": [
+    {
+      "id": "calais_renty",
+      "name": "Calais / Renty",
+      "from": [
+        554,
+        82
+      ],
+      "to": [
+        554,
+        179
+      ]
+    },
+    {
+      "id": "renty_arras",
+      "name": "Renty / Arras",
+      "from": [
+        554,
+        191
+      ],
+      "to": [
+        554,
+        246
+      ]
+    },
+    {
+      "id": "arras_junction",
+      "name": "Arras / Central Junction",
+      "from": [
+        554,
+        258
+      ],
+      "to": [
+        554,
+        303
+      ]
+    },
+    {
+      "id": "junction_acheau",
+      "name": "Central Junction / Acheau",
+      "from": [
+        554,
+        315
+      ],
+      "to": [
+        554,
+        410
+      ]
+    },
+    {
+      "id": "acheau_south",
+      "name": "Acheau / Southern Post",
+      "from": [
+        554,
+        422
+      ],
+      "to": [
+        554,
+        509
+      ]
+    },
+    {
+      "id": "south_picardie",
+      "name": "Southern Post / Picardie",
+      "from": [
+        554,
+        521
+      ],
+      "to": [
+        560,
+        640
+      ]
+    },
+    {
+      "id": "asques_caulers",
+      "name": "Asques / Caulers",
+      "from": [
+        150,
+        309
+      ],
+      "to": [
+        300,
+        309
+      ]
+    },
+    {
+      "id": "caulers_junction",
+      "name": "Caulers / Central Junction",
+      "from": [
+        368,
+        309
+      ],
+      "to": [
+        548,
+        309
+      ]
+    },
+    {
+      "id": "junction_east",
+      "name": "Central Junction / East Hyper Gate",
+      "from": [
+        566,
+        309
+      ],
+      "to": [
+        988,
+        309
+      ]
     }
   ]
 }

@@ -121,7 +121,7 @@ func _build() -> void:
 		_tree.set_column_custom_minimum_width(i, 76)
 	_tree.add_theme_font_size_override("font_size", 15)
 	_tree.add_theme_font_size_override("title_button_font_size", 12)
-	_tree.add_theme_constant_override("v_separation", 16)
+	_tree.add_theme_constant_override("v_separation", 8)
 	_tree.add_theme_color_override("font_color", PALE)
 	_tree.add_theme_stylebox_override("panel", _style(Color("0a1822"), Color("294451")))
 	_tree.add_theme_stylebox_override("selected", _style(Color("294854"), Color("294854")))
@@ -159,9 +159,9 @@ func _build() -> void:
 
 func _refresh() -> void:
 	_refreshing = true
-	_title.text = "COMMODITIES EXCHANGE" if shop_kind == "commodities" else "SHIP WEAPONS & UTILITIES"
+	_title.text = "COMMODITIES EXCHANGE" if shop_kind == "commodities" else "WEAPONS, UTILITIES & SUPPLIES"
 	_account.text = "%s cr\nCARGO  %d / %d" % [_money(market.credits), market.cargo_used(), market.capacity()]
-	var titles := ["COMMODITY" if shop_kind == "commodities" else "EQUIPMENT", "BUY", "SELL", "CARGO" if shop_kind == "commodities" else "LOCKER", "STOCK"]
+	var titles := ["COMMODITY" if shop_kind == "commodities" else "EQUIPMENT", "BUY", "SELL", "CARGO" if shop_kind == "commodities" else "ABOARD", "STOCK"]
 	for i in 5: _tree.set_column_title(i, titles[i])
 	_tree.clear()
 	var root := _tree.create_item()
@@ -177,13 +177,14 @@ func _refresh() -> void:
 		row.set_text(4, str(market.stock[id]))
 		for column in range(1, 5): row.set_text_alignment(column, HORIZONTAL_ALIGNMENT_RIGHT)
 		if id == selected_id: row.select(0)
+	if _tree.get_selected() != null: _tree.scroll_to_item(_tree.get_selected())
 	for i in 3:
 		var id: String = market.utility if i == 2 else market.weapons[i]
 		_slots[i].text = ("UTILITY" if i == 2 else "W%d" % (i + 1)) + " · " + ("EMPTY" if id.is_empty() else str(State.ITEMS[id].name))
 		_slots[i].disabled = id.is_empty()
 		_slots[i].tooltip_text = "Unmount into your equipment locker"
 	_scope.text = "Prices are per unit. Credits, cargo, dealer stock and loadout save locally."
-	if shop_kind == "equipment": _scope.text = "ARTOIS LOADOUT · Fitted weapons and shields are applied when you close the outfitter or launch."
+	if shop_kind == "equipment": _scope.text = "SUPPLIES · Z select missiles / F launch after lock / B repair hull / N restore shields. Supplies use dedicated bins, not cargo."
 	_refreshing = false
 	_details()
 
@@ -205,7 +206,7 @@ func _details() -> void:
 	_sell.tooltip_text = market.trade_error(selected_id, quantity, false)
 	_buy.disabled = not _buy.tooltip_text.is_empty()
 	_sell.disabled = not _sell.tooltip_text.is_empty()
-	_fit.visible = item.kind != "commodity"
+	_fit.visible = item.kind in ["weapon", "utility"]
 	_fit.tooltip_text = market.fit_error(selected_id)
 	_fit.disabled = not _fit.tooltip_text.is_empty()
 
