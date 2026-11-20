@@ -11,6 +11,11 @@ static func pick(world: ArtoisSpace, pixel: Vector2) -> String:
 	if planet_distance >= 0:
 		nearest = planet_distance
 		selected = world.DOCK_ID
+	for fighter in world.combat.enemies:
+		var distance := _sphere(origin, direction, fighter.global_position, 6.0)
+		if distance >= 0 and distance < nearest:
+			nearest = distance
+			selected = str(fighter.get_meta("id"))
 	for id in world.landmarks:
 		var meshes: Array[Node] = world.landmarks[id].find_children("*", "MeshInstance3D", true, false)
 		var bounds := AABB()

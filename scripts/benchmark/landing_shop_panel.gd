@@ -183,7 +183,7 @@ func _refresh() -> void:
 		_slots[i].disabled = id.is_empty()
 		_slots[i].tooltip_text = "Unmount into your equipment locker"
 	_scope.text = "Prices are per unit. Credits, cargo, dealer stock and loadout save locally."
-	if shop_kind == "equipment": _scope.text = "PROTOTYPE LOADOUT · Fitting is saved; integration with flight weapons and shields is a later step."
+	if shop_kind == "equipment": _scope.text = "ARTOIS LOADOUT · Fitted weapons and shields are applied when you close the outfitter or launch."
 	_refreshing = false
 	_details()
 

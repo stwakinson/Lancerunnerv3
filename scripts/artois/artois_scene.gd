@@ -1,12 +1,83 @@
 extends "res://scripts/benchmark/artois_visual.gd"
 
+const Sortie = preload("res://scripts/artois/artois_sortie.gd")
+const ContractPanel = preload("res://scripts/artois/artois_contract_panel.gd")
+const Contact = preload("res://scripts/artois/artois_contact.gd")
 const Picking = preload("res://scripts/artois/artois_picking.gd")
 const Chart = preload("res://scripts/artois/artois_chart.gd")
 const TargetHud = preload("res://scripts/artois/artois_target_hud.gd")
+var mission := Sortie.new()
+var contract_panel: Control
+var contact_button: Button
+var contact_hotspot: Button
+var mission_label: Label
+var _recovering := false
 var chart: ArtoisChart
 var target_hud: ArtoisTargetHud
 var _notice := ""
 var _notice_time := 0.0
+
+
+func _ready() -> void:
+	super._ready()
+	space_world.combat.configure(space_world, market_state)
+	mission.configure(space_world)
+	mission.changed.connect(_mission_changed)
+	space_world.combat.player_destroyed.connect(func() -> void: _recover_from_defeat.call_deferred())
+	shop_panel.closed.connect(_apply_loadout)
+	var contact := Contact.new()
+	contact.position = Vector2(330, 268)
+	landing_world.layers[4].add_child(contact)
+	_mission_changed()
+	_sync_shop_hotspots()
+
+
+func _apply_loadout() -> void:
+	space_world.combat.configure(space_world, market_state)
+
+
+func _mission_changed() -> void:
+	if mission_label != null: mission_label.text = mission.summary()
+	if contract_panel != null and contract_panel.visible: contract_panel.refresh()
+
+
+func open_contract() -> void:
+	if not landed or transitioning or shop_panel.visible or contract_panel.visible: return
+	space_world.reset_taps()
+	contract_panel.open_panel()
+	_sync_shop_hotspots()
+
+
+func open_shop(kind: String) -> void:
+	if contract_panel != null and contract_panel.visible: return
+	space_world.reset_taps()
+	super.open_shop(kind)
+
+
+func _sync_shop_hotspots() -> void:
+	super._sync_shop_hotspots()
+	if contact_hotspot == null: return
+	var available := landed and not transitioning and not shop_panel.visible and not contract_panel.visible
+	shop_hotspots.visible = available
+	contact_hotspot.visible = available
+	var factor := maxf(size.x / 640.0, size.y / 360.0)
+	var offset := (size - Vector2(640, 360) * factor) * 0.5
+	contact_hotspot.position = offset + (Vector2(314, 226) + landing_world.layers[3].position) * factor
+	contact_hotspot.size = Vector2(32, 48) * factor
+
+
+func _recover_from_defeat() -> void:
+	if _recovering: return
+	_recovering = true
+	mission.fail()
+	space_world.brake()
+	space_world.ship.position = space_world.target_position(space_world.DOCK_ID) + Vector3(0, 0, 50)
+	space_world.select_target(space_world.DOCK_ID)
+	await toggle_docking()
+	space_world.combat.repair()
+	_recovering = false
+	_notice = "SHIP RECOVERED AT PORT / REPAIRED / CONTACT FLUELLEN TO RETRY"
+	_notice_time = 6.0
 
 
 func _create_space_world() -> Node3D:
@@ -36,6 +107,32 @@ func _build_ui() -> void:
 	chart.configure(space_world)
 	chart.target_selected.connect(space_world.select_target)
 	chart.navigation_requested.connect(space_world.navigate_to)
+	mission_label = _text(ui, "", Vector2(38, 238), 12, ACCENT)
+	contact_button = _button(ui, "3  FLUELLEN / CONTRACT", Vector2(954, 200), 238, open_contract)
+	contact_button.name = "PlanetContactButton"
+	contact_hotspot = Button.new()
+	contact_hotspot.name = "PlanetContactHotspot"
+	contact_hotspot.tooltip_text = "Captain Fluellen / Test sortie contract (3)"
+	contact_hotspot.focus_mode = Control.FOCUS_NONE
+	contact_hotspot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var transparent := StyleBoxEmpty.new()
+	contact_hotspot.add_theme_stylebox_override("normal", transparent)
+	contact_hotspot.add_theme_stylebox_override("hover", transparent)
+	contact_hotspot.add_theme_stylebox_override("pressed", transparent)
+	contact_hotspot.pressed.connect(open_contract)
+	add_child(contact_hotspot)
+	move_child(contact_hotspot, ui.get_index())
+	var badge := Label.new()
+	badge.text = "FLUELLEN / CONTRACT"
+	badge.position = Vector2(-55, -23)
+	badge.add_theme_font_size_override("font_size", 12)
+	badge.add_theme_color_override("font_color", ACCENT)
+	contact_hotspot.add_child(badge)
+	contract_panel = ContractPanel.new()
+	ui.add_child(contract_panel)
+	contract_panel.mission = mission
+	contract_panel.market = market_state
+	contract_panel.closed.connect(_sync_shop_hotspots)
 	# Chart and target presentation sit below the transition fade.
 	_fade.move_to_front()
 
@@ -51,9 +148,10 @@ func _update_labels() -> void:
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
 		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND"
-		_hint.text = "W/S thrust · A/D/Q/E strafe · RMB steer · Shift+W cruise (5× / no fire) · C exit · X brake · LMB select · M chart"
+		_hint.text = "W/S thrust · A/D/Q/E strafe · RMB steer · Shift+W cruise · Double-tap dodge · Space fire · C exit · X brake · LMB select · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
+	if contact_button != null: contact_button.visible = landed
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
 	if ui != null and ui.has_node("SystemChartButton"):
@@ -61,12 +159,17 @@ func _update_labels() -> void:
 
 
 func _process(delta: float) -> void:
+	if _recovering: return
+	if contract_panel != null and contract_panel.visible:
+		landing_world.advance(delta, Vector2.ZERO, 0.0, true)
+		_sync_shop_hotspots()
+		return
 	if chart != null and chart.visible: return
 	super._process(delta)
 	if not landed and not transitioning:
 		target_hud.queue_redraw()
 		var world := space_world as ArtoisSpace
-		var target := world.layout.target(world.selected_id)
+		var target := world.target_entry()
 		var distance := world.ship.position.distance_to(world.target_position())
 		_notice_time = maxf(0.0, _notice_time - delta)
 		var mode := "NAVIGATING" if world.autopilot else ("CRUISE" if world.cruise else "FLIGHT")
@@ -79,12 +182,13 @@ func _process(delta: float) -> void:
 
 func toggle_chart() -> void:
 	if landed or transitioning or shop_panel.visible: return
+	space_world.reset_taps()
 	if chart.visible: chart.close_chart()
 	else: chart.open_chart()
 
 
 func toggle_docking() -> void:
-	if transitioning or shop_panel.visible or (chart != null and chart.visible): return
+	if transitioning or shop_panel.visible or (contract_panel != null and contract_panel.visible) or (chart != null and chart.visible): return
 	var world := space_world as ArtoisSpace
 	if not landed:
 		var error := world.docking_error()
@@ -95,7 +199,11 @@ func toggle_docking() -> void:
 		world.brake()
 	else:
 		world.prepare_launch()
+		world.combat.configure(world, market_state)
+		if mission.phase == "active": world.select_target(mission.TARGET_ID)
+	world.reset_taps()
 	await super.toggle_docking()
+	if landed: world.combat.repair()
 	_update_labels()
 
 
@@ -114,7 +222,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not event is InputEventKey or not event.pressed or event.echo or transitioning or shop_panel.visible: return
+	if not event is InputEventKey or not event.pressed or event.echo or transitioning or shop_panel.visible or _recovering or contract_panel.visible: return
 	if chart.visible:
 		if event.physical_keycode in [KEY_M, KEY_ESCAPE]:
 			chart.close_chart()
@@ -123,9 +231,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not landed:
 		var world := space_world as ArtoisSpace
 		if (event.physical_keycode == KEY_W and (event.shift_pressed or Input.is_physical_key_pressed(KEY_SHIFT))) or (event.physical_keycode == KEY_SHIFT and Input.is_physical_key_pressed(KEY_W)):
+			world.reset_taps()
 			world.engage_cruise()
 			get_viewport().set_input_as_handled()
 			return
+		if event.physical_keycode in [KEY_W, KEY_S, KEY_A, KEY_D, KEY_Q, KEY_E]:
+			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
 			KEY_M: toggle_chart()
 			KEY_C: world.toggle_cruise()
@@ -143,10 +254,24 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				return
 		get_viewport().set_input_as_handled()
 	else:
-		super._unhandled_key_input(event)
+		if event.physical_keycode == KEY_3:
+			open_contract()
+			get_viewport().set_input_as_handled()
+		else: super._unhandled_key_input(event)
+
+
+func _input(event: InputEvent) -> void:
+	if contract_panel != null and contract_panel.visible and event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
+		contract_panel.close_panel()
+		get_viewport().set_input_as_handled()
+		return
+	super._input(event)
 
 
 func _menu() -> void:
+	if contract_panel != null and contract_panel.visible:
+		contract_panel.close_panel()
+		return
 	if chart != null and chart.visible:
 		chart.close_chart()
 		return

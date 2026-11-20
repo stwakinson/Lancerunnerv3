@@ -32,7 +32,9 @@ profile. An open shop blocks launch.
 | C | Toggle cruise off/on |
 | Left click | Select a structure, wreck or planet; a rock selects its asteroid field |
 | X | Brake immediately and cancel cruise/course following |
-| Space | Fire visual-only projectiles along the ship's heading (disabled in cruise) |
+| Space | Fire fitted weapons along the ship's heading (disabled in cruise) |
+| Double-tap W/S/A/D/Q/E | Dodge in that local direction; 0.65-second cooldown |
+| 3 (landed) | Talk to Fluellen for the five-enemy test sortie |
 | M | Open/close the system chart; flight pauses while it is open |
 | Tab | Cycle tracked destinations |
 | T | Align the ship toward the tracked destination |
@@ -57,6 +59,9 @@ is prevented by an analytic sphere boundary. Placeholder stations, ships and
 asteroids do not yet supply collision/damage gameplay. Jump gates are visible
 navigation landmarks; travel to other systems is not implemented here. Only the
 planet port opens a landing destination in this first pass.
+
+Fitted weapons, regenerating shields and the planet contact's repeatable
+five-enemy test mission are described in [Artois combat](artois-combat.md).
 
 ## Included map elements
 

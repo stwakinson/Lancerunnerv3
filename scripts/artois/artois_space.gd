@@ -1,6 +1,7 @@
 class_name ArtoisSpace
 extends BenchmarkSpace
 
+const Combat = preload("res://scripts/artois/artois_combat.gd")
 const Layout = preload("res://scripts/artois/artois_layout.gd")
 const Shapes = preload("res://scripts/artois/artois_placeholders.gd")
 const NORMAL_SPEED := 35.0
@@ -9,6 +10,10 @@ const DOCK_RANGE := 90.0
 const DOCK_SPEED := 20.0
 const DOCK_ID := "planet_dock"
 
+var combat: ArtoisCombat
+var dodge_velocity := Vector3.ZERO
+var dodge_cooldown := 0.0
+var _last_taps := {}
 var layout := Layout.new()
 var landmarks := {}
 var field_nodes := {}
@@ -20,6 +25,32 @@ var arrival_message := ""
 var _yaw := 0.0
 var _pitch := 0.0
 var _shapes := Shapes.new()
+
+
+func _ready() -> void:
+	super._ready()
+	combat = Combat.new()
+	combat.name = "Combat"
+	add_child(combat)
+	combat.configure(self, LandingMarketState.new())
+
+
+func tap_direction(key: int, now: float) -> bool:
+	const DIRECTIONS := {KEY_A: Vector3.LEFT, KEY_D: Vector3.RIGHT, KEY_W: Vector3.FORWARD, KEY_S: Vector3.BACK, KEY_Q: Vector3.DOWN, KEY_E: Vector3.UP}
+	if not DIRECTIONS.has(key) or combat.dead: return false
+	var previous := float(_last_taps.get(key, -10.0))
+	_last_taps[key] = now
+	if now - previous > 0.27 or now < previous or dodge_cooldown > 0: return false
+	_last_taps.clear()
+	cruise = false
+	autopilot = false
+	dodge_velocity = ship.basis * DIRECTIONS[key] * 135.0
+	dodge_cooldown = 0.65
+	return true
+
+
+func reset_taps() -> void:
+	_last_taps.clear()
 
 
 func _build_world() -> void:
@@ -83,19 +114,22 @@ func _build_field(field: Dictionary) -> void:
 
 
 func target_position(id: String = "") -> Vector3:
-	var entry := layout.target(selected_id if id.is_empty() else id)
+	var resolved := selected_id if id.is_empty() else id
+	var hostile := combat.enemy(resolved) if combat != null else null
+	if hostile != null: return hostile.position
+	var entry := layout.target(resolved)
 	return layout.world(entry) if not entry.is_empty() else ship.position
 
 
 func select_target(id: String) -> void:
-	if layout.target(id).is_empty(): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null): return
 	selected_id = id
 	autopilot = false
 	arrival_message = ""
 
 
 func navigate_to(id: String) -> void:
-	if layout.target(id).is_empty(): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null): return
 	select_target(id)
 	autopilot = true
 	cruise = false
@@ -124,6 +158,8 @@ func brake() -> void:
 	autopilot = false
 	velocity = Vector3.ZERO
 	speed = 0.0
+	dodge_velocity = Vector3.ZERO
+	reset_taps()
 
 
 func launch_position() -> Vector3:
@@ -136,8 +172,10 @@ func prepare_launch() -> void:
 	_yaw = 0
 	_pitch = 0
 	brake()
+	dodge_cooldown = 0.0
 	selected_id = DOCK_ID
 	arrival_message = "LAUNCH COMPLETE"
+	combat.clear_projectiles()
 	# Old trails and shots must not connect across the landing transition.
 	for shot in shots: shot.queue_free()
 	shots.clear()
@@ -148,13 +186,15 @@ func prepare_launch() -> void:
 func docking_error() -> String:
 	if ship.position.distance_to(target_position(DOCK_ID)) > DOCK_RANGE:
 		return "APPROACH AGINCOURT PLANET PORT  /  WITHIN 90 m TO LAND"
-	if velocity.length() > DOCK_SPEED:
+	if (velocity + dodge_velocity).length() > DOCK_SPEED:
 		return "SLOW BELOW 20 m/s TO DOCK  /  X TO BRAKE"
 	return ""
 
 
 func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, firing: bool) -> void:
+	if combat.dead: return
 	elapsed += delta
+	dodge_cooldown = maxf(0.0, dodge_cooldown - delta)
 	if steering != Vector2.ZERO or thrust != 0:
 		autopilot = false
 	var forward := -ship.basis.z
@@ -171,7 +211,7 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 		if distance <= stopping_distance + 4 and velocity.length() < 4:
 			autopilot = false
 			desired = Vector3.ZERO
-			arrival_message = "ARRIVED  /  " + str(layout.target(selected_id).name).to_upper()
+			arrival_message = "ARRIVED  /  " + str(target_entry().name).to_upper()
 		_sync_angles()
 	else:
 		var top_speed := CRUISE_SPEED if cruise else (105.0 if boosting else NORMAL_SPEED)
@@ -179,41 +219,22 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 		desired += (ship.basis.x * steering.x + ship.basis.y * steering.y) * (40.0 if boosting else 25.0)
 	if cruise: desired = desired.limit_length(CRUISE_SPEED)
 	velocity = velocity.move_toward(desired, (110.0 if autopilot or cruise else 85.0) * delta)
-	ship.position += velocity * delta
+	# Integrate exponential dodge decay independently of normal thrust.
+	ship.position += velocity * delta + dodge_velocity * ((1.0 - exp(-delta * 6.0)) / 6.0)
+	dodge_velocity *= exp(-delta * 6.0)
 	_avoid_planet()
-	speed = velocity.length()
+	speed = (velocity + dodge_velocity).length()
 	for i in ship.engines.size():
 		ship.engines[i].scale.z = 1.0 + (0.6 if boosting or cruise or autopilot else 0.12) * (1.0 + sin(elapsed * 23))
-	_fire_wait -= delta
-	if firing and not cruise and _fire_wait <= 0:
-		_fire_wait = 0.16
-		_fire_shot()
-	for i in range(shots.size() - 1, -1, -1):
-		var shot := shots[i]
-		shot.position += (shot.get_meta("velocity") as Vector3) * delta
-		var remaining := float(shot.get_meta("remaining")) - delta
-		shot.set_meta("remaining", remaining)
-		if remaining <= 0:
-			shot.queue_free()
-			shots.remove_at(i)
+	combat.advance(delta)
+	if firing and not cruise: _fire_shot()
 	camera.fov = lerpf(camera.fov, 60.0 if cruise or autopilot else (58.0 if boosting else 54.0), 1.0 - exp(-delta * 3.0))
 	_update_camera(delta)
 	_effects.advance(delta, ship, camera, boosting or cruise or autopilot)
 
 
 func _fire_shot() -> void:
-	if cruise: return
-	var shot := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.08, 0.08, 2.0)
-	shot.mesh = mesh
-	shot.material_override = _material("8ae5ed", true)
-	shot.position = ship.position - ship.basis.z * 3.2
-	shot.basis = ship.basis
-	shot.set_meta("velocity", -ship.basis.z * 150.0 + velocity)
-	shot.set_meta("remaining", 3.0)
-	add_child(shot)
-	shots.append(shot)
+	combat.fire()
 
 
 func _avoid_planet() -> void:
@@ -248,3 +269,10 @@ func orbit(relative: Vector2) -> void:
 
 func reset_view() -> void:
 	_update_camera(0.0)
+
+
+func target_entry() -> Dictionary:
+	var hostile := combat.enemy(selected_id) if combat != null else null
+	if hostile != null:
+		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "Hull %d / Shield %d" % [roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield"))]}
+	return layout.target(selected_id)
