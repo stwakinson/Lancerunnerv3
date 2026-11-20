@@ -63,7 +63,7 @@ func _build_views() -> void:
 	space_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	space_view.msaa_3d = Viewport.MSAA_DISABLED
 	add_child(space_view)
-	space_world = Space.new()
+	space_world = _create_space_world()
 	space_view.add_child(space_world)
 	_space_image = _image(space_view)
 	landing_view = SubViewport.new()
@@ -72,7 +72,7 @@ func _build_views() -> void:
 	landing_view.disable_3d = true
 	landing_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(landing_view)
-	landing_world = Landing.new()
+	landing_world = _create_landing_world()
 	landing_view.add_child(landing_world)
 	_landing_image = _image(landing_view)
 	_landing_image.visible = false
@@ -80,6 +80,18 @@ func _build_views() -> void:
 	add_child(shop_hotspots)
 	shop_hotspots.shop_requested.connect(open_shop)
 	shop_hotspots.visible = false
+
+
+func _create_space_world() -> Node3D:
+	return Space.new()
+
+
+func _create_landing_world() -> Node2D:
+	return Landing.new()
+
+
+func _context_label() -> String:
+	return "ARTOIS   /   ART DIRECTION BENCHMARK"
 
 
 func _image(view: SubViewport) -> TextureRect:
@@ -153,7 +165,7 @@ func _build_ui() -> void:
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(bar)
 	_text(ui, "L A N C E R U N N E R", Vector2(36, 20), 24, PAPER, 700)
-	_text(ui, "ARTOIS   /   ART DIRECTION BENCHMARK", Vector2(38, 55), 10, MUTED)
+	_text(ui, _context_label(), Vector2(38, 55), 10, MUTED)
 	_text(ui, "1415   /   THE ROAD TO AGINCOURT", Vector2(916, 28), 11, ACCENT, 600)
 	_render_label = _text(ui, "", Vector2(916, 51), 10, MUTED)
 	_section = _text(ui, "01  /  ATMOSPHERE & SILHOUETTE", Vector2(38, 118), 11, ACCENT, 600)

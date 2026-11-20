@@ -158,7 +158,7 @@ func _build_ui() -> void:
 	_start_button = UiStyle.button("START MISSION", 26)
 	_start_button.pressed.connect(_show_picker.bind(true))
 	_ui.add_child(_start_button)
-	_place(_start_button, 0.5, 0.5, 0.76, 0.76, -170.0, 170.0, -34.0, 34.0)
+	_place(_start_button, 0.5, 0.5, 0.70, 0.70, -170.0, 170.0, -30.0, 30.0)
 
 	var hint := UiStyle.label("Mouse to steer  ·  W/A/S/D to fly  ·  Shift boost  ·  Click to fire",
 		16, false, 0, Color(1, 1, 1, 0.6))
@@ -166,12 +166,19 @@ func _build_ui() -> void:
 	_place(hint, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, -56.0, -26.0)
 	_hint = hint
 
+	var artois := UiStyle.button("ARTOIS SYSTEM  /  EXPLORE", 20)
+	artois.pressed.connect(func() -> void:
+		if not _launching and not SceneFader.busy:
+			SceneFader.change_scene("res://scenes/artois.tscn"))
+	_ui.add_child(artois)
+	_place(artois, 0.5, 0.5, 0.80, 0.80, -225.0, 225.0, -22.0, 22.0)
+
 	var benchmark := UiStyle.button("ARTOIS  /  VISUAL BENCHMARK", 16)
 	benchmark.pressed.connect(func() -> void:
 		if not _launching and not SceneFader.busy:
 			SceneFader.change_scene("res://scenes/benchmark/artois_visual.tscn"))
 	_ui.add_child(benchmark)
-	_place(benchmark, 0.5, 0.5, 0.87, 0.87, -210.0, 210.0, -22.0, 22.0)
+	_place(benchmark, 0.5, 0.5, 0.89, 0.89, -210.0, 210.0, -18.0, 18.0)
 
 	_build_picker()
 

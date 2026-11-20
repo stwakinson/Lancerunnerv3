@@ -55,3 +55,9 @@ func _rebuild(lane: int, camera: Camera3D, boosting: bool) -> void:
 			surface.set_uv(corner[1])
 			surface.add_vertex(to_local(corner[0]))
 	_ribbons[lane].mesh = surface.commit()
+
+
+func clear_trails() -> void:
+	for history in _samples: history.clear()
+	for ribbon in _ribbons: ribbon.mesh = null
+	_sample_wait = 0.0
