@@ -2,6 +2,13 @@
 
 Godot 4.7 port of the Unity "ShipGame" space shooter. Open the folder in Godot and press F5.
 
+## Lancerunner visual benchmark
+
+The main menu's **ARTOIS / VISUAL BENCHMARK** opens an isolated pixel-style 3D
+space scene and layered landing preview. Press **Enter** to dock/launch, **P** to
+compare space rendering modes, and **F** to toggle landing weather. See
+[the benchmark guide](docs/visual-benchmark.md) for controls and asset replacement.
+
 ## Controls
 - **Mouse**: steer (the ship turns to follow the view)
 - **W / S**: fly forward / back along the view (look down + W dives). The ship has momentum: let go and it drifts to a stop
