@@ -10,6 +10,8 @@ var mission := Sortie.new()
 var contract_panel: Control
 var contact_button: Button
 var contact_hotspot: Button
+var radio_label: Label
+var contact_label: Label
 var mission_label: Label
 var _recovering := false
 var chart: ArtoisChart
@@ -70,6 +72,7 @@ func _recover_from_defeat() -> void:
 	if _recovering: return
 	_recovering = true
 	mission.fail()
+	space_world.highways.reset()
 	space_world.brake()
 	space_world.ship.position = space_world.target_position(space_world.DOCK_ID) + Vector3(0, 0, 50)
 	space_world.select_target(space_world.DOCK_ID)
@@ -107,6 +110,10 @@ func _build_ui() -> void:
 	chart.configure(space_world)
 	chart.target_selected.connect(space_world.select_target)
 	chart.navigation_requested.connect(space_world.navigate_to)
+	radio_label = _text(ui, "", Vector2(38, 265), 12, Color("aacbd1"))
+	contact_label = _text(ui, "", Vector2(38, 288), 11, Color("b5c4ca"))
+	contact_label.size = Vector2(850, 46)
+	contact_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	mission_label = _text(ui, "", Vector2(38, 238), 12, ACCENT)
 	contact_button = _button(ui, "3  FLUELLEN / CONTRACT", Vector2(954, 200), 238, open_contract)
 	contact_button.name = "PlanetContactButton"
@@ -133,6 +140,9 @@ func _build_ui() -> void:
 	contract_panel.mission = mission
 	contract_panel.market = market_state
 	contract_panel.closed.connect(_sync_shop_hotspots)
+	shop_panel.move_to_front()
+	chart.move_to_front()
+	contract_panel.move_to_front()
 	# Chart and target presentation sit below the transition fade.
 	_fade.move_to_front()
 
@@ -148,9 +158,11 @@ func _update_labels() -> void:
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
 		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND"
-		_hint.text = "W/S thrust · A/D/Q/E strafe · RMB steer · Shift+W cruise · Double-tap dodge · Space fire · C exit · X brake · LMB select · M chart"
+		_hint.text = "RMB steer · Space guns · F missile · Z ammo · B hull · N shield · Shift+W cruise · Double-tap dodge · LMB/V contacts · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
+	if radio_label != null: radio_label.visible = not landed
+	if contact_label != null: contact_label.visible = not landed
 	if contact_button != null: contact_button.visible = landed
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
@@ -159,14 +171,22 @@ func _update_labels() -> void:
 
 
 func _process(delta: float) -> void:
+	if space_world.traffic != null:
+		space_world.traffic.player_present = not landed and not transitioning and not _recovering
+		if landed and not transitioning: space_world.traffic.advance(delta)
 	if _recovering: return
 	if contract_panel != null and contract_panel.visible:
 		landing_world.advance(delta, Vector2.ZERO, 0.0, true)
 		_sync_shop_hotspots()
 		return
 	if chart != null and chart.visible: return
+	if not landed and not transitioning and space_world.combat.ordnance.cursor_enabled:
+		space_world.combat.ordnance.cursor = _space_pixel(get_local_mouse_position())
 	super._process(delta)
 	if not landed and not transitioning:
+		radio_label.text = space_world.traffic.radio_line
+		var contact: Dictionary = space_world.traffic.target_entry(space_world.selected_id)
+		contact_label.text = str(contact.get("notes", ""))
 		target_hud.queue_redraw()
 		var world := space_world as ArtoisSpace
 		var target := world.target_entry()
@@ -174,8 +194,10 @@ func _process(delta: float) -> void:
 		_notice_time = maxf(0.0, _notice_time - delta)
 		var mode := "NAVIGATING" if world.autopilot else ("CRUISE" if world.cruise else "FLIGHT")
 		_status.text = "%s   /   %s  %d m   /   SPEED %d m/s" % [mode, target.name, roundi(distance), roundi(world.speed)]
-		if _notice_time > 0: _status.text = _notice
+		if world.highways.attached(): _status.text = world.highways.status()
+		elif _notice_time > 0: _status.text = _notice
 		elif world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND AT AGINCOURT PLANET PORT"
+		if world.combat.ordnance.message_time > 0: _status.text = world.combat.ordnance.message
 		_dock_button.disabled = not world.docking_error().is_empty()
 		_dock_button.tooltip_text = world.docking_error()
 
@@ -207,8 +229,17 @@ func toggle_docking() -> void:
 	_update_labels()
 
 
+func _space_pixel(local: Vector2) -> Vector2:
+	var factor := maxf(size.x / space_view.size.x, size.y / space_view.size.y)
+	var offset := (size - Vector2(space_view.size) * factor) * 0.5
+	return (local - offset) / factor
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if landed or transitioning or shop_panel.visible or (chart != null and chart.visible): return
+	if event is InputEventMouseMotion:
+		var local: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
+		space_world.combat.ordnance.set_cursor(_space_pixel(local))
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		var factor := maxf(size.x / space_view.size.x, size.y / space_view.size.y)
 		var offset := (size - Vector2(space_view.size) * factor) * 0.5
@@ -238,6 +269,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.physical_keycode in [KEY_W, KEY_S, KEY_A, KEY_D, KEY_Q, KEY_E]:
 			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
+			KEY_F: world.combat.ordnance.launch()
+			KEY_Z: world.combat.ordnance.cycle_missile()
+			KEY_B: world.combat.ordnance.use_recovery("armourer_mites")
+			KEY_N: world.combat.ordnance.use_recovery("ward_phial")
+			KEY_V:
+				var contacts := world.traffic.nearby_ids()
+				if not contacts.is_empty(): world.select_target(contacts[(contacts.find(world.selected_id) + 1) % contacts.size()])
 			KEY_M: toggle_chart()
 			KEY_C: world.toggle_cruise()
 			KEY_X: world.brake()

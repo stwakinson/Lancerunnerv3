@@ -32,11 +32,14 @@ profile. An open shop blocks launch.
 | C | Toggle cruise off/on |
 | Left click | Select a structure, wreck or planet; a rock selects its asteroid field |
 | X | Brake immediately and cancel cruise/course following |
-| Space | Fire fitted weapons along the ship's heading (disabled in cruise) |
+| Space | Fire cursor-directed guns within a 30° forward arc (disabled in transit) |
+| Z / F | Select missile type / launch after 1.5-second lock |
+| B / N | Use Armourer's Mites for hull / Ward Phial for shields |
 | Double-tap W/S/A/D/Q/E | Dodge in that local direction; 0.65-second cooldown |
 | 3 (landed) | Talk to Fluellen for the five-enemy test sortie |
 | M | Open/close the system chart; flight pauses while it is open |
 | Tab | Cycle tracked destinations |
+| V | Cycle nearby local ships; inspect their faction, pilot, cargo and orders |
 | T | Align the ship toward the tracked destination |
 | G | Navigate toward the tracked destination and stop short of it |
 | Enter | Land at the planet port when range/speed permit; launch when landed |
@@ -44,7 +47,10 @@ profile. An open shop blocks launch.
 | R | Snap the chase camera back into position |
 | Esc | Close a chart/shop first, otherwise return to the menu |
 
-The chart lists **22 navigation targets**. Click a location on the chart or use
+A [finite local population](artois-locals.md) now runs trade, salvage and pirate
+routines inside Artois, including while the player visits the planet.
+
+The chart lists **41 navigation targets**, including eighteen highway entrances. Click a location on the chart or use
 the destination picker, then **NAVIGATE** to engage course following. **TRACK
 ONLY** keeps the marker for manual flight. Asteroid field centres can also be
 selected. Manual thrust/strafe/steering cancels course following. Normal thrust
@@ -56,12 +62,16 @@ traffic or obstacle-routing system.
 
 The new flight controller has no old benchmark movement box. Planet penetration
 is prevented by an analytic sphere boundary. Placeholder stations, ships and
-asteroids do not yet supply collision/damage gameplay. Jump gates are visible
-navigation landmarks; travel to other systems is not implemented here. Only the
+asteroids do not yet supply collision/damage gameplay. The north (Calais), east and south (Picardie) hyper gates have null destinations
+and are explicitly offline. Entering their rings cannot leave Artois. Only the
 planet port opens a landing destination in this first pass.
 
 Fitted weapons, regenerating shields and the planet contact's repeatable
 five-enemy test mission are described in [Artois combat](artois-combat.md).
+
+Golden filaments connect the main north–south route and western branch. Fly
+through a ring for 10× travel; Shift plus a direction breaks the magnetic pull.
+See [highway controls and routes](artois-highways.md).
 
 ## Included map elements
 
@@ -74,6 +84,7 @@ five-enemy test mission are described in [Artois combat](artois-combat.md).
 | Maroeuil field | Long asteroid volume, northern ship wreck and southern freebooter base |
 | South | Acheau Village, unnamed outpost, unnamed capital ship, Picardie Gate |
 | Southwest | St Paul Cathedral |
+| East | Eastern Hyper Gate and central-junction filament approach |
 | Added planet access | Agincourt Planet Port and a visible planet with atmosphere |
 
 The two unfinished southern map labels remain named **Southern Outpost
@@ -106,8 +117,8 @@ Artois reuses those instead of copying the entire visual controller. Landing is 
 separate scene resource shown in its 2D viewport through the existing fade; the
 3D system stays allocated, paused and hidden, preserving state for launch. Old
 projectiles and exhaust trails are cleared on launch so they cannot join across
-the transition. When configuring an export, include `data/artois.json` among the
-non-resource data files.
+the transition. When configuring an export, include `data/*.json` among the
+non-resource data files (system layout and population profiles).
 
 ## Validation and previews
 
