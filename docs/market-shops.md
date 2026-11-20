@@ -29,9 +29,11 @@ The cargo module adds ten market cargo spaces while fitted and cannot be removed
 until cargo fits the base hold. There are two weapon hardpoints and one utility
 slot, with one starting pulse laser mounted.
 
-**This is a saved prototype loadout.** Weapons and shields are not yet wired to
-the space benchmark's firing/damage systems. The outfitter labels this limitation;
-the cargo module already affects the market's capacity checks.
+**Artois uses this saved loadout in combat.** Closing the outfitter or launching
+applies both weapon hardpoints and the utility. Aegis upgrades the built-in shield
+from 60 to 180 and regeneration from 8 to 22 per second. The original visual
+benchmark and original combat missions retain their separate mechanics.
+The cargo module affects the market capacity checks.
 
 ## Modal input and persistence
 

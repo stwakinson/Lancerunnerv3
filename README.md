@@ -9,6 +9,10 @@ system chart; select a destination and choose **NAVIGATE**. Approach **Agincourt
 Planet Port** within **90 m**, slow below **20 m/s**, then press **Enter** to land.
 Enter launches back from the planet market. See [the Artois guide](docs/artois-system.md).
 
+Artois also includes double-tap dodges, fitted weapons, regenerating shields and
+Captain Fluellen's five-enemy test contract on the planet. See
+[combat and mission controls](docs/artois-combat.md).
+
 ## Lancerunner visual benchmark
 
 The main menu's **ARTOIS / VISUAL BENCHMARK** opens an isolated pixel-style 3D

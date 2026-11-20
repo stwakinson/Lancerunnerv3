@@ -30,6 +30,9 @@ func configure(space: ArtoisSpace) -> void:
 
 
 func open_chart() -> void:
+	_targets = world.layout.targets()
+	_picker.clear()
+	for entry in _targets: _picker.add_item(entry.name)
 	visible = true
 	_refresh()
 
@@ -100,7 +103,7 @@ func _select(id: String) -> void:
 
 
 func _refresh() -> void:
-	var entry := world.layout.target(world.selected_id)
+	var entry := world.target_entry()
 	_title.text = entry.name
 	_description.text = str(entry.kind).replace("_", " ").to_upper() + "\n" + str(entry.notes)
 	_distance.text = "%s m from ship" % str(roundi(world.ship.position.distance_to(world.target_position())))
@@ -143,6 +146,7 @@ func _draw() -> void:
 		var colour := Color("d6b37d")
 		if "gate" in str(entry.kind): colour = Color("83c9dc")
 		if entry.kind in ["ruin_gate", "ruin_castle", "shipyard", "guild", "wreck", "pirate_base"]: colour = Color("c18786")
+		if entry.kind == "mission": colour = Color("f07059")
 		if entry.kind == "planet_dock": colour = Color("ffd18a")
 		draw_circle(at, 3.5, colour)
 		if entry.id == world.selected_id: draw_arc(at, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
@@ -152,7 +156,7 @@ func _draw() -> void:
 		if entry.id == "southern_outpost": name = "Unnamed Outpost"
 		if entry.id == "southern_ship": name = "Unnamed Capital Ship"
 		draw_string(_font, at + offset, name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, colour)
-	if world.layout.target(world.selected_id).kind == "field": draw_arc(target, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
+	if world.target_entry().kind == "field": draw_arc(target, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
 	draw_rect(MAP_RECT, Color("4b6475"), false, 1)
 
 

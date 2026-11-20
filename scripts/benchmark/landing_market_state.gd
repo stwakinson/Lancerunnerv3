@@ -1,8 +1,8 @@
 class_name LandingMarketState
 extends RefCounted
 
-# Self-contained prototype economy. Never reads or writes the combat mission's
-# health, score or equipment. Prices are fixed; quantities and stock persist.
+# Shared landing economy. Artois reads this loadout on launch; the original
+# combat mission remains separate. Prices are fixed; quantities and stock persist.
 
 const VERSION := 1
 const BASE_CAPACITY := 20
@@ -14,8 +14,8 @@ const ITEMS := {
 	"fuel": {"name": "Reactor cells", "kind": "commodity", "buy": 95, "sell": 76, "stock": 60, "description": "Sealed industrial power cells, traded as cargo. One cargo space per unit."},
 	"pulse_laser": {"name": "Lance pulse laser", "kind": "weapon", "buy": 1400, "sell": 1050, "stock": 6, "description": "Class I energy weapon. A dependable primary armament. Fits either weapon hardpoint in the prototype loadout."},
 	"autocannon": {"name": "Longbow autocannon", "kind": "weapon", "buy": 2100, "sell": 1575, "stock": 4, "description": "Class I ballistic weapon. Intended for sustained close-range fire. Fits either prototype weapon hardpoint."},
-	"missile_rack": {"name": "Falcon missile rack", "kind": "weapon", "buy": 2600, "sell": 1950, "stock": 3, "description": "A compact guided-ordnance mount. Fits either prototype weapon hardpoint."},
-	"shield": {"name": "Aegis shield generator", "kind": "utility", "buy": 1800, "sell": 1350, "stock": 4, "description": "Defensive equipment for the utility mount. Stored and fitted as part of the prototype loadout."},
+	"missile_rack": {"name": "Falcon missile rack", "kind": "weapon", "buy": 2600, "sell": 1950, "stock": 3, "description": "Guided missiles for Artois combat. Select a hostile and fire within the forward aiming cone. Prototype ammunition is unlimited."},
+	"shield": {"name": "Aegis shield generator", "kind": "utility", "buy": 1800, "sell": 1350, "stock": 4, "description": "Raises Artois shields from 60 to 180 and regeneration from 8 to 22 per second after four seconds without damage. Fits the utility mount."},
 	"cargo_expander": {"name": "Cargo expansion module", "kind": "utility", "buy": 900, "sell": 675, "stock": 5, "description": "Adds 10 cargo spaces while fitted. Empty the extra cargo space before removing this module."},
 }
 
