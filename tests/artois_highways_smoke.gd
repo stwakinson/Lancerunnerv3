@@ -46,7 +46,7 @@ func _run() -> void:
 	while root.get_node("SceneFader").busy: await process_frame
 	world = scene.space_world
 	highway = world.highways
-	check(highway.routes.size() == 8 and highway.gates.size() == 16, "Map must contain eight bidirectional routes with sixteen gates")
+	check(highway.routes.size() == 9 and highway.gates.size() == 18, "Map must contain nine bidirectional routes with eighteen gates")
 	for id in highway.gates:
 		check(world.landmarks.has(id), "Highway gate must have selectable geometry")
 		check(world.layout.world(world.layout.target(id)).is_equal_approx(highway.gates[id].position), "Chart and gate coordinates must agree")
@@ -150,7 +150,7 @@ func _run() -> void:
 
 	# Native chart and gate-click geometry are exercised in rendered runs.
 	scene.toggle_chart()
-	check(scene.chart._picker.item_count == 38, "Chart must list highway entrances")
+	check(scene.chart._picker.item_count == 41, "Chart must list highway entrances")
 	await scene._capture(capture_dir, "artois-highways-chart.png")
 	if DisplayServer.get_name() != "headless":
 		await click(scene.chart, scene.chart.map_point(ArtoisLayout.point(world.layout.target(id).map)))

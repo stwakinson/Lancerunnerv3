@@ -14,7 +14,8 @@ Captain Fluellen's five-enemy test contract on the planet. See
 [combat and mission controls](docs/artois-combat.md).
 
 [Golden filament highways](docs/artois-highways.md) provide 10× in-system travel
-through paired rings, with directional boost breakouts.
+through paired rings, with directional boost breakouts. North, east and south
+hyper gates are present but offline with null destinations; the demo stays in Artois.
 [Cursor guns and ordnance](docs/artois-ordnance.md) add locked missile variants,
 ammunition and period-inspired hull/shield recovery supplies in the outfitter.
 

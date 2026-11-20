@@ -208,6 +208,9 @@ func prepare_launch() -> void:
 
 
 func docking_error() -> String:
+	for entry in layout.locations:
+		if entry.kind == "hyper_gate" and ship.position.distance_to(layout.world(entry)) < 160:
+			return "HYPER GATE OFFLINE / NO DESTINATION LINK / ARTOIS DEMO"
 	if highways != null and highways.attached(): return "BREAK FREE OF THE FILAMENT BEFORE DOCKING"
 	if ship.position.distance_to(target_position(DOCK_ID)) > DOCK_RANGE:
 		return "APPROACH AGINCOURT PLANET PORT  /  WITHIN 90 m TO LAND"

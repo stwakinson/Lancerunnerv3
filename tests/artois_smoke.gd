@@ -25,8 +25,8 @@ func _run() -> void:
 	while root.get_node("SceneFader").busy: await process_frame
 	var space := scene.space_world as ArtoisSpace
 	var layout := space.layout
-	check(layout.locations.size() == 19 and layout.fields.size() == 3, "All map landmarks, fields and the added port must be authored")
-	var expected := ["calais_gate", "border_post", "renty", "embry", "asques_gate", "caulers", "agincourt", "arras", "fressin", "wrecked_shipyard", "merchant_guild", "maroeuil_wreck", "freebooter_base", "acheau", "southern_outpost", "southern_ship", "picardie_gate", "st_paul", "planet_dock"]
+	check(layout.locations.size() == 20 and layout.fields.size() == 3, "All map landmarks, fields and the added port must be authored")
+	var expected := ["calais_gate", "border_post", "renty", "embry", "asques_gate", "caulers", "agincourt", "arras", "fressin", "wrecked_shipyard", "merchant_guild", "maroeuil_wreck", "freebooter_base", "acheau", "southern_outpost", "southern_ship", "picardie_gate", "st_paul", "planet_dock", "east_gate"]
 	for id in expected:
 		check(space.landmarks.has(id), "World must contain " + id)
 		check(space.landmarks[id].position.is_equal_approx(layout.world(layout.target(id))), "Chart and world coordinates must agree for " + id)
@@ -86,7 +86,7 @@ func _run() -> void:
 	space.prepare_launch()
 	await scene._capture(capture_dir, "artois-system.png")
 	scene.toggle_chart()
-	check(scene.chart.visible and scene.chart._picker.item_count == 38, "Chart must expose all 38 navigation targets")
+	check(scene.chart.visible and scene.chart._picker.item_count == 41, "Chart must expose all 41 navigation targets")
 	space.velocity = Vector3.FORWARD * 35
 	var paused_position: Vector3 = space.ship.position
 	scene.set_process(true)

@@ -46,7 +46,7 @@ profile. An open shop blocks launch.
 | R | Snap the chase camera back into position |
 | Esc | Close a chart/shop first, otherwise return to the menu |
 
-The chart lists **38 navigation targets**, including sixteen highway entrances. Click a location on the chart or use
+The chart lists **41 navigation targets**, including eighteen highway entrances. Click a location on the chart or use
 the destination picker, then **NAVIGATE** to engage course following. **TRACK
 ONLY** keeps the marker for manual flight. Asteroid field centres can also be
 selected. Manual thrust/strafe/steering cancels course following. Normal thrust
@@ -58,8 +58,8 @@ traffic or obstacle-routing system.
 
 The new flight controller has no old benchmark movement box. Planet penetration
 is prevented by an analytic sphere boundary. Placeholder stations, ships and
-asteroids do not yet supply collision/damage gameplay. Jump gates are visible
-navigation landmarks; travel to other systems is not implemented here. Only the
+asteroids do not yet supply collision/damage gameplay. The north (Calais), east and south (Picardie) hyper gates have null destinations
+and are explicitly offline. Entering their rings cannot leave Artois. Only the
 planet port opens a landing destination in this first pass.
 
 Fitted weapons, regenerating shields and the planet contact's repeatable
@@ -80,6 +80,7 @@ See [highway controls and routes](artois-highways.md).
 | Maroeuil field | Long asteroid volume, northern ship wreck and southern freebooter base |
 | South | Acheau Village, unnamed outpost, unnamed capital ship, Picardie Gate |
 | Southwest | St Paul Cathedral |
+| East | Eastern Hyper Gate and central-junction filament approach |
 | Added planet access | Agincourt Planet Port and a visible planet with atmosphere |
 
 The two unfinished southern map labels remain named **Southern Outpost

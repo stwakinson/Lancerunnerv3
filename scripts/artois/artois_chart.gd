@@ -156,10 +156,12 @@ func _draw() -> void:
 		if "gate" in str(entry.kind): colour = Color("83c9dc")
 		if entry.kind in ["ruin_gate", "ruin_castle", "shipyard", "guild", "wreck", "pirate_base"]: colour = Color("c18786")
 		if entry.kind == "mission": colour = Color("f07059")
+		if entry.kind == "hyper_gate": colour = Color("d99c5e")
 		if entry.kind == "planet_dock": colour = Color("ffd18a")
 		draw_circle(at, 3.5, colour)
 		if entry.id == world.selected_id: draw_arc(at, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
 		var offset := Vector2(8, 14) if entry.kind == "planet_dock" else Vector2(8, 3)
+		if entry.id == "east_gate": offset = Vector2(-112, -10)
 		var name: String = entry.name
 		if entry.id == "arras": name = "Arras (Ruined Gate)"
 		if entry.id == "southern_outpost": name = "Unnamed Outpost"

@@ -1,7 +1,7 @@
 # Golden filament highways
 
-Artois has **eight bidirectional highway links**, with sixteen golden entry rings.
-They follow the map's north–south spine and its western Asques/Caulers branch.
+Artois has **nine bidirectional highway links**, with eighteen golden entry rings.
+They follow the map's north–south spine and its western Asques/Caulers branch, plus the eastern hyper-gate approach.
 The existing blue system-exit gate placeholders remain separate landmarks.
 
 ## Ride a filament
@@ -38,6 +38,7 @@ recovery and launch clear any attached highway state.
 | Southern Post / Picardie | Southern system-exit approach |
 | Asques / Caulers | Western branch |
 | Caulers / Central Junction | Western branch into the main spine |
+| Central Junction / East Hyper Gate | Eastern branch through Maroeuil to its dormant terminus |
 
 There is clearance between each pair of adjoining links, with a larger local
 space around Caulers. These are editable placements interpreted from the map;
@@ -47,7 +48,7 @@ in the reverse direction works through the opposite entrance of each link.
 ## Code and visuals
 
 - `data/artois.json` contains each highway's ID, name and endpoint map coordinates.
-- `artois_layout.gd` derives sixteen highway navigation targets from that data.
+- `artois_layout.gd` derives eighteen highway navigation targets from that data.
 - `artois_highways.gd` builds ring geometry, layered filaments and moving motes,
   detects swept gate crossings, integrates the magnetic spring and handles exits.
 - `shaders/artois/filament.gdshader` adds golden light, moving pulses and soft haze.
@@ -55,8 +56,8 @@ in the reverse direction works through the opposite entrance of each link.
 - The existing Artois flight, chart, click selection, HUD and combat modules
   expose highway travel and preserve ordinary flight outside it.
 
-The chart now lists 38 standard targets (19 original locations, three fields,
-16 highway gates), plus the test mission waypoint after acceptance. No external
+The chart now lists 41 standard targets (20 locations, three fields,
+18 highway gates), plus the test mission waypoint after acceptance. No external
 art is required for this first procedural version. Forward+ can add bloom; the
 emissive rings and additive filament effects also work in Compatibility.
 
@@ -88,3 +89,29 @@ performance remain unverified.
 ![Filament transit](artois-highway-previews/artois-filament-transit.png)
 
 ![Filament overview](artois-highway-previews/artois-filament-overview.png)
+
+
+## Dormant hyper gates
+
+Calais (north), Eastern Hyper Gate (east) and Picardie (south) are larger,
+non-operational system-exit frames. Each has `destination: null` and
+`enabled: false` in `data/artois.json`. The eastern terminus sits beyond Maroeuil
+and has a filament connection to the central junction. The Asques branch stays
+in place as authored.
+
+These hyper gates can be selected and approached, but have no travel action,
+portal trigger or destination scene. Near one, Enter explains **HYPER GATE
+OFFLINE / NO DESTINATION LINK / ARTOIS DEMO**. Flying through it does nothing.
+Only Agincourt Planet Port still opens the planet landing scene; the playable
+demo stays in Artois.
+
+```sh
+godot --headless --path . --script res://tests/artois_hyper_gates_smoke.gd
+```
+
+Checks verify all three null links, directions, geometry, inert interaction and
+crossing, the chart entries and the eastern filament connection.
+
+![Hyper-gate chart](artois-hyper-gate-previews/artois-hyper-gates-chart.png)
+
+![Eastern dormant gate](artois-hyper-gate-previews/artois-east-hyper-gate.png)
