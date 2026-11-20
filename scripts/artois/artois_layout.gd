@@ -5,6 +5,7 @@ extends RefCounted
 const SOURCE := "res://data/artois.json"
 var locations: Array = []
 var fields: Array = []
+var highways: Array = []
 var planet: Dictionary
 var map_size: Vector2
 var origin: Vector2
@@ -16,6 +17,7 @@ func _init() -> void:
 	assert(document is Dictionary, "Artois layout must be a JSON object")
 	locations = document.locations
 	fields = document.fields
+	highways = document.get("highways", [])
 	planet = document.planet
 	map_size = point(document.map_size)
 	origin = point(document.map_origin)
@@ -50,6 +52,7 @@ func targets() -> Array:
 		entry.kind = "field"
 		entry.notes = "Authored asteroid volume. Navigation tracks the centre of the field."
 		result.append(entry)
+	result.append_array(highway_targets())
 	return result
 
 
@@ -57,3 +60,14 @@ func target(id: String) -> Dictionary:
 	for entry in targets():
 		if entry.id == id: return entry
 	return {}
+
+
+func highway_targets() -> Array:
+	var result := []
+	for lane in highways:
+		for endpoint in ["a", "b"]:
+			result.append({"id": "highway_" + str(lane.id) + "_" + endpoint,
+				"name": str(lane.name) + " / " + endpoint.to_upper() + " Gate",
+				"kind": "highway_gate", "map": lane["from" if endpoint == "a" else "to"],
+				"notes": "G: approach and align. W: enter for 10x travel. Shift + direction: break free."})
+	return result

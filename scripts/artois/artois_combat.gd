@@ -74,7 +74,7 @@ func repair() -> void:
 
 
 func fire() -> void:
-	if dead or world.cruise: return
+	if dead or world.cruise or (world.highways != null and world.highways.attached()): return
 	for slot in 2:
 		var id: String = weapons[slot]
 		if not WEAPONS.has(id) or _cooldowns[slot] > 0: continue
