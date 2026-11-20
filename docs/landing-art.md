@@ -22,6 +22,13 @@ share one painted plate; they do not have individual geometry or independent mot
 Mist, rain, people, traffic and the fire are runtime animation passes. This remains
 a composed landing hub preview, not a navigable 3D city or an on-foot gameplay mode.
 
+## Market services
+
+Click the labelled shop fronts for the commodities exchange or ship outfitter.
+Keys **1 / 2** and the fixed service buttons also open them. Shops hold the camera
+while ambience continues; **Esc** returns to the market. See [market shops](market-shops.md)
+for trading, loadout preview and local persistence.
+
 ## Controls
 
 - Move the **mouse** for shallow viewpoint movement.

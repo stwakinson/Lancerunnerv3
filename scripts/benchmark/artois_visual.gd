@@ -4,6 +4,9 @@ extends Control
 # spawners or player controller. Enter is a preview transition, not real docking.
 
 const Space = preload("res://scripts/benchmark/benchmark_space.gd")
+const MarketState = preload("res://scripts/benchmark/landing_market_state.gd")
+const ShopPanel = preload("res://scripts/benchmark/landing_shop_panel.gd")
+const Hotspots = preload("res://scripts/benchmark/landing_shop_hotspots.gd")
 const Landing = preload("res://scripts/benchmark/benchmark_landing.gd")
 const PIXEL_SIZE := Vector2i(640, 360)
 const INK := Color("0b1724")
@@ -33,12 +36,18 @@ var _hint: Label
 var _section: Label
 var _fade: ColorRect
 var _smoke := false
+var market_state := MarketState.new()
+var shop_panel: LandingShopPanel
+var shop_hotspots: LandingShopHotspots
+var _commodity_service: Button
+var _equipment_service: Button
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_smoke = "--benchmark-smoke" in OS.get_cmdline_user_args()
+	market_state.load_state()
 	_build_views()
 	_build_ui()
 	_update_labels()
@@ -67,6 +76,10 @@ func _build_views() -> void:
 	landing_view.add_child(landing_world)
 	_landing_image = _image(landing_view)
 	_landing_image.visible = false
+	shop_hotspots = Hotspots.new()
+	add_child(shop_hotspots)
+	shop_hotspots.shop_requested.connect(open_shop)
+	shop_hotspots.visible = false
 
 
 func _image(view: SubViewport) -> TextureRect:
@@ -146,6 +159,8 @@ func _build_ui() -> void:
 	_section = _text(ui, "01  /  ATMOSPHERE & SILHOUETTE", Vector2(38, 118), 11, ACCENT, 600)
 	_heading = _text(ui, "", Vector2(34, 139), 42, PAPER, 700)
 	_subheading = _text(ui, "", Vector2(38, 194), 13, MUTED)
+	_commodity_service = _button(ui, "1  COMMODITIES", Vector2(954, 108), 238, open_shop.bind("commodities"))
+	_equipment_service = _button(ui, "2  SHIP OUTFITTER", Vector2(954, 154), 238, open_shop.bind("equipment"))
 	var footer := ColorRect.new()
 	footer.position = Vector2(0, 615)
 	footer.size = Vector2(1280, 105)
@@ -160,6 +175,10 @@ func _build_ui() -> void:
 	_weather_button = _button(ui, "F  LANDING RAIN: ON", Vector2(474, 634), 190, toggle_weather)
 	_button(ui, "ESC  MAIN MENU", Vector2(1044, 634), 200, _menu)
 	_hint = _text(ui, "W/S thrust   ·   A/D strafe   ·   Q/E climb   ·   Shift boost   ·   Space fire   ·   RMB drag: look   ·   R: reset view", Vector2(38, 689), 11, MUTED)
+	shop_panel = ShopPanel.new()
+	ui.add_child(shop_panel)
+	shop_panel.configure(market_state)
+	shop_panel.closed.connect(_sync_shop_hotspots)
 	_fade = ColorRect.new()
 	_fade.color = Color(INK, 0)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -183,7 +202,8 @@ func _process(delta: float) -> void:
 	var pointer := get_local_mouse_position() / size * 2.0 - Vector2.ONE
 	if landed:
 		var pan := float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
-		landing_world.advance(delta, pointer.clamp(Vector2(-1, -1), Vector2.ONE), pan)
+		landing_world.advance(delta, pointer.clamp(Vector2(-1, -1), Vector2.ONE), pan, shop_panel.visible)
+		_sync_shop_hotspots()
 	else:
 		var steering := Vector2(float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)),
 			float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q)))
@@ -219,9 +239,10 @@ func toggle_weather() -> void:
 
 
 func toggle_docking() -> void:
-	if transitioning:
+	if transitioning or shop_panel.visible:
 		return
 	transitioning = true
+	_sync_shop_hotspots()
 	_dock_button.disabled = true
 	var tween := create_tween()
 	tween.tween_property(_fade, "color:a", 1.0, 0.35)
@@ -239,6 +260,7 @@ func toggle_docking() -> void:
 	await tween.finished
 	transitioning = false
 	_dock_button.disabled = false
+	_sync_shop_hotspots()
 
 
 func _update_labels() -> void:
@@ -248,6 +270,8 @@ func _update_labels() -> void:
 	_subheading.position = Vector2(38, 142) if landed else Vector2(38, 194)
 	_subheading.add_theme_font_size_override("font_size", 11 if landed else 13)
 	_section.visible = not landed
+	_commodity_service.visible = landed
+	_equipment_service.visible = landed
 	_pixel_button.visible = not landed
 	_motion_button.visible = landed
 	_depth_button.visible = landed
@@ -258,7 +282,25 @@ func _update_labels() -> void:
 	_dock_button.text = "ENTER  LAUNCH TO SPACE" if landed else "ENTER  PREVIEW DOCKING"
 	_pixel_button.text = "P  SPACE: " + ("PIXEL" if pixel_mode else "SMOOTH")
 	_render_label.text = "SPACE 640 × 360 · NEAREST" if pixel_mode else "SPACE NATIVE RESOLUTION · MSAA"
-	_status.text = "DOCKED   /   AGINCOURT MARKET   /   MOVE THE MOUSE OR HOLD A / D TO EXPLORE" if landed else "EMBRY FIELD EDGE   /   DOCKING PREVIEW AVAILABLE"
+	_status.text = "DOCKED   /   CLICK COMMODITIES OR SHIP OUTFITTER TO TRADE" if landed else "EMBRY FIELD EDGE   /   DOCKING PREVIEW AVAILABLE"
+
+
+func open_shop(kind: String) -> void:
+	if not landed or transitioning or shop_panel.visible:
+		return
+	shop_panel.open_shop(kind)
+	_sync_shop_hotspots()
+
+
+func _sync_shop_hotspots() -> void:
+	shop_hotspots.visible = landed and not transitioning and not shop_panel.visible
+	shop_hotspots.sync_positions(size, landing_world.layers[3].position)
+
+
+func _input(event: InputEvent) -> void:
+	if shop_panel != null and shop_panel.visible and event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
+		shop_panel.close_shop()
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -267,12 +309,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not event.is_pressed() or event.is_echo() or transitioning:
+	if not event.is_pressed() or event.is_echo() or transitioning or shop_panel.visible:
 		return
 	var key := event as InputEventKey
 	if key == null:
 		return
 	match key.physical_keycode:
+		KEY_1: open_shop("commodities")
+		KEY_2: open_shop("equipment")
 		KEY_ENTER: toggle_docking()
 		KEY_R:
 			if landed:
@@ -287,6 +331,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _menu() -> void:
+	if shop_panel.visible:
+		shop_panel.close_shop()
+		return
 	if not transitioning:
 		get_tree().change_scene_to_file("res://scenes/menu.tscn")
 

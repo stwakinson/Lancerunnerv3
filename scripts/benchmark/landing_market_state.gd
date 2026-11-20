@@ -1,0 +1,161 @@
+class_name LandingMarketState
+extends RefCounted
+
+# Self-contained prototype economy. Never reads or writes the combat mission's
+# health, score or equipment. Prices are fixed; quantities and stock persist.
+
+const VERSION := 1
+const BASE_CAPACITY := 20
+const ITEMS := {
+	"grain": {"name": "Grain", "kind": "commodity", "buy": 40, "sell": 32, "stock": 90, "description": "Staple food for the villages and garrisons of Artois. Each unit occupies one cargo space."},
+	"alloy": {"name": "Refined alloy", "kind": "commodity", "buy": 120, "sell": 96, "stock": 45, "description": "Structural metal for shipyards, hull repairs and fortress maintenance. One cargo space per unit."},
+	"medicine": {"name": "Medical supplies", "kind": "commodity", "buy": 210, "sell": 168, "stock": 30, "description": "Field dressings and medical compounds, packed for transport through the border systems. One cargo space per unit."},
+	"textiles": {"name": "Fine textiles", "kind": "commodity", "buy": 160, "sell": 128, "stock": 35, "description": "Valois cloth prized by merchants and officers alike. One cargo space per unit."},
+	"fuel": {"name": "Reactor cells", "kind": "commodity", "buy": 95, "sell": 76, "stock": 60, "description": "Sealed industrial power cells, traded as cargo. One cargo space per unit."},
+	"pulse_laser": {"name": "Lance pulse laser", "kind": "weapon", "buy": 1400, "sell": 1050, "stock": 6, "description": "Class I energy weapon. A dependable primary armament. Fits either weapon hardpoint in the prototype loadout."},
+	"autocannon": {"name": "Longbow autocannon", "kind": "weapon", "buy": 2100, "sell": 1575, "stock": 4, "description": "Class I ballistic weapon. Intended for sustained close-range fire. Fits either prototype weapon hardpoint."},
+	"missile_rack": {"name": "Falcon missile rack", "kind": "weapon", "buy": 2600, "sell": 1950, "stock": 3, "description": "A compact guided-ordnance mount. Fits either prototype weapon hardpoint."},
+	"shield": {"name": "Aegis shield generator", "kind": "utility", "buy": 1800, "sell": 1350, "stock": 4, "description": "Defensive equipment for the utility mount. Stored and fitted as part of the prototype loadout."},
+	"cargo_expander": {"name": "Cargo expansion module", "kind": "utility", "buy": 900, "sell": 675, "stock": 5, "description": "Adds 10 cargo spaces while fitted. Empty the extra cargo space before removing this module."},
+}
+
+var credits := 7500
+var cargo := {"grain": 3, "alloy": 1}
+var locker := {}
+var weapons: Array = ["pulse_laser", ""]
+var utility := ""
+var stock := {}
+var save_path := "user://lancerunner_market_preview_v1.json"
+
+
+func _init() -> void:
+	for id in ITEMS:
+		stock[id] = ITEMS[id].stock
+
+
+func cargo_used() -> int:
+	var used := 0
+	for amount in cargo.values():
+		used += amount
+	return used
+
+
+func capacity() -> int:
+	return BASE_CAPACITY + (10 if utility == "cargo_expander" else 0)
+
+
+func owned(id: String) -> int:
+	return int((cargo if ITEMS[id].kind == "commodity" else locker).get(id, 0))
+
+
+func trade_error(id: String, quantity: int, buying: bool) -> String:
+	if not ITEMS.has(id) or quantity < 1 or quantity > 99:
+		return "Choose a valid item and a quantity from 1 to 99."
+	var item: Dictionary = ITEMS[id]
+	if buying:
+		if quantity > int(stock[id]): return "The dealer does not have that many in stock."
+		if credits < int(item.buy) * quantity: return "Insufficient credits."
+		if item.kind == "commodity" and cargo_used() + quantity > capacity(): return "Not enough cargo space."
+		if item.kind != "commodity" and owned(id) + quantity > 99: return "Equipment locker limit reached."
+	else:
+		if owned(id) < quantity: return "Not enough in your cargo or locker. Unmount fitted equipment before selling it."
+		if int(stock[id]) + quantity > 9999: return "The dealer cannot accept more stock."
+		if credits + int(item.sell) * quantity > 1000000000: return "Credit limit reached."
+	return ""
+
+
+func trade(id: String, quantity: int, buying: bool) -> String:
+	var error := trade_error(id, quantity, buying)
+	if not error.is_empty(): return error
+	var item: Dictionary = ITEMS[id]
+	var inventory: Dictionary = cargo if item.kind == "commodity" else locker
+	inventory[id] = owned(id) + (quantity if buying else -quantity)
+	if inventory[id] == 0: inventory.erase(id)
+	credits += (-int(item.buy) if buying else int(item.sell)) * quantity
+	stock[id] = int(stock[id]) + (-quantity if buying else quantity)
+	return ""
+
+
+func fit_error(id: String) -> String:
+	if not ITEMS.has(id) or ITEMS[id].kind == "commodity": return "Select equipment to fit."
+	if owned(id) < 1: return "Buy an item or choose one in your locker first."
+	if ITEMS[id].kind == "weapon" and not weapons.has(""): return "Unmount a weapon to free a hardpoint."
+	if ITEMS[id].kind == "utility" and not utility.is_empty(): return "Unmount the current utility first."
+	return ""
+
+
+func fit(id: String) -> String:
+	var error := fit_error(id)
+	if not error.is_empty(): return error
+	if ITEMS[id].kind == "weapon":
+		weapons[weapons.find("")] = id
+	else:
+		utility = id
+	locker[id] = owned(id) - 1
+	if locker[id] == 0: locker.erase(id)
+	return ""
+
+
+func unmount(slot: int) -> String:
+	if slot < 0 or slot > 2: return "Invalid equipment slot."
+	var id: String = utility if slot == 2 else weapons[slot]
+	if id.is_empty(): return "This slot is empty."
+	if id == "cargo_expander" and cargo_used() > BASE_CAPACITY: return "Sell cargo down to 20 spaces before removing the expansion module."
+	if int(locker.get(id, 0)) >= 99: return "Equipment locker limit reached."
+	locker[id] = int(locker.get(id, 0)) + 1
+	if slot == 2: utility = ""
+	else: weapons[slot] = ""
+	return ""
+
+
+func save_state() -> bool:
+	var file := FileAccess.open(save_path + ".tmp", FileAccess.WRITE)
+	if file == null: return false
+	file.store_string(JSON.stringify({"version": VERSION, "credits": credits, "cargo": cargo, "locker": locker, "weapons": weapons, "utility": utility, "stock": stock}))
+	file.flush()
+	var error := file.get_error()
+	file.close()
+	if error != OK: return false
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(save_path + ".tmp"), ProjectSettings.globalize_path(save_path)) == OK
+
+
+func load_state() -> bool:
+	if not FileAccess.file_exists(save_path): return false
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+	if not _valid_save(data): return false
+	credits = int(data.credits)
+	cargo = _integer_inventory(data.cargo)
+	locker = _integer_inventory(data.locker)
+	weapons = data.weapons.duplicate()
+	utility = data.utility
+	stock = _integer_inventory(data.stock)
+	return true
+
+
+func _integer_inventory(source: Dictionary) -> Dictionary:
+	var result := {}
+	for id in source: result[id] = int(source[id])
+	return result
+
+
+func _whole(value: Variant, maximum: int) -> bool:
+	return typeof(value) in [TYPE_INT, TYPE_FLOAT] and is_finite(float(value)) and float(value) >= 0 and float(value) <= maximum and float(value) == floorf(float(value))
+
+
+func _valid_save(data: Variant) -> bool:
+	if not data is Dictionary or data.get("version") != VERSION or not _whole(data.get("credits"), 1000000000): return false
+	for key in ["cargo", "locker", "stock"]:
+		if not data.get(key) is Dictionary: return false
+		for id in data[key]:
+			if not ITEMS.has(id) or not _whole(data[key][id], 9999 if key == "stock" else 99): return false
+			if key == "cargo" and ITEMS[id].kind != "commodity": return false
+			if key == "locker" and ITEMS[id].kind == "commodity": return false
+	if data.stock.size() != ITEMS.size(): return false
+	if not data.get("weapons") is Array or data.weapons.size() != 2: return false
+	for id in data.weapons:
+		if not id is String or (not id.is_empty() and (not ITEMS.has(id) or ITEMS[id].kind != "weapon")): return false
+	var util: Variant = data.get("utility")
+	if not util is String or (not util.is_empty() and (not ITEMS.has(util) or ITEMS[util].kind != "utility")): return false
+	var used := 0
+	for amount in data.cargo.values(): used += int(amount)
+	return used <= BASE_CAPACITY + (10 if util == "cargo_expander" else 0)

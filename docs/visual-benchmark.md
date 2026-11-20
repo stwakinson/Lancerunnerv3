@@ -35,6 +35,7 @@ godot --path . res://scenes/benchmark/artois_visual.tscn
 - **P:** compare 640×360 nearest-filtered space rendering against native-resolution
   space rendering with anti-aliasing. Interface text remains independently rendered.
   Landing art keeps its own 640×360 pixel grid in both modes.
+- **1 / 2**, or click the labelled shops: commodities / ship outfitter.
 - **F:** toggle landing rain and mist.
 - **Right mouse drag:** orbit the space camera; **R:** reset its view.
 - **Landed:** mouse look and **A / D** camera pan; **R** recentres.
@@ -42,7 +43,8 @@ godot --path . res://scenes/benchmark/artois_visual.tscn
 - **Esc:** return to the original main menu.
 
 The space test uses bounded local movement; it has no collision, damage, targeting,
-boarding, economy or persistent system simulation. No existing mission controls
+boarding or persistent system simulation. The landing has a saved prototype market
+and loadout; see [market shops](market-shops.md). No existing mission controls
 or rules are changed.
 
 ## What to evaluate

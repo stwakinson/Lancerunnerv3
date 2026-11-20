@@ -52,16 +52,17 @@ func _add_ambience(node_name: String, kind: BenchmarkLandingAmbience.Pass) -> vo
 	layers.append(layer)
 
 
-func advance(delta: float, pointer: Vector2, pan_input := 0.0) -> void:
+func advance(delta: float, pointer: Vector2, pan_input := 0.0, camera_frozen := false) -> void:
 	elapsed += delta
-	manual_pan = clampf(manual_pan + pan_input * delta * 24, -24, 24)
-	var drift := Vector2(sin(elapsed * 0.17) * 5, sin(elapsed * 0.13) * 1.2) if cinematic_motion else Vector2.ZERO
-	var target := pointer.clamp(-Vector2.ONE, Vector2.ONE) * Vector2(18, 5) + Vector2(manual_pan, 0) + drift
-	target = target.clamp(-MAX_PAN, MAX_PAN)
-	if not parallax_enabled:
-		camera_position = Vector2.ZERO
-	else:
-		camera_position = camera_position.lerp(target, 1.0 - exp(-delta * 4.5))
+	if not camera_frozen:
+		manual_pan = clampf(manual_pan + pan_input * delta * 24, -24, 24)
+		var drift := Vector2(sin(elapsed * 0.17) * 5, sin(elapsed * 0.13) * 1.2) if cinematic_motion else Vector2.ZERO
+		var target := pointer.clamp(-Vector2.ONE, Vector2.ONE) * Vector2(18, 5) + Vector2(manual_pan, 0) + drift
+		target = target.clamp(-MAX_PAN, MAX_PAN)
+		if not parallax_enabled:
+			camera_position = Vector2.ZERO
+		else:
+			camera_position = camera_position.lerp(target, 1.0 - exp(-delta * 4.5))
 	for i in layers.size():
 		# Pixel snapping preserves a stable output grid. Market and street actors
 		# share a factor so feet remain attached to the pavement.
