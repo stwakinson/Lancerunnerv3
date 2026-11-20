@@ -3,6 +3,8 @@ extends BenchmarkSpace
 
 const Layout = preload("res://scripts/artois/artois_layout.gd")
 const Shapes = preload("res://scripts/artois/artois_placeholders.gd")
+const NORMAL_SPEED := 35.0
+const CRUISE_SPEED := NORMAL_SPEED * 5.0
 const DOCK_RANGE := 90.0
 const DOCK_SPEED := 20.0
 const DOCK_ID := "planet_dock"
@@ -107,6 +109,11 @@ func align_to_target() -> void:
 	_sync_angles()
 
 
+func engage_cruise() -> void:
+	cruise = true
+	autopilot = false
+
+
 func toggle_cruise() -> void:
 	cruise = not cruise
 	autopilot = false
@@ -167,9 +174,10 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 			arrival_message = "ARRIVED  /  " + str(layout.target(selected_id).name).to_upper()
 		_sync_angles()
 	else:
-		var top_speed := 280.0 if cruise else (105.0 if boosting else 35.0)
+		var top_speed := CRUISE_SPEED if cruise else (105.0 if boosting else NORMAL_SPEED)
 		desired = forward * (1.0 if cruise else thrust) * top_speed
 		desired += (ship.basis.x * steering.x + ship.basis.y * steering.y) * (40.0 if boosting else 25.0)
+	if cruise: desired = desired.limit_length(CRUISE_SPEED)
 	velocity = velocity.move_toward(desired, (110.0 if autopilot or cruise else 85.0) * delta)
 	ship.position += velocity * delta
 	_avoid_planet()
@@ -177,7 +185,7 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 	for i in ship.engines.size():
 		ship.engines[i].scale.z = 1.0 + (0.6 if boosting or cruise or autopilot else 0.12) * (1.0 + sin(elapsed * 23))
 	_fire_wait -= delta
-	if firing and _fire_wait <= 0:
+	if firing and not cruise and _fire_wait <= 0:
 		_fire_wait = 0.16
 		_fire_shot()
 	for i in range(shots.size() - 1, -1, -1):
@@ -194,6 +202,7 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 
 
 func _fire_shot() -> void:
+	if cruise: return
 	var shot := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.08, 0.08, 2.0)
