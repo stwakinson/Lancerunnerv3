@@ -37,6 +37,53 @@ func _run() -> void:
 		check(relative.length_squared() < 1, pair[0] + " must remain inside its map field")
 	check(space.landmarks.calais_gate.position.z < space.landmarks.picardie_gate.position.z, "North/south map orientation must be preserved")
 	check(space.landmarks.st_paul.position.x < space.landmarks.asques_gate.position.x, "Cathedral must remain in the southwest")
+	# Both key orders engage a latched mode, without repeat toggles.
+	await _key(KEY_SHIFT, true)
+	await _key(KEY_W, true, true)
+	await _key(KEY_W, false)
+	await _key(KEY_SHIFT, false)
+	check(space.cruise, "Shift then W must engage cruise after release")
+	space.brake()
+	await _key(KEY_W, true)
+	await _key(KEY_SHIFT, true, true)
+	await _key(KEY_SHIFT, false)
+	await _key(KEY_W, false)
+	check(space.cruise, "W then Shift must also engage cruise")
+	space.ship.position = Vector3(0, 1000, 0)
+	for i in 40: space.advance(0.1, Vector2.ONE, 1.0, true, true)
+	check(is_equal_approx(space.speed, 5.0 * space.NORMAL_SPEED), "Cruise speed including strafe must be exactly five times normal")
+	check(space.shots.is_empty(), "Holding fire in cruise must produce no projectiles")
+	space._fire_shot()
+	check(space.shots.is_empty(), "Weapon entry point must also reject cruise fire")
+	space.brake()
+	space.advance(0.2, Vector2.ZERO, 0.0, false, true)
+	check(space.shots.size() == 1, "Weapons must work again after leaving cruise")
+	space.prepare_launch()
+	# Aim directly at an isolated gate to test the same ray used by live clicks.
+	space.camera.position = space.target_position("asques_gate") + Vector3(0, 0, 180)
+	space.camera.look_at(space.target_position("asques_gate"))
+	var centre := Vector2(scene.space_view.size) * 0.5
+	check(scene.Picking.pick(space, centre) == "asques_gate", "Picking must include gate openings")
+	if DisplayServer.get_name() != "headless":
+		space.select_target("embry")
+		await _click(scene, scene.size * 0.5)
+		check(space.selected_id == "asques_gate", "Real left clicks must select the object under the cursor")
+		scene.toggle_pixels()
+		space.select_target("embry")
+		await _click(scene, scene.size * 0.5)
+		check(space.selected_id == "asques_gate", "Selection must also work at native rendering resolution")
+		scene.toggle_pixels()
+		space.select_target("embry")
+		scene.toggle_chart()
+		await _click(scene, scene.size * 0.5)
+		check(space.selected_id != "asques_gate", "Chart UI must prevent clicks reaching space")
+		await _key(KEY_SHIFT, true)
+		await _key(KEY_W, true, true)
+		await _key(KEY_W, false)
+		await _key(KEY_SHIFT, false)
+		check(not space.cruise, "Chart input must not engage cruise")
+		scene.chart.close_chart()
+	space.prepare_launch()
 	await scene._capture(capture_dir, "artois-system.png")
 	scene.toggle_chart()
 	check(scene.chart.visible and scene.chart._picker.item_count == 22, "Chart must expose all 22 navigation targets")
@@ -138,4 +185,15 @@ func _click(control: Control, local: Vector2) -> void:
 		Input.parse_input_event(event)
 	Input.flush_buffered_events()
 	await process_frame
+	await process_frame
+
+
+func _key(code: Key, pressed: bool, shift := false) -> void:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.physical_keycode = code
+	event.pressed = pressed
+	event.shift_pressed = shift
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
 	await process_frame

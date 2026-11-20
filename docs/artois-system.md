@@ -28,9 +28,11 @@ profile. An open shop blocks launch.
 | Q / E | Descend / climb along the ship's local up axis |
 | Right mouse drag | Steer yaw and pitch |
 | Shift | Boost |
-| C | Toggle forward cruise in space |
+| Shift + W | Engage latched forward cruise at 175 m/s (5× normal); weapons locked |
+| C | Toggle cruise off/on |
+| Left click | Select a structure, wreck or planet; a rock selects its asteroid field |
 | X | Brake immediately and cancel cruise/course following |
-| Space | Fire visual-only projectiles along the ship's heading |
+| Space | Fire visual-only projectiles along the ship's heading (disabled in cruise) |
 | M | Open/close the system chart; flight pauses while it is open |
 | Tab | Cycle tracked destinations |
 | T | Align the ship toward the tracked destination |
@@ -44,8 +46,10 @@ The chart lists **22 navigation targets**. Click a location on the chart or use
 the destination picker, then **NAVIGATE** to engage course following. **TRACK
 ONLY** keeps the marker for manual flight. Asteroid field centres can also be
 selected. Manual thrust/strafe/steering cancels course following. Normal thrust
-is 35 m/s, boost 105 m/s and cruise/course speed up to 280 m/s, with acceleration
-and braking. Course following is simple point-to-point navigation, not an AI
+is 35 m/s, boost 105 m/s, cruise 175 m/s and automatic course speed up to 280 m/s, with acceleration
+and braking. Cruise stays engaged after releasing Shift+W; C or X exits it.
+Space selection respects UI panels and the planet obscuring objects behind it.
+Course following is simple point-to-point navigation, not an AI
 traffic or obstacle-routing system.
 
 The new flight controller has no old benchmark movement box. Planet penetration
@@ -81,6 +85,7 @@ story decisions. The castle's later battle is not scripted.
 - `artois_space.gd`: world assembly, free flight, course following and port checks.
 - `artois_chart.gd`: selectable chart and course controls.
 - `artois_target_hud.gd`: tracked marker, distance and off-screen direction.
+- `artois_picking.gd`: nearest-object ray selection for structures, planet and instanced rocks.
 - `artois_scene.gd`: system UI, gated docking and landing/launch orchestration.
 
 The layout uses a 1068×807 authoring canvas, with east mapped to +X and south to
@@ -114,7 +119,8 @@ godot --path . --script res://tests/artois_smoke.gd -- \\
 ```
 
 Checks cover all map IDs, field membership, world/chart agreement, travel beyond
-the old bounds, cruise/brake, course arrival, planet exclusion, range/speed-gated
+the old bounds, both cruise key orders, exact 5× speed, cruise weapon locking,
+rendered object clicks in pixel/native modes, chart input isolation, course arrival, planet exclusion, range/speed-gated
 docking, landing shops, launch state cleanup and the menu entry. Existing visual,
 market-state and combat component checks also pass. Rendered verification uses
 Godot 4.6.3 on Mesa llvmpipe/OpenGL Compatibility. Godot 4.7, Forward+ and target
