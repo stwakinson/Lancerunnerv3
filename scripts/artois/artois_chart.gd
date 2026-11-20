@@ -89,7 +89,7 @@ func _build() -> void:
 		navigation_requested.emit(world.selected_id)
 		close_chart())
 	_button("TRACK ONLY", Vector2(930, 571), Vector2(270, 34), close_chart)
-	_label("GATES   /   SETTLEMENTS   /   RUINS   /   FIELDS      •      GOLD: PLANET PORT", Vector2(80, 627), Vector2(1000, 25), 12, Color("92afbe"))
+	_label("GOLD LINES: FILAMENT HIGHWAYS   /   CLICK A RING, NAVIGATE, THEN W THROUGH THE GATE", Vector2(80, 627), Vector2(1000, 25), 12, Color("92afbe"))
 
 
 func map_point(point: Vector2) -> Vector2:
@@ -136,6 +136,15 @@ func _draw() -> void:
 			points.append(centre + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
 		draw_polyline(points, Color("647182"), 1.2, true)
 		draw_string(_font, map_point(ArtoisLayout.point(field.label_map)), str(field.name), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("8a99ad"))
+	for lane in world.layout.highways:
+		var start := map_point(ArtoisLayout.point(lane.from))
+		var end := map_point(ArtoisLayout.point(lane.to))
+		draw_line(start, end, Color(1.0, 0.69, 0.28, 0.22), 6, true)
+		draw_line(start, end, Color("eab562"), 1.5, true)
+	for gate in world.layout.highway_targets():
+		var at := map_point(ArtoisLayout.point(gate.map))
+		draw_arc(at, 3.5, 0, TAU, 16, Color("ffd18a"), 1.5, true)
+		if gate.id == world.selected_id: draw_arc(at, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
 	var player := map_point(world.layout.to_map(world.ship.position))
 	var target := map_point(world.layout.to_map(world.target_position()))
 	if MAP_RECT.has_point(player):
@@ -165,7 +174,7 @@ func _gui_input(event: InputEvent) -> void:
 	if not MAP_RECT.has_point(event.position): return
 	var nearest := ""
 	var distance := 14.0
-	for entry in world.layout.locations:
+	for entry in world.layout.locations + world.layout.highway_targets():
 		var candidate := map_point(ArtoisLayout.point(entry.map)).distance_to(event.position)
 		if candidate < distance:
 			distance = candidate

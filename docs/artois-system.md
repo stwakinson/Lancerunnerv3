@@ -44,7 +44,7 @@ profile. An open shop blocks launch.
 | R | Snap the chase camera back into position |
 | Esc | Close a chart/shop first, otherwise return to the menu |
 
-The chart lists **22 navigation targets**. Click a location on the chart or use
+The chart lists **38 navigation targets**, including sixteen highway entrances. Click a location on the chart or use
 the destination picker, then **NAVIGATE** to engage course following. **TRACK
 ONLY** keeps the marker for manual flight. Asteroid field centres can also be
 selected. Manual thrust/strafe/steering cancels course following. Normal thrust
@@ -62,6 +62,10 @@ planet port opens a landing destination in this first pass.
 
 Fitted weapons, regenerating shields and the planet contact's repeatable
 five-enemy test mission are described in [Artois combat](artois-combat.md).
+
+Golden filaments connect the main north–south route and western branch. Fly
+through a ring for 10× travel; Shift plus a direction breaks the magnetic pull.
+See [highway controls and routes](artois-highways.md).
 
 ## Included map elements
 

@@ -103,7 +103,7 @@ func _run() -> void:
 	await scene.toggle_docking()
 	check(not scene.landed and world.selected_id == scene.mission.TARGET_ID, "Launch must preserve the mission destination")
 	scene.toggle_chart()
-	check(scene.chart._picker.item_count == 23, "Mission waypoint must appear in the chart")
+	check(scene.chart._picker.item_count == 39, "Mission waypoint must appear in the chart")
 	scene.toggle_chart()
 	world.brake()
 	world.tap_direction(KEY_A, 100)

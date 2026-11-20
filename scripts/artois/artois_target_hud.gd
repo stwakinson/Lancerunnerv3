@@ -55,7 +55,7 @@ func _draw_combat() -> void:
 		draw_string(_font, at, ("SHIELD %d / %d" if i == 0 else "HULL %d / %d") % [roundi(value), roundi(maximum)], HORIZONTAL_ALIGNMENT_LEFT, 240, 13, colour)
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230, 5)), Color("182c38"))
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230 * value / maximum, 5)), colour)
-	var weapon_text := "WEAPONS LOCKED / CRUISE" if world.cruise else "SPACE / " + (" + ".join(combat.weapons).replace("_", " ").to_upper())
+	var weapon_text := "WEAPONS LOCKED / TRANSIT" if world.cruise or world.highways.attached() else "SPACE / " + (" + ".join(combat.weapons).replace("_", " ").to_upper())
 	draw_string(_font, origin + Vector2(0, 84), weapon_text, HORIZONTAL_ALIGNMENT_LEFT, 260, 12, Color("bdd4dc"))
 	var factor := maxf(size.x / source_view.size.x, size.y / source_view.size.y)
 	var offset := (size - Vector2(source_view.size) * factor) * 0.5

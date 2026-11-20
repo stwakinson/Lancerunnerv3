@@ -86,7 +86,7 @@ func _run() -> void:
 	space.prepare_launch()
 	await scene._capture(capture_dir, "artois-system.png")
 	scene.toggle_chart()
-	check(scene.chart.visible and scene.chart._picker.item_count == 22, "Chart must expose all 22 navigation targets")
+	check(scene.chart.visible and scene.chart._picker.item_count == 38, "Chart must expose all 38 navigation targets")
 	space.velocity = Vector3.FORWARD * 35
 	var paused_position: Vector3 = space.ship.position
 	scene.set_process(true)

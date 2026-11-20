@@ -70,6 +70,7 @@ func _recover_from_defeat() -> void:
 	if _recovering: return
 	_recovering = true
 	mission.fail()
+	space_world.highways.reset()
 	space_world.brake()
 	space_world.ship.position = space_world.target_position(space_world.DOCK_ID) + Vector3(0, 0, 50)
 	space_world.select_target(space_world.DOCK_ID)
@@ -133,6 +134,8 @@ func _build_ui() -> void:
 	contract_panel.mission = mission
 	contract_panel.market = market_state
 	contract_panel.closed.connect(_sync_shop_hotspots)
+	chart.move_to_front()
+	contract_panel.move_to_front()
 	# Chart and target presentation sit below the transition fade.
 	_fade.move_to_front()
 
@@ -148,7 +151,7 @@ func _update_labels() -> void:
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
 		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND"
-		_hint.text = "W/S thrust · A/D/Q/E strafe · RMB steer · Shift+W cruise · Double-tap dodge · Space fire · C exit · X brake · LMB select · M chart"
+		_hint.text = "W/S thrust · A/D/Q/E strafe · RMB steer · Shift+W cruise · Double-tap dodge · Shift+direction: exit filament · Space fire · C exit · X brake · LMB select · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
 	if contact_button != null: contact_button.visible = landed
@@ -174,7 +177,8 @@ func _process(delta: float) -> void:
 		_notice_time = maxf(0.0, _notice_time - delta)
 		var mode := "NAVIGATING" if world.autopilot else ("CRUISE" if world.cruise else "FLIGHT")
 		_status.text = "%s   /   %s  %d m   /   SPEED %d m/s" % [mode, target.name, roundi(distance), roundi(world.speed)]
-		if _notice_time > 0: _status.text = _notice
+		if world.highways.attached(): _status.text = world.highways.status()
+		elif _notice_time > 0: _status.text = _notice
 		elif world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND AT AGINCOURT PLANET PORT"
 		_dock_button.disabled = not world.docking_error().is_empty()
 		_dock_button.tooltip_text = world.docking_error()
