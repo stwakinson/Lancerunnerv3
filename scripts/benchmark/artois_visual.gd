@@ -48,6 +48,7 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_smoke = "--benchmark-smoke" in OS.get_cmdline_user_args()
 	market_state.load_state()
+	market_state.set_market("planet_dock")
 	_build_views()
 	_build_ui()
 	_update_labels()

@@ -81,3 +81,7 @@ godot --path . --script res://tests/market_smoke.gd -- \\
 ![Commodity panel](benchmark-previews/market-commodities.png)
 
 ![Outfitter panel](benchmark-previews/market-outfitter.png)
+
+
+Artois now provides [station-specific interiors and regional quotes](station-markets.md).
+The player inventory is shared, while each visited dealer keeps independent saved stock.

@@ -1,6 +1,7 @@
 class_name ArtoisSpace
 extends BenchmarkSpace
 
+const Markets = preload("res://scripts/artois/artois_markets.gd")
 const Embry = preload("res://scripts/artois/artois_embry.gd")
 const Traffic = preload("res://scripts/artois/artois_traffic.gd")
 const Highways = preload("res://scripts/artois/artois_highways.gd")
@@ -13,6 +14,8 @@ const DOCK_RANGE := 90.0
 const DOCK_SPEED := 20.0
 const DOCK_ID := "planet_dock"
 
+var port_catalog := Markets.new()
+var active_port := DOCK_ID
 var embry_art := Embry.new()
 var traffic: ArtoisTraffic
 var highways: ArtoisHighways
@@ -202,19 +205,19 @@ func brake() -> void:
 
 
 func launch_position() -> Vector3:
-	return layout.world(layout.target(DOCK_ID)) + Vector3(0, 12, 140)
+	return layout.world(layout.target(active_port)) + Vector3(0, 12, 140)
 
 
 func prepare_launch() -> void:
 	disruption_remaining = 0.0
 	highways.reset()
 	ship.position = launch_position()
-	ship.rotation = Vector3.ZERO
-	_yaw = 0
+	ship.rotation = Vector3(0, 0 if active_port == DOCK_ID else PI, 0)
+	_yaw = ship.rotation.y
 	_pitch = 0
 	brake()
 	dodge_cooldown = 0.0
-	selected_id = DOCK_ID
+	selected_id = active_port
 	arrival_message = "LAUNCH COMPLETE"
 	combat.clear_projectiles()
 	# Old trails and shots must not connect across the landing transition.
@@ -229,8 +232,9 @@ func docking_error() -> String:
 		if entry.kind == "hyper_gate" and ship.position.distance_to(layout.world(entry)) < 160:
 			return "HYPER GATE OFFLINE / NO DESTINATION LINK / ARTOIS DEMO"
 	if highways != null and highways.attached(): return "BREAK FREE OF THE FILAMENT BEFORE DOCKING"
-	if ship.position.distance_to(target_position(DOCK_ID)) > DOCK_RANGE:
-		return "APPROACH AGINCOURT PLANET PORT  /  WITHIN 90 m TO LAND"
+	var port := docking_port()
+	if ship.position.distance_to(target_position(port)) > DOCK_RANGE:
+		return "APPROACH %s / WITHIN 90 m TO DOCK" % str(port_catalog.profile(port).name).to_upper()
 	if (velocity + dodge_velocity).length() > DOCK_SPEED:
 		return "SLOW BELOW 20 m/s TO DOCK  /  X TO BRAKE"
 	return ""
@@ -355,3 +359,14 @@ func apply_disruption(duration: float) -> void:
 	reset_taps()
 	combat.ordnance.reset_lock()
 	combat.ordnance.notify("FETTER HIT / CRUISE CANCELLED / SPEED LIMITED FOR 6s")
+
+
+func docking_port() -> String:
+	var chosen := selected_id if port_catalog.has_port(selected_id) else DOCK_ID
+	var nearest := DOCK_RANGE
+	for id in port_catalog.ports():
+		var distance := ship.position.distance_to(target_position(id))
+		if distance <= nearest:
+			nearest = distance
+			chosen = id
+	return chosen

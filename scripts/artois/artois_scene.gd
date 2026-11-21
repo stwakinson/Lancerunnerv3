@@ -6,6 +6,8 @@ const Contact = preload("res://scripts/artois/artois_contact.gd")
 const Picking = preload("res://scripts/artois/artois_picking.gd")
 const Chart = preload("res://scripts/artois/artois_chart.gd")
 const TargetHud = preload("res://scripts/artois/artois_target_hud.gd")
+var docked_id := "planet_dock"
+var _landing_cache := {}
 var mission := Sortie.new()
 var contract_panel: Control
 var contact_button: Button
@@ -22,6 +24,7 @@ var _notice_time := 0.0
 
 func _ready() -> void:
 	super._ready()
+	_landing_cache["planet_dock"] = landing_world
 	space_world.combat.configure(space_world, market_state)
 	mission.configure(space_world)
 	mission.changed.connect(_mission_changed)
@@ -44,7 +47,7 @@ func _mission_changed() -> void:
 
 
 func open_contract() -> void:
-	if not landed or transitioning or shop_panel.visible or contract_panel.visible: return
+	if not landed or docked_id != "planet_dock" or transitioning or shop_panel.visible or contract_panel.visible: return
 	space_world.reset_taps()
 	contract_panel.open_panel()
 	_sync_shop_hotspots()
@@ -61,7 +64,7 @@ func _sync_shop_hotspots() -> void:
 	if contact_hotspot == null: return
 	var available := landed and not transitioning and not shop_panel.visible and not contract_panel.visible
 	shop_hotspots.visible = available
-	contact_hotspot.visible = available
+	contact_hotspot.visible = available and docked_id == "planet_dock"
 	var factor := maxf(size.x / 640.0, size.y / 360.0)
 	var offset := (size - Vector2(640, 360) * factor) * 0.5
 	contact_hotspot.position = offset + (Vector2(314, 226) + landing_world.layers[3].position) * factor
@@ -153,7 +156,7 @@ func _update_labels() -> void:
 		_heading.text = "ARTOIS"
 		_subheading.text = "VALOIS SPACE  /  SYSTEM NAVIGATION"
 		_section.text = "SYSTEM FLIGHT"
-		_dock_button.text = "ENTER  LAND AT PORT"
+		_dock_button.text = "ENTER  LAND AT PORT" if space_world.docking_port() == "planet_dock" else "ENTER  DOCK AT STATION"
 		_dock_button.disabled = not space_world.docking_error().is_empty()
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
@@ -161,9 +164,16 @@ func _update_labels() -> void:
 		_hint.text = "RMB steer · Space guns · F missile · Z ammo · B hull · N shield · Shift+W cruise · Double-tap dodge · LMB/V contacts · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
+		if docked_id != "planet_dock":
+			var profile: Dictionary = market_state.markets.profile(docked_id)
+			_heading.text = str(profile.name).to_upper()
+			_subheading.text = "%s / STATION MARKET DECK" % str(profile.faction).to_upper()
+			_status.text = "DOCKED / " + str(profile.notes)
+			_hint.text = "Mouse: look around · A/D: pan · R: centre · C: drift · L: depth · F: vent mist · 1/2: shops"
+			_weather_button.text = "F  VENT MIST: " + ("ON" if landing_world.weather_enabled else "OFF")
 	if radio_label != null: radio_label.visible = not landed
 	if contact_label != null: contact_label.visible = not landed
-	if contact_button != null: contact_button.visible = landed
+	if contact_button != null: contact_button.visible = landed and docked_id == "planet_dock"
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
 	if ui != null and ui.has_node("SystemChartButton"):
@@ -196,7 +206,7 @@ func _process(delta: float) -> void:
 		_status.text = "%s   /   %s  %d m   /   SPEED %d m/s" % [mode, target.name, roundi(distance), roundi(world.speed)]
 		if world.highways.attached(): _status.text = world.highways.status()
 		elif _notice_time > 0: _status.text = _notice
-		elif world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND AT AGINCOURT PLANET PORT"
+		elif world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE / ENTER AT " + str(world.port_catalog.profile(world.docking_port()).name).to_upper()
 		if world.combat.ordnance.message_time > 0: _status.text = world.combat.ordnance.message
 		_dock_button.disabled = not world.docking_error().is_empty()
 		_dock_button.tooltip_text = world.docking_error()
@@ -219,14 +229,37 @@ func toggle_docking() -> void:
 			_notice_time = 4.0
 			return
 		world.brake()
+		docked_id = world.docking_port()
+		world.active_port = docked_id
+		market_state.set_market(docked_id)
+		_switch_landing(docked_id)
 	else:
 		world.prepare_launch()
 		world.combat.configure(world, market_state)
 		if mission.phase == "active": world.select_target(mission.TARGET_ID)
+		elif mission.phase == "return": world.select_target(world.DOCK_ID)
 	world.reset_taps()
 	await super.toggle_docking()
 	if landed: world.combat.repair()
 	_update_labels()
+
+
+func _switch_landing(id: String) -> void:
+	landing_world.visible = false
+	if not _landing_cache.has(id):
+		var resource: PackedScene = load(market_state.markets.scene_path(id))
+		var room := resource.instantiate()
+		landing_view.add_child(room)
+		_landing_cache[id] = room
+	landing_world = _landing_cache[id]
+	landing_world.visible = true
+	landing_world.reset_camera()
+
+
+func toggle_weather() -> void:
+	super.toggle_weather()
+	if landed and docked_id != "planet_dock":
+		_weather_button.text = "F  VENT MIST: " + ("ON" if landing_world.weather_enabled else "OFF")
 
 
 func _space_pixel(local: Vector2) -> Vector2:

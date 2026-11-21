@@ -16,6 +16,8 @@ Captain Fluellen's five-enemy test contract on the planet. See
 [Golden filament highways](docs/artois-highways.md) provide 10× in-system travel
 through paired rings, with directional boost breakouts. North, east and south
 hyper gates are present but offline with null destinations; the demo stays in Artois.
+[Station interiors and local markets](docs/station-markets.md) let you dock at
+14 ports, use both shops, and make modest regional commodity runs.
 [Embry's column canyon](docs/embry-art.md) combines towering rectangular rocks
 with an orange industrial station nestled between them.
 [Thirty named locals](docs/artois-locals.md) now trade, salvage, prowl and flee

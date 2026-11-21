@@ -42,7 +42,7 @@ profile. An open shop blocks launch.
 | V | Cycle nearby local ships; inspect their faction, pilot, cargo and orders |
 | T | Align the ship toward the tracked destination |
 | G | Navigate toward the tracked destination and stop short of it |
-| Enter | Land at the planet port when range/speed permit; launch when landed |
+| Enter | Dock at a nearby station/planet within 90 m below 20 m/s; launch from that port |
 | P | Compare pixel/native space rendering |
 | R | Snap the chase camera back into position |
 | Esc | Close a chart/shop first, otherwise return to the menu |
@@ -63,8 +63,8 @@ traffic or obstacle-routing system.
 The new flight controller has no old benchmark movement box. Planet penetration
 is prevented by an analytic sphere boundary. Placeholder stations, ships and
 asteroids do not yet supply collision/damage gameplay. The north (Calais), east and south (Picardie) hyper gates have null destinations
-and are explicitly offline. Entering their rings cannot leave Artois. Only the
-planet port opens a landing destination in this first pass.
+and are explicitly offline. Entering their rings cannot leave Artois. The planet and thirteen station/tender/salvage ports now open
+[2.5D market interiors](station-markets.md), each with local commodity quotes.
 
 Fitted weapons, regenerating shields and the planet contact's repeatable
 five-enemy test mission are described in [Artois combat](artois-combat.md).

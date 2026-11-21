@@ -22,8 +22,8 @@ large columns flank and back the tower so it sits among the rock formations.
 - Selection tests instance bounds rather than enormous height-based spheres, so
   tall rocks do not intercept clicks through empty space around the station.
 
-This is a visual environment pass. Embry does not acquire a new landing scene,
-shop interior or docking action. As elsewhere in the current blockout, the rocks
+This guide describes the exterior art pass. Embry now also has a
+[station market interior](station-markets.md). As elsewhere in the current blockout, the rocks
 and station do not have physical ship collision/damage. The clearances support
 navigation and visual approaches rather than a new rigid-body obstacle system.
 

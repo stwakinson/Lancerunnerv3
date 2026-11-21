@@ -1,7 +1,7 @@
 # Cursor guns, seekers and recovery supplies
 
 Artois combat now uses cursor-directed guns, missile ammunition and purchased
-recovery supplies. Buy supplies from **SHIP OUTFITTER** on the planet. They are
+recovery supplies. Buy supplies from **SHIP OUTFITTER** at the planet or any dockable station market. They are
 stored in dedicated bins (up to 99 of each type), outside the commodity hold.
 They do not need fitting. The Falcon launcher still occupies a weapon hardpoint.
 

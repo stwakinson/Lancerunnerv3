@@ -121,8 +121,9 @@ func _run() -> void:
 		if not space.autopilot: break
 	check(not space.autopilot and space.ship.position.distance_to(space.target_position()) < 85, "Course following must reach and stop near a distant settlement")
 	check(space.ship.position.distance_to(from) > 500, "Navigation must move through the expanded system")
+	space.ship.position += Vector3(0, 0, 350)
 	await scene.toggle_docking()
-	check(not scene.landed and not scene.transitioning, "Landing must be rejected away from the planet port")
+	check(not scene.landed and not scene.transitioning, "Docking must be rejected away from every port")
 	space.navigate_to(space.DOCK_ID)
 	for i in 600:
 		space.advance(0.1, Vector2.ZERO, 0.0, false, false)
