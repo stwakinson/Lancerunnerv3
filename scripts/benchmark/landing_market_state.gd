@@ -4,33 +4,49 @@ extends RefCounted
 # Shared landing economy. Artois reads this loadout on launch; the original
 # combat mission remains separate. Prices are fixed; quantities and stock persist.
 
+const Markets = preload("res://scripts/artois/artois_markets.gd")
 const VERSION := 1
 const BASE_CAPACITY := 20
 const ITEMS := {
-	"grain": {"name": "Grain", "kind": "commodity", "buy": 40, "sell": 32, "stock": 90, "description": "Staple food for the villages and garrisons of Artois. Each unit occupies one cargo space."},
+	"grain": {"name": "Wheat & Grain", "kind": "commodity", "buy": 40, "sell": 32, "stock": 90, "description": "Planet-grown wheat and staple grain. Orbital settlements pay a small premium. One hold space."},
 	"alloy": {"name": "Refined alloy", "kind": "commodity", "buy": 120, "sell": 96, "stock": 45, "description": "Structural metal for shipyards, hull repairs and fortress maintenance. One cargo space per unit."},
-	"medicine": {"name": "Medical supplies", "kind": "commodity", "buy": 210, "sell": 168, "stock": 30, "description": "Field dressings and medical compounds, packed for transport through the border systems. One cargo space per unit."},
-	"textiles": {"name": "Fine textiles", "kind": "commodity", "buy": 160, "sell": 128, "stock": 35, "description": "Valois cloth prized by merchants and officers alike. One cargo space per unit."},
+	"medicine": {"name": "Apothecary Chests", "kind": "commodity", "buy": 210, "sell": 168, "stock": 30, "description": "Field medicines and salves. Chapter apothecaries supply garrisons and civilian infirmaries. One hold space."},
+	"textiles": {"name": "Fine Broadcloth", "kind": "commodity", "buy": 160, "sell": 128, "stock": 35, "description": "Valois cloth prized by merchants and officers alike. One cargo space per unit."},
 	"fuel": {"name": "Reactor cells", "kind": "commodity", "buy": 95, "sell": 76, "stock": 60, "description": "Sealed industrial power cells, traded as cargo. One cargo space per unit."},
+	"oxygen": {"name": "Bottled Air", "kind": "commodity", "buy": 20, "sell": 18, "stock": 120, "description": "Purified oxygen and breathing air from the planet's airworks. Essential cargo for sealed settlements; one hold space."},
+	"wool": {"name": "Wool Bales", "kind": "commodity", "buy": 62, "sell": 57, "stock": 45, "description": "Fleece for cloth workshops and shipboard insulation. Northern factors sell cheaply; southern weavers pay more."},
+	"argent_ore": {"name": "Argent Ore", "kind": "commodity", "buy": 182, "sell": 174, "stock": 12, "description": "Silver-bearing rare-metal concentrate for contacts, instruments and plate. Mining and salvage ports export it."},
+	"ale": {"name": "Ale Casks", "kind": "commodity", "buy": 32, "sell": 28, "stock": 50, "description": "A familiar comfort for dockworkers and garrisons. Counting houses and chapter brewers supply the trade."},
+	"lamp_oil": {"name": "Tallow & Lamp Oil", "kind": "commodity", "buy": 48, "sell": 44, "stock": 60, "description": "Rendering-house oils for lamps, seals and machinery. Cheap planetside; stations pay a little more."},
 	"pulse_laser": {"name": "Lance pulse laser", "kind": "weapon", "buy": 1400, "sell": 1050, "stock": 6, "description": "Class I energy weapon. A dependable primary armament. Fits either weapon hardpoint in the prototype loadout."},
 	"autocannon": {"name": "Longbow autocannon", "kind": "weapon", "buy": 2100, "sell": 1575, "stock": 4, "description": "Class I ballistic weapon. Intended for sustained close-range fire. Fits either prototype weapon hardpoint."},
-	"missile_rack": {"name": "Falcon missile rack", "kind": "weapon", "buy": 2600, "sell": 1950, "stock": 3, "description": "Guided missiles for Artois combat. Select a hostile and fire within the forward aiming cone. Prototype ammunition is unlimited."},
+	"missile_rack": {"name": "Falcon missile rack", "kind": "weapon", "buy": 2600, "sell": 1950, "stock": 3, "description": "Launches Pavise, Bodkin or Fetter rounds. Z selects ammo; F fires after a 1.5-second lock. Ammunition sold separately."},
 	"shield": {"name": "Aegis shield generator", "kind": "utility", "buy": 1800, "sell": 1350, "stock": 4, "description": "Raises Artois shields from 60 to 180 and regeneration from 8 to 22 per second after four seconds without damage. Fits the utility mount."},
 	"cargo_expander": {"name": "Cargo expansion module", "kind": "utility", "buy": 900, "sell": 675, "stock": 5, "description": "Adds 10 cargo spaces while fitted. Empty the extra cargo space before removing this module."},
+	"pavise_missile": {"name": "Pavise missile", "kind": "consumable", "buy": 120, "sell": 90, "stock": 40, "description": "Anti-shield round: 90 shield / 6 hull damage. Requires a Falcon rack and lock. Z selects; F launches."},
+	"bodkin_missile": {"name": "Bodkin missile", "kind": "consumable", "buy": 180, "sell": 135, "stock": 30, "description": "Anti-hull round: 8 shield / 80 hull damage. Shields must be stripped first. Z selects; F launches from a Falcon rack."},
+	"fetter_missile": {"name": "Fetter missile", "kind": "consumable", "buy": 90, "sell": 65, "stock": 40, "description": "Disruptor: 12 shield / 5 hull damage. Cancels cruise and caps speed at 12 m/s for six seconds. Requires a Falcon rack."},
+	"armourer_mites": {"name": "Armourer's Mites", "kind": "consumable", "buy": 180, "sell": 135, "stock": 25, "description": "Tiny repair servitors, an armourer's retinue for your hull. B restores 60 hull. Shared three-second recovery cooldown."},
+	"ward_phial": {"name": "Ward Phial", "kind": "consumable", "buy": 140, "sell": 105, "stock": 30, "description": "A sealed reserve of warding energy. N restores 90 shield. Shared three-second recovery cooldown."},
 }
+const LEGACY_IDS := ["grain", "alloy", "medicine", "textiles", "fuel", "pulse_laser", "autocannon", "missile_rack", "shield", "cargo_expander"]
 
 var credits := 7500
 var cargo := {"grain": 3, "alloy": 1}
 var locker := {}
 var weapons: Array = ["pulse_laser", ""]
 var utility := ""
+var markets := Markets.new()
+var market_id := "planet_dock"
+var market_stocks := {}
 var stock := {}
 var save_path := "user://lancerunner_market_preview_v1.json"
 
 
 func _init() -> void:
 	for id in ITEMS:
-		stock[id] = ITEMS[id].stock
+		stock[id] = int(ITEMS[id].stock)
+	market_stocks[market_id] = stock
 
 
 func cargo_used() -> int:
@@ -51,7 +67,8 @@ func owned(id: String) -> int:
 func trade_error(id: String, quantity: int, buying: bool) -> String:
 	if not ITEMS.has(id) or quantity < 1 or quantity > 99:
 		return "Choose a valid item and a quantity from 1 to 99."
-	var item: Dictionary = ITEMS[id]
+	var item := quote(id)
+	if item.kind == "commodity" and not trades_good(id): return "This market does not trade that good."
 	if buying:
 		if quantity > int(stock[id]): return "The dealer does not have that many in stock."
 		if credits < int(item.buy) * quantity: return "Insufficient credits."
@@ -67,7 +84,7 @@ func trade_error(id: String, quantity: int, buying: bool) -> String:
 func trade(id: String, quantity: int, buying: bool) -> String:
 	var error := trade_error(id, quantity, buying)
 	if not error.is_empty(): return error
-	var item: Dictionary = ITEMS[id]
+	var item := quote(id)
 	var inventory: Dictionary = cargo if item.kind == "commodity" else locker
 	inventory[id] = owned(id) + (quantity if buying else -quantity)
 	if inventory[id] == 0: inventory.erase(id)
@@ -77,7 +94,7 @@ func trade(id: String, quantity: int, buying: bool) -> String:
 
 
 func fit_error(id: String) -> String:
-	if not ITEMS.has(id) or ITEMS[id].kind == "commodity": return "Select equipment to fit."
+	if not ITEMS.has(id) or ITEMS[id].kind not in ["weapon", "utility"]: return "Select a weapon or utility to fit."
 	if owned(id) < 1: return "Buy an item or choose one in your locker first."
 	if ITEMS[id].kind == "weapon" and not weapons.has(""): return "Unmount a weapon to free a hardpoint."
 	if ITEMS[id].kind == "utility" and not utility.is_empty(): return "Unmount the current utility first."
@@ -111,7 +128,7 @@ func unmount(slot: int) -> String:
 func save_state() -> bool:
 	var file := FileAccess.open(save_path + ".tmp", FileAccess.WRITE)
 	if file == null: return false
-	file.store_string(JSON.stringify({"version": VERSION, "credits": credits, "cargo": cargo, "locker": locker, "weapons": weapons, "utility": utility, "stock": stock}))
+	file.store_string(JSON.stringify({"version": VERSION, "credits": credits, "cargo": cargo, "locker": locker, "weapons": weapons, "utility": utility, "stock": stock, "market_id": market_id, "market_stocks": market_stocks}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -128,7 +145,15 @@ func load_state() -> bool:
 	locker = _integer_inventory(data.locker)
 	weapons = data.weapons.duplicate()
 	utility = data.utility
-	stock = _integer_inventory(data.stock)
+	market_id = str(data.get("market_id", "planet_dock"))
+	market_stocks.clear()
+	for port in data.get("market_stocks", {}):
+		var inventory := _initial_stock(port)
+		inventory.merge(_integer_inventory(data.market_stocks[port]), true)
+		market_stocks[port] = inventory
+	stock = _initial_stock(market_id)
+	stock.merge(_integer_inventory(data.stock), true)
+	market_stocks[market_id] = stock
 	return true
 
 
@@ -150,7 +175,17 @@ func _valid_save(data: Variant) -> bool:
 			if not ITEMS.has(id) or not _whole(data[key][id], 9999 if key == "stock" else 99): return false
 			if key == "cargo" and ITEMS[id].kind != "commodity": return false
 			if key == "locker" and ITEMS[id].kind == "commodity": return false
-	if data.stock.size() != ITEMS.size(): return false
+	# New supply stock is additive; preserve all original save validation.
+	for id in LEGACY_IDS:
+		if not data.stock.has(id): return false
+	if data.has("market_id") or data.has("market_stocks"):
+		if not data.get("market_id") is String or not markets.has_port(data.market_id) or not data.get("market_stocks") is Dictionary: return false
+		for port in data.market_stocks:
+			if not markets.has_port(port) or not data.market_stocks[port] is Dictionary: return false
+			for id in data.market_stocks[port]:
+				if not ITEMS.has(id) or not _whole(data.market_stocks[port][id], 9999): return false
+			for id in LEGACY_IDS:
+				if not data.market_stocks[port].has(id): return false
 	if not data.get("weapons") is Array or data.weapons.size() != 2: return false
 	for id in data.weapons:
 		if not id is String or (not id.is_empty() and (not ITEMS.has(id) or ITEMS[id].kind != "weapon")): return false
@@ -159,3 +194,46 @@ func _valid_save(data: Variant) -> bool:
 	var used := 0
 	for amount in data.cargo.values(): used += int(amount)
 	return used <= BASE_CAPACITY + (10 if util == "cargo_expander" else 0)
+
+
+func consume(id: String) -> String:
+	if not ITEMS.has(id) or ITEMS[id].kind != "consumable": return "Invalid supply."
+	var before := owned(id)
+	if before < 1: return "No %s aboard. Buy supplies at the outfitter." % ITEMS[id].name
+	if before == 1: locker.erase(id)
+	else: locker[id] = before - 1
+	if not save_state():
+		locker[id] = before
+		return "Supply use could not be saved; nothing was consumed."
+	return ""
+
+
+func trades_good(id: String) -> bool:
+	return ITEMS.has(id) and (ITEMS[id].kind != "commodity" or markets.profile(market_id).quotes.has(id))
+
+
+func quote(id: String) -> Dictionary:
+	var item: Dictionary = ITEMS[id].duplicate()
+	var prices: Array = markets.profile(market_id).quotes.get(id, [])
+	if item.kind == "commodity" and prices.size() == 2:
+		item.buy = int(prices[0])
+		item.sell = int(prices[1])
+	return item
+
+
+func _initial_stock(port: String) -> Dictionary:
+	var result := {}
+	var profile := markets.profile(port)
+	for id in ITEMS:
+		result[id] = int(profile.stock.get(id, ITEMS[id].stock))
+		if ITEMS[id].kind == "commodity" and not profile.quotes.has(id): result[id] = 0
+	return result
+
+
+func set_market(port: String) -> bool:
+	if not markets.has_port(port): return false
+	market_stocks[market_id] = stock
+	if not market_stocks.has(port): market_stocks[port] = _initial_stock(port)
+	market_id = port
+	stock = market_stocks[port]
+	return true

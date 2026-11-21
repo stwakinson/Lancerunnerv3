@@ -48,6 +48,16 @@ func make(entry: Dictionary) -> Node3D:
 	node.name = entry.id
 	var kind: String = entry.kind
 	match kind:
+		"hyper_gate":
+			# A larger dormant frame, visually distinct from golden highway rings.
+			ring(node, 60, "526174")
+			ring(node, 69, "75634b")
+			for i in 4:
+				var direction := Vector3(cos(i * PI / 2), sin(i * PI / 2), 0)
+				block(node, direction * 65, Vector3(13, 13, 19), "333e54")
+				block(node, direction * 65 + Vector3(0, 0, 10), Vector3(5, 5, 1), "d3974e", true)
+			var facing: Array = entry.get("facing", [0, 0, -1])
+			node.rotation.y = atan2(-float(facing[0]), -float(facing[2]))
 		"gate", "planet_dock":
 			var radius := 38.0 if kind == "gate" else 18.0
 			ring(node, radius, "556c83")

@@ -16,6 +16,13 @@ static func pick(world: ArtoisSpace, pixel: Vector2) -> String:
 		if distance >= 0 and distance < nearest:
 			nearest = distance
 			selected = str(fighter.get_meta("id"))
+	if world.traffic != null:
+		for actor in world.traffic.actors.values():
+			if not actor.alive or not actor.node.visible: continue
+			var distance := _sphere(origin, direction, actor.node.global_position, actor.radius)
+			if distance >= 0 and distance < nearest:
+				nearest = distance
+				selected = actor.id
 	for id in world.landmarks:
 		var meshes: Array[Node] = world.landmarks[id].find_children("*", "MeshInstance3D", true, false)
 		var bounds := AABB()
@@ -37,8 +44,10 @@ static func pick(world: ArtoisSpace, pixel: Vector2) -> String:
 		var node: MultiMeshInstance3D = world.field_nodes[id]
 		for i in node.multimesh.instance_count:
 			var transform := node.global_transform * node.multimesh.get_instance_transform(i)
-			var radius := maxf(transform.basis.x.length(), maxf(transform.basis.y.length(), transform.basis.z.length()))
-			var distance := _sphere(origin, direction, transform.origin, radius)
+			var bounds: AABB = transform * node.multimesh.mesh.get_aabb()
+			var hit: Variant = bounds.intersects_ray(origin, direction)
+			if hit == null: continue
+			var distance: float = (hit - origin).dot(direction)
 			if distance >= 0 and distance < nearest:
 				nearest = distance
 				selected = id

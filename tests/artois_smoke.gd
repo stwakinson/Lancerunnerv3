@@ -25,8 +25,8 @@ func _run() -> void:
 	while root.get_node("SceneFader").busy: await process_frame
 	var space := scene.space_world as ArtoisSpace
 	var layout := space.layout
-	check(layout.locations.size() == 19 and layout.fields.size() == 3, "All map landmarks, fields and the added port must be authored")
-	var expected := ["calais_gate", "border_post", "renty", "embry", "asques_gate", "caulers", "agincourt", "arras", "fressin", "wrecked_shipyard", "merchant_guild", "maroeuil_wreck", "freebooter_base", "acheau", "southern_outpost", "southern_ship", "picardie_gate", "st_paul", "planet_dock"]
+	check(layout.locations.size() == 20 and layout.fields.size() == 3, "All map landmarks, fields and the added port must be authored")
+	var expected := ["calais_gate", "border_post", "renty", "embry", "asques_gate", "caulers", "agincourt", "arras", "fressin", "wrecked_shipyard", "merchant_guild", "maroeuil_wreck", "freebooter_base", "acheau", "southern_outpost", "southern_ship", "picardie_gate", "st_paul", "planet_dock", "east_gate"]
 	for id in expected:
 		check(space.landmarks.has(id), "World must contain " + id)
 		check(space.landmarks[id].position.is_equal_approx(layout.world(layout.target(id))), "Chart and world coordinates must agree for " + id)
@@ -86,7 +86,7 @@ func _run() -> void:
 	space.prepare_launch()
 	await scene._capture(capture_dir, "artois-system.png")
 	scene.toggle_chart()
-	check(scene.chart.visible and scene.chart._picker.item_count == 22, "Chart must expose all 22 navigation targets")
+	check(scene.chart.visible and scene.chart._picker.item_count == 41, "Chart must expose all 41 navigation targets")
 	space.velocity = Vector3.FORWARD * 35
 	var paused_position: Vector3 = space.ship.position
 	scene.set_process(true)
@@ -121,8 +121,9 @@ func _run() -> void:
 		if not space.autopilot: break
 	check(not space.autopilot and space.ship.position.distance_to(space.target_position()) < 85, "Course following must reach and stop near a distant settlement")
 	check(space.ship.position.distance_to(from) > 500, "Navigation must move through the expanded system")
+	space.ship.position += Vector3(0, 0, 350)
 	await scene.toggle_docking()
-	check(not scene.landed and not scene.transitioning, "Landing must be rejected away from the planet port")
+	check(not scene.landed and not scene.transitioning, "Docking must be rejected away from every port")
 	space.navigate_to(space.DOCK_ID)
 	for i in 600:
 		space.advance(0.1, Vector2.ZERO, 0.0, false, false)
