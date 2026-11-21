@@ -1,0 +1,608 @@
+{
+  "ports": {
+    "planet_dock": {
+      "name": "Agincourt Planet Port",
+      "faction": "Borderlanders",
+      "theme": "planet",
+      "notes": "Fields and airworks supply the orbital settlements.",
+      "quotes": {
+        "grain": [
+          40,
+          32
+        ],
+        "oxygen": [
+          20,
+          18
+        ],
+        "alloy": [
+          120,
+          116
+        ],
+        "medicine": [
+          210,
+          202
+        ],
+        "textiles": [
+          160,
+          152
+        ],
+        "fuel": [
+          95,
+          90
+        ],
+        "wool": [
+          62,
+          57
+        ],
+        "argent_ore": [
+          182,
+          174
+        ],
+        "ale": [
+          32,
+          28
+        ],
+        "lamp_oil": [
+          48,
+          44
+        ]
+      },
+      "stock": {}
+    },
+    "border_post": {
+      "name": "Border Post",
+      "faction": "Britannian",
+      "theme": "garrison",
+      "notes": "Northern garrison demand for provisions and medical stores.",
+      "quotes": {
+        "grain": [
+          49,
+          45
+        ],
+        "oxygen": [
+          27,
+          24
+        ],
+        "alloy": [
+          122,
+          114
+        ],
+        "medicine": [
+          214,
+          205
+        ],
+        "fuel": [
+          104,
+          97
+        ],
+        "lamp_oil": [
+          57,
+          52
+        ],
+        "wool": [
+          59,
+          55
+        ],
+        "textiles": [
+          166,
+          157
+        ],
+        "ale": [
+          36,
+          32
+        ]
+      },
+      "stock": {}
+    },
+    "renty": {
+      "name": "Renty",
+      "faction": "Britannian",
+      "theme": "weavers",
+      "notes": "Northern wool factors and weaving sheds.",
+      "quotes": {
+        "grain": [
+          45,
+          41
+        ],
+        "oxygen": [
+          25,
+          22
+        ],
+        "alloy": [
+          122,
+          114
+        ],
+        "medicine": [
+          213,
+          203
+        ],
+        "fuel": [
+          98,
+          91
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "wool": [
+          54,
+          50
+        ],
+        "textiles": [
+          157,
+          149
+        ],
+        "ale": [
+          34,
+          30
+        ]
+      },
+      "stock": {}
+    },
+    "embry": {
+      "name": "Embry Village",
+      "faction": "Borderlanders",
+      "theme": "mining",
+      "notes": "Ore factors beneath the column cliffs.",
+      "quotes": {
+        "grain": [
+          49,
+          45
+        ],
+        "oxygen": [
+          27,
+          23
+        ],
+        "alloy": [
+          109,
+          103
+        ],
+        "medicine": [
+          213,
+          203
+        ],
+        "fuel": [
+          98,
+          91
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "argent_ore": [
+          158,
+          150
+        ]
+      },
+      "stock": {
+        "grain": 35,
+        "oxygen": 45,
+        "alloy": 70,
+        "argent_ore": 55
+      }
+    },
+    "caulers": {
+      "name": "Caulers Village",
+      "faction": "Hanseatic League",
+      "theme": "exchange",
+      "notes": "A Hanseatic counting house and local freight exchange.",
+      "quotes": {
+        "grain": [
+          48,
+          44
+        ],
+        "oxygen": [
+          25,
+          22
+        ],
+        "alloy": [
+          122,
+          114
+        ],
+        "medicine": [
+          213,
+          203
+        ],
+        "fuel": [
+          98,
+          91
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "ale": [
+          29,
+          26
+        ],
+        "textiles": [
+          157,
+          150
+        ],
+        "wool": [
+          60,
+          55
+        ]
+      },
+      "stock": {}
+    },
+    "agincourt": {
+      "name": "Agincourt Castle",
+      "faction": "Border Garrison",
+      "theme": "garrison",
+      "notes": "A provision hall serving the fortress.",
+      "quotes": {
+        "grain": [
+          50,
+          46
+        ],
+        "oxygen": [
+          28,
+          24
+        ],
+        "alloy": [
+          122,
+          114
+        ],
+        "medicine": [
+          216,
+          207
+        ],
+        "fuel": [
+          104,
+          97
+        ],
+        "lamp_oil": [
+          58,
+          53
+        ],
+        "textiles": [
+          168,
+          158
+        ],
+        "ale": [
+          36,
+          32
+        ]
+      },
+      "stock": {}
+    },
+    "fressin": {
+      "name": "Fressin Salvage Enclave",
+      "faction": "Borderlanders",
+      "theme": "salvage",
+      "notes": "A makeshift market inside the ruined castle.",
+      "quotes": {
+        "grain": [
+          51,
+          46
+        ],
+        "oxygen": [
+          28,
+          24
+        ],
+        "alloy": [
+          112,
+          105
+        ],
+        "medicine": [
+          213,
+          203
+        ],
+        "fuel": [
+          98,
+          91
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "argent_ore": [
+          166,
+          157
+        ]
+      },
+      "stock": {}
+    },
+    "wrecked_shipyard": {
+      "name": "Shipyard Salvage Berth",
+      "faction": "Borderlanders",
+      "theme": "salvage",
+      "notes": "Recovered metal and shipwright stores.",
+      "quotes": {
+        "grain": [
+          50,
+          45
+        ],
+        "oxygen": [
+          27,
+          24
+        ],
+        "alloy": [
+          106,
+          100
+        ],
+        "medicine": [
+          213,
+          203
+        ],
+        "fuel": [
+          92,
+          86
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "argent_ore": [
+          163,
+          155
+        ]
+      },
+      "stock": {
+        "alloy": 80,
+        "argent_ore": 45
+      }
+    },
+    "merchant_guild": {
+      "name": "Old Guild Counting House",
+      "faction": "Hanseatic League",
+      "theme": "exchange",
+      "notes": "A surviving trading post among the guild ruins.",
+      "quotes": {
+        "grain": [
+          49,
+          44
+        ],
+        "oxygen": [
+          26,
+          23
+        ],
+        "alloy": [
+          113,
+          106
+        ],
+        "medicine": [
+          213,
+          203
+        ],
+        "fuel": [
+          98,
+          91
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "argent_ore": [
+          169,
+          160
+        ],
+        "ale": [
+          30,
+          27
+        ]
+      },
+      "stock": {}
+    },
+    "freebooter_base": {
+      "name": "Freebooter Anchorage",
+      "faction": "Freebooters",
+      "theme": "salvage",
+      "notes": "An unlicensed barter deck for salvagers and free companies.",
+      "quotes": {
+        "grain": [
+          52,
+          47
+        ],
+        "oxygen": [
+          29,
+          25
+        ],
+        "alloy": [
+          111,
+          103
+        ],
+        "medicine": [
+          219,
+          208
+        ],
+        "fuel": [
+          99,
+          92
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "argent_ore": [
+          165,
+          156
+        ]
+      },
+      "stock": {}
+    },
+    "acheau": {
+      "name": "Acheau Village",
+      "faction": "Valois",
+      "theme": "weavers",
+      "notes": "Southern cloth merchants and dyers.",
+      "quotes": {
+        "grain": [
+          47,
+          43
+        ],
+        "oxygen": [
+          25,
+          22
+        ],
+        "alloy": [
+          122,
+          114
+        ],
+        "medicine": [
+          213,
+          203
+        ],
+        "fuel": [
+          98,
+          91
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "textiles": [
+          148,
+          140
+        ],
+        "wool": [
+          64,
+          59
+        ],
+        "ale": [
+          34,
+          30
+        ]
+      },
+      "stock": {
+        "textiles": 65,
+        "wool": 20
+      }
+    },
+    "southern_outpost": {
+      "name": "Southern Outpost",
+      "faction": "Valois",
+      "theme": "garrison",
+      "notes": "Southern victuallers and quartermasters.",
+      "quotes": {
+        "grain": [
+          50,
+          46
+        ],
+        "oxygen": [
+          28,
+          24
+        ],
+        "alloy": [
+          122,
+          114
+        ],
+        "medicine": [
+          214,
+          204
+        ],
+        "fuel": [
+          104,
+          97
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "textiles": [
+          153,
+          145
+        ],
+        "wool": [
+          65,
+          60
+        ],
+        "ale": [
+          36,
+          32
+        ]
+      },
+      "stock": {}
+    },
+    "southern_ship": {
+      "name": "Southern Capital Ship",
+      "faction": "Valois",
+      "theme": "garrison",
+      "notes": "Fleet tender stores and an armourer's counter.",
+      "quotes": {
+        "grain": [
+          51,
+          46
+        ],
+        "oxygen": [
+          28,
+          24
+        ],
+        "alloy": [
+          124,
+          117
+        ],
+        "medicine": [
+          218,
+          207
+        ],
+        "fuel": [
+          104,
+          97
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "textiles": [
+          155,
+          147
+        ],
+        "wool": [
+          65,
+          60
+        ],
+        "ale": [
+          37,
+          33
+        ]
+      },
+      "stock": {}
+    },
+    "st_paul": {
+      "name": "St Paul Cathedral",
+      "faction": "Chapter of St Paul",
+      "theme": "chapel",
+      "notes": "Chapter apothecaries, lamp keepers and almoners.",
+      "quotes": {
+        "grain": [
+          50,
+          45
+        ],
+        "oxygen": [
+          26,
+          23
+        ],
+        "alloy": [
+          122,
+          114
+        ],
+        "medicine": [
+          190,
+          182
+        ],
+        "fuel": [
+          98,
+          91
+        ],
+        "lamp_oil": [
+          58,
+          53
+        ],
+        "ale": [
+          30,
+          27
+        ],
+        "argent_ore": [
+          190,
+          181
+        ]
+      },
+      "stock": {
+        "medicine": 60,
+        "lamp_oil": 25
+      }
+    }
+  }
+}

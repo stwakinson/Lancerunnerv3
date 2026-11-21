@@ -10,9 +10,8 @@ Accept the test sortie, close the conversation and launch with Enter.
 Five freebooters wait there and start attacking when approached within **420 m**.
 
 Use right mouse drag to steer, left click an enemy to track it, **T** to align,
-and **Space** to fire both fitted weapons. The crosshair indicates the ship's
-forward firing direction; selecting a hostile provides a small 7-degree aim
-assist cone. Destroy all five, then **G** navigates to the automatically selected
+and **Space** to fire fitted guns toward the cursor within a 30-degree forward
+arc. **Z** selects missile ammunition and **F** launches after a 1.5-second lock. Destroy all five, then **G** navigates to the automatically selected
 planet port. Land, speak to Fluellen and claim **1,500 credits**. Payment uses the
 existing atomic market save and cannot be claimed twice for the same sortie.
 You can explicitly repeat the test after payment.
@@ -52,10 +51,11 @@ slots do not fire. Removing Aegis restores the standard built-in shield.
 | --- | --- | --- | --- |
 | Lance pulse laser | 24 | 0.24 s | 360 m/s |
 | Longbow autocannon | 10 | 0.085 s | 460 m/s |
-| Falcon missile rack | 65 | 1.2 s | 140 m/s |
+| Falcon missile rack | By ammunition | 1.2 s | 160–220 m/s |
 
-Missiles steer toward the selected hostile after launch. Ammunition is unlimited
-in this test. Fast rounds use segment/sphere sweeps to avoid tunnelling. Each
+Missiles steer toward the locked hostile after launch and consume purchased
+Pavise, Bodkin or Fetter rounds. Recovery supplies restore hull or shields.
+See [ordnance and supplies](artois-ordnance.md) for controls, effects and prices. Fast rounds use segment/sphere sweeps to avoid tunnelling. Each
 hostile starts with 65 hull and 20 shield, manoeuvres to maintain firing distance,
 and fires damaging, dodgeable projectiles. Hits flash the player's shield and
 destroyed fighters produce a brief expanding burst.

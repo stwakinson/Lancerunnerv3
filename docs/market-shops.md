@@ -20,7 +20,7 @@ supply/demand economy.
 
 ## Weapons and utilities
 
-The outfitter sells three weapons, a shield generator and a cargo expansion
+The outfitter sells three weapons, five consumable supplies, a shield generator and a cargo expansion
 module. Purchases enter the equipment locker. **FIT TO SHIP** mounts a stored
 weapon in a free hardpoint or a utility in the utility slot. Click a fitted slot
 to unmount into the locker; equipment must be unmounted before it can be sold.
@@ -34,6 +34,11 @@ applies both weapon hardpoints and the utility. Aegis upgrades the built-in shie
 from 60 to 180 and regeneration from 8 to 22 per second. The original visual
 benchmark and original combat missions retain their separate mechanics.
 The cargo module affects the market capacity checks.
+
+Missile rounds (Pavise, Bodkin, Fetter), Armourer's Mites and Ward Phials are
+stored in dedicated supply bins and cannot be fitted into equipment slots.
+See [ordnance and supply prices](artois-ordnance.md). Existing ten-item saves
+load without losing player state; new dealer supply stock is added automatically.
 
 ## Modal input and persistence
 
@@ -76,3 +81,7 @@ godot --path . --script res://tests/market_smoke.gd -- \\
 ![Commodity panel](benchmark-previews/market-commodities.png)
 
 ![Outfitter panel](benchmark-previews/market-outfitter.png)
+
+
+Artois now provides [station-specific interiors and regional quotes](station-markets.md).
+The player inventory is shared, while each visited dealer keeps independent saved stock.

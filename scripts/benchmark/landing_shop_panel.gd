@@ -18,6 +18,7 @@ var _item_name: Label
 var _description: Label
 var _totals: Label
 var _message: Label
+var _venue: Label
 var _scope: Label
 var _quantity: SpinBox
 var _buy: Button
@@ -103,7 +104,7 @@ func _build() -> void:
 	panel.size = Vector2(1160, 552)
 	panel.add_theme_stylebox_override("panel", _style(Color("0d202d"), Color("72828b")))
 	add_child(panel)
-	_label("AGINCOURT  /  LOWER MARKET", Vector2(88, 96), Vector2(600, 20), 12, GOLD)
+	_venue = _label("AGINCOURT  /  LOWER MARKET", Vector2(88, 96), Vector2(600, 20), 12, GOLD)
 	_title = _label("", Vector2(86, 119), Vector2(700, 43), 30)
 	_account = _label("", Vector2(790, 103), Vector2(320, 60), 16, GOLD)
 	_close = _button("×", Vector2(1158, 94), Vector2(40, 38), close_shop)
@@ -121,7 +122,7 @@ func _build() -> void:
 		_tree.set_column_custom_minimum_width(i, 76)
 	_tree.add_theme_font_size_override("font_size", 15)
 	_tree.add_theme_font_size_override("title_button_font_size", 12)
-	_tree.add_theme_constant_override("v_separation", 16)
+	_tree.add_theme_constant_override("v_separation", 8)
 	_tree.add_theme_color_override("font_color", PALE)
 	_tree.add_theme_stylebox_override("panel", _style(Color("0a1822"), Color("294451")))
 	_tree.add_theme_stylebox_override("selected", _style(Color("294854"), Color("294854")))
@@ -159,31 +160,37 @@ func _build() -> void:
 
 func _refresh() -> void:
 	_refreshing = true
-	_title.text = "COMMODITIES EXCHANGE" if shop_kind == "commodities" else "SHIP WEAPONS & UTILITIES"
+	_venue.text = "%s / %s" % [market.markets.profile(market.market_id).name.to_upper(), market.markets.profile(market.market_id).faction.to_upper()]
+	_title.text = "COMMODITIES EXCHANGE" if shop_kind == "commodities" else "WEAPONS, UTILITIES & SUPPLIES"
 	_account.text = "%s cr\nCARGO  %d / %d" % [_money(market.credits), market.cargo_used(), market.capacity()]
-	var titles := ["COMMODITY" if shop_kind == "commodities" else "EQUIPMENT", "BUY", "SELL", "CARGO" if shop_kind == "commodities" else "LOCKER", "STOCK"]
+	var titles := ["COMMODITY" if shop_kind == "commodities" else "EQUIPMENT", "BUY", "SELL", "CARGO" if shop_kind == "commodities" else "ABOARD", "STOCK"]
 	for i in 5: _tree.set_column_title(i, titles[i])
 	_tree.clear()
 	var root := _tree.create_item()
 	for id in State.ITEMS:
-		var item: Dictionary = State.ITEMS[id]
+		var item := market.quote(id)
 		if (item.kind == "commodity") != (shop_kind == "commodities"): continue
+		if item.kind == "commodity" and not market.trades_good(id) and market.owned(id) == 0: continue
 		var row := _tree.create_item(root)
 		row.set_metadata(0, id)
 		row.set_text(0, item.name)
 		row.set_text(1, _money(item.buy))
 		row.set_text(2, _money(item.sell))
+		if item.kind == "commodity" and not market.trades_good(id):
+			row.set_text(1, "—")
+			row.set_text(2, "—")
 		row.set_text(3, str(market.owned(id)))
 		row.set_text(4, str(market.stock[id]))
 		for column in range(1, 5): row.set_text_alignment(column, HORIZONTAL_ALIGNMENT_RIGHT)
 		if id == selected_id: row.select(0)
+	if _tree.get_selected() != null: _tree.scroll_to_item(_tree.get_selected())
 	for i in 3:
 		var id: String = market.utility if i == 2 else market.weapons[i]
 		_slots[i].text = ("UTILITY" if i == 2 else "W%d" % (i + 1)) + " · " + ("EMPTY" if id.is_empty() else str(State.ITEMS[id].name))
 		_slots[i].disabled = id.is_empty()
 		_slots[i].tooltip_text = "Unmount into your equipment locker"
-	_scope.text = "Prices are per unit. Credits, cargo, dealer stock and loadout save locally."
-	if shop_kind == "equipment": _scope.text = "ARTOIS LOADOUT · Fitted weapons and shields are applied when you close the outfitter or launch."
+	_scope.text = "LOCAL MARKET / " + str(market.markets.profile(market.market_id).notes)
+	if shop_kind == "equipment": _scope.text = "SUPPLIES · Z select missiles / F launch after lock / B repair hull / N restore shields. Supplies use dedicated bins, not cargo."
 	_refreshing = false
 	_details()
 
@@ -196,16 +203,17 @@ func _selected() -> void:
 
 func _details() -> void:
 	if market == null or not State.ITEMS.has(selected_id): return
-	var item: Dictionary = State.ITEMS[selected_id]
+	var item := market.quote(selected_id)
 	var quantity := int(_quantity.value)
 	_item_name.text = item.name
 	_description.text = str(item.kind).to_upper() + "\n" + str(item.description)
 	_totals.text = "BUY  %s cr     /     SELL  %s cr" % [_money(int(item.buy) * quantity), _money(int(item.sell) * quantity)]
+	if item.kind == "commodity" and not market.trades_good(selected_id): _totals.text = "NOT TRADED HERE / KEEP FOR ANOTHER PORT"
 	_buy.tooltip_text = market.trade_error(selected_id, quantity, true)
 	_sell.tooltip_text = market.trade_error(selected_id, quantity, false)
 	_buy.disabled = not _buy.tooltip_text.is_empty()
 	_sell.disabled = not _sell.tooltip_text.is_empty()
-	_fit.visible = item.kind != "commodity"
+	_fit.visible = item.kind in ["weapon", "utility"]
 	_fit.tooltip_text = market.fit_error(selected_id)
 	_fit.disabled = not _fit.tooltip_text.is_empty()
 

@@ -1,6 +1,10 @@
 class_name ArtoisSpace
 extends BenchmarkSpace
 
+const Markets = preload("res://scripts/artois/artois_markets.gd")
+const Embry = preload("res://scripts/artois/artois_embry.gd")
+const Traffic = preload("res://scripts/artois/artois_traffic.gd")
+const Highways = preload("res://scripts/artois/artois_highways.gd")
 const Combat = preload("res://scripts/artois/artois_combat.gd")
 const Layout = preload("res://scripts/artois/artois_layout.gd")
 const Shapes = preload("res://scripts/artois/artois_placeholders.gd")
@@ -10,7 +14,13 @@ const DOCK_RANGE := 90.0
 const DOCK_SPEED := 20.0
 const DOCK_ID := "planet_dock"
 
+var port_catalog := Markets.new()
+var active_port := DOCK_ID
+var embry_art := Embry.new()
+var traffic: ArtoisTraffic
+var highways: ArtoisHighways
 var combat: ArtoisCombat
+var disruption_remaining := 0.0
 var dodge_velocity := Vector3.ZERO
 var dodge_cooldown := 0.0
 var _last_taps := {}
@@ -33,18 +43,30 @@ func _ready() -> void:
 	combat.name = "Combat"
 	add_child(combat)
 	combat.configure(self, LandingMarketState.new())
+	highways = Highways.new()
+	highways.name = "GoldenHighways"
+	add_child(highways)
+	highways.configure(self)
+	traffic = Traffic.new()
+	traffic.name = "LocalTraffic"
+	add_child(traffic)
+	traffic.configure(self)
 
 
 func tap_direction(key: int, now: float) -> bool:
 	const DIRECTIONS := {KEY_A: Vector3.LEFT, KEY_D: Vector3.RIGHT, KEY_W: Vector3.FORWARD, KEY_S: Vector3.BACK, KEY_Q: Vector3.DOWN, KEY_E: Vector3.UP}
-	if not DIRECTIONS.has(key) or combat.dead: return false
+	if not DIRECTIONS.has(key) or combat.dead or disruption_remaining > 0: return false
 	var previous := float(_last_taps.get(key, -10.0))
 	_last_taps[key] = now
 	if now - previous > 0.27 or now < previous or dodge_cooldown > 0: return false
 	_last_taps.clear()
 	cruise = false
 	autopilot = false
-	dodge_velocity = ship.basis * DIRECTIONS[key] * 135.0
+	if highways.attached():
+		highways.escape(ship.basis * DIRECTIONS[key])
+		dodge_velocity = Vector3.ZERO
+	else:
+		dodge_velocity = ship.basis * DIRECTIONS[key] * 135.0
 	dodge_cooldown = 0.65
 	return true
 
@@ -57,7 +79,7 @@ func _build_world() -> void:
 	camera.near = 0.3
 	camera.far = 40000
 	for entry in layout.locations:
-		var node := _shapes.make(entry)
+		var node := embry_art.make_station() if entry.id == "embry" else _shapes.make(entry)
 		node.position = layout.world(entry)
 		add_child(node)
 		landmarks[entry.id] = node
@@ -76,6 +98,12 @@ func _build_world() -> void:
 
 
 func _build_field(field: Dictionary) -> void:
+	if field.get("visual_profile", "") == "column_canyon":
+		var node := embry_art.make_field(self, field)
+		add_child(node)
+		field_nodes[field.id] = node
+		asteroid_count += node.multimesh.instance_count
+		return
 	var random := RandomNumberGenerator.new()
 	random.seed = int(field.seed)
 	var source := SphereMesh.new()
@@ -115,6 +143,9 @@ func _build_field(field: Dictionary) -> void:
 
 func target_position(id: String = "") -> Vector3:
 	var resolved := selected_id if id.is_empty() else id
+	if traffic != null:
+		var local := traffic.get_actor(resolved)
+		if not local.is_empty(): return local.node.position
 	var hostile := combat.enemy(resolved) if combat != null else null
 	if hostile != null: return hostile.position
 	var entry := layout.target(resolved)
@@ -122,14 +153,16 @@ func target_position(id: String = "") -> Vector3:
 
 
 func select_target(id: String) -> void:
-	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()): return
+	if selected_id != id and combat != null: combat.ordnance.reset_lock()
 	selected_id = id
 	autopilot = false
 	arrival_message = ""
 
 
 func navigate_to(id: String) -> void:
-	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null): return
+	if highways.attached(): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()): return
 	select_target(id)
 	autopilot = true
 	cruise = false
@@ -144,16 +177,25 @@ func align_to_target() -> void:
 
 
 func engage_cruise() -> void:
+	if disruption_remaining > 0:
+		combat.ordnance.notify("FETTERED / CRUISE DISABLED")
+		return
+	if highways.attached():
+		highways.escape(-ship.basis.z)
+		return
 	cruise = true
 	autopilot = false
 
 
 func toggle_cruise() -> void:
+	if disruption_remaining > 0: return
+	if highways.attached(): return
 	cruise = not cruise
 	autopilot = false
 
 
 func brake() -> void:
+	if highways != null and highways.attached(): return
 	cruise = false
 	autopilot = false
 	velocity = Vector3.ZERO
@@ -163,17 +205,19 @@ func brake() -> void:
 
 
 func launch_position() -> Vector3:
-	return layout.world(layout.target(DOCK_ID)) + Vector3(0, 12, 140)
+	return layout.world(layout.target(active_port)) + Vector3(0, 12, 140)
 
 
 func prepare_launch() -> void:
+	disruption_remaining = 0.0
+	highways.reset()
 	ship.position = launch_position()
-	ship.rotation = Vector3.ZERO
-	_yaw = 0
+	ship.rotation = Vector3(0, 0 if active_port == DOCK_ID else PI, 0)
+	_yaw = ship.rotation.y
 	_pitch = 0
 	brake()
 	dodge_cooldown = 0.0
-	selected_id = DOCK_ID
+	selected_id = active_port
 	arrival_message = "LAUNCH COMPLETE"
 	combat.clear_projectiles()
 	# Old trails and shots must not connect across the landing transition.
@@ -184,8 +228,13 @@ func prepare_launch() -> void:
 
 
 func docking_error() -> String:
-	if ship.position.distance_to(target_position(DOCK_ID)) > DOCK_RANGE:
-		return "APPROACH AGINCOURT PLANET PORT  /  WITHIN 90 m TO LAND"
+	for entry in layout.locations:
+		if entry.kind == "hyper_gate" and ship.position.distance_to(layout.world(entry)) < 160:
+			return "HYPER GATE OFFLINE / NO DESTINATION LINK / ARTOIS DEMO"
+	if highways != null and highways.attached(): return "BREAK FREE OF THE FILAMENT BEFORE DOCKING"
+	var port := docking_port()
+	if ship.position.distance_to(target_position(port)) > DOCK_RANGE:
+		return "APPROACH %s / WITHIN 90 m TO DOCK" % str(port_catalog.profile(port).name).to_upper()
 	if (velocity + dodge_velocity).length() > DOCK_SPEED:
 		return "SLOW BELOW 20 m/s TO DOCK  /  X TO BRAKE"
 	return ""
@@ -194,15 +243,40 @@ func docking_error() -> String:
 func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, firing: bool) -> void:
 	if combat.dead: return
 	elapsed += delta
+	disruption_remaining = maxf(0.0, disruption_remaining - delta)
 	dodge_cooldown = maxf(0.0, dodge_cooldown - delta)
+	highways.tick(delta)
+	var previous := ship.position
+	var input := Vector3(steering.x, steering.y, -thrust)
+	if highways.attached() and boosting and input.length_squared() > 0:
+		highways.escape(ship.basis * input)
+	if highways.attached():
+		highways.advance(delta, steering)
+	else:
+		_advance_manual(delta, steering, thrust, boosting)
+		highways.try_enter(previous, ship.position)
+	_avoid_planet()
+	speed = (velocity + dodge_velocity).length()
+	for i in ship.engines.size():
+		ship.engines[i].scale.z = 1.0 + (0.6 if boosting or cruise or autopilot or highways.attached() else 0.12) * (1.0 + sin(elapsed * 23))
+	traffic.advance(delta)
+	combat.advance(delta)
+	if firing and not cruise: _fire_shot()
+	camera.fov = lerpf(camera.fov, 66.0 if highways.attached() else (60.0 if cruise or autopilot else (58.0 if boosting else 54.0)), 1.0 - exp(-delta * 3.0))
+	_update_camera(delta)
+	_effects.advance(delta, ship, camera, boosting or cruise or autopilot or highways.attached())
+
+
+func _advance_manual(delta: float, steering: Vector2, thrust: float, boosting: bool) -> void:
 	if steering != Vector2.ZERO or thrust != 0:
 		autopilot = false
 	var forward := -ship.basis.z
 	var desired := Vector3.ZERO
 	if autopilot:
-		var to_target := target_position() - ship.position
+		var destination := highways.approach_position(selected_id) if highways.gates.has(selected_id) else target_position()
+		var to_target := destination - ship.position
 		var distance := to_target.length()
-		var stopping_distance := 55.0 if selected_id == DOCK_ID else 75.0
+		var stopping_distance := 12.0 if highways.gates.has(selected_id) else (55.0 if selected_id == DOCK_ID else 75.0)
 		if distance > 0.01:
 			var direction := to_target / distance
 			var up := Vector3.FORWARD if absf(direction.dot(Vector3.UP)) > 0.98 else Vector3.UP
@@ -211,6 +285,8 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 		if distance <= stopping_distance + 4 and velocity.length() < 4:
 			autopilot = false
 			desired = Vector3.ZERO
+			if highways.gates.has(selected_id):
+				ship.basis = Basis.looking_at(highways.gates[selected_id].axis, Vector3.UP)
 			arrival_message = "ARRIVED  /  " + str(target_entry().name).to_upper()
 		_sync_angles()
 	else:
@@ -218,19 +294,11 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 		desired = forward * (1.0 if cruise else thrust) * top_speed
 		desired += (ship.basis.x * steering.x + ship.basis.y * steering.y) * (40.0 if boosting else 25.0)
 	if cruise: desired = desired.limit_length(CRUISE_SPEED)
+	if disruption_remaining > 0: desired = desired.limit_length(12.0)
 	velocity = velocity.move_toward(desired, (110.0 if autopilot or cruise else 85.0) * delta)
 	# Integrate exponential dodge decay independently of normal thrust.
 	ship.position += velocity * delta + dodge_velocity * ((1.0 - exp(-delta * 6.0)) / 6.0)
 	dodge_velocity *= exp(-delta * 6.0)
-	_avoid_planet()
-	speed = (velocity + dodge_velocity).length()
-	for i in ship.engines.size():
-		ship.engines[i].scale.z = 1.0 + (0.6 if boosting or cruise or autopilot else 0.12) * (1.0 + sin(elapsed * 23))
-	combat.advance(delta)
-	if firing and not cruise: _fire_shot()
-	camera.fov = lerpf(camera.fov, 60.0 if cruise or autopilot else (58.0 if boosting else 54.0), 1.0 - exp(-delta * 3.0))
-	_update_camera(delta)
-	_effects.advance(delta, ship, camera, boosting or cruise or autopilot)
 
 
 func _fire_shot() -> void:
@@ -272,7 +340,33 @@ func reset_view() -> void:
 
 
 func target_entry() -> Dictionary:
+	if traffic != null:
+		var entry := traffic.target_entry(selected_id)
+		if not entry.is_empty(): return entry
 	var hostile := combat.enemy(selected_id) if combat != null else null
 	if hostile != null:
 		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "Hull %d / Shield %d" % [roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield"))]}
 	return layout.target(selected_id)
+
+
+func apply_disruption(duration: float) -> void:
+	disruption_remaining = maxf(disruption_remaining, duration)
+	highways.reset()
+	cruise = false
+	autopilot = false
+	dodge_velocity = Vector3.ZERO
+	velocity = velocity.limit_length(12.0)
+	reset_taps()
+	combat.ordnance.reset_lock()
+	combat.ordnance.notify("FETTER HIT / CRUISE CANCELLED / SPEED LIMITED FOR 6s")
+
+
+func docking_port() -> String:
+	var chosen := selected_id if port_catalog.has_port(selected_id) else DOCK_ID
+	var nearest := DOCK_RANGE
+	for id in port_catalog.ports():
+		var distance := ship.position.distance_to(target_position(id))
+		if distance <= nearest:
+			nearest = distance
+			chosen = id
+	return chosen
