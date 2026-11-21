@@ -117,7 +117,7 @@ func _run() -> void:
 	combat.clear_encounter()
 	world.advance(6.1, Vector2.ZERO, 0, false, false)
 	world.engage_cruise()
-	check(world.cruise and world.disruption_remaining == 0, "Cruise must recover after the disruption expires")
+	check(world.cruise_spool > 0 and world.disruption_remaining == 0, "Cruise must recover after the disruption expires")
 	world.brake()
 
 	# Repair supplies restore appropriate health without wasting stock at full health.
@@ -132,6 +132,10 @@ func _run() -> void:
 	var loaded := LandingMarketState.new()
 	loaded.save_path = market.save_path
 	check(loaded.load_state() and loaded.owned("pavise_missile") == 2 and loaded.owned("armourer_mites") == 2 and loaded.owned("ward_phial") == 2, "Ammo and recovery consumption must persist")
+	combat.hull = combat.HULL_MAX
+	combat.defence.armour = 10
+	arms.advance(3.1)
+	check(arms.use_recovery("armourer_mites") and combat.defence.armour == 50 and combat.hull == combat.HULL_MAX, "Mites must repair armour even with a sound hull")
 	var path := market.save_path
 	market.save_path = "user://nonexistent-ordnance-folder/save.json"
 	var count := market.owned("bodkin_missile")

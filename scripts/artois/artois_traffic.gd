@@ -227,7 +227,7 @@ func _hostile_step(actor: Dictionary, delta: float) -> void:
 		var up := Vector3.RIGHT if absf(direction.y) > 0.98 else Vector3.UP
 		actor.node.basis = Basis(actor.node.basis.get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * 6)))
 		if distance < 310 and actor.fire_wait <= 0:
-			var shot: MeshInstance3D = world.combat._projectile(actor.node.position + direction * 14, direction * 165, 6.0, "f7a36c" if actor.role == "pirate" else "c5b0ef", 2.5)
+			var shot: MeshInstance3D = world.combat._projectile(actor.node.position + direction * 14, direction * 110, 22.0, "f7a36c" if actor.role == "pirate" else "c5b0ef", 3.5)
 			shot.set_meta("source", actor.id)
 			shots.append(shot)
 			actor.fire_wait = 2.6

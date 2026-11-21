@@ -161,7 +161,7 @@ func _update_labels() -> void:
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
 		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND"
-		_hint.text = "RMB steer · Space guns · F missile · Z ammo · B hull · N shield · Shift+W cruise · Double-tap dodge · LMB/V contacts · M chart"
+		_hint.text = "Tab boost · Ctrl knight shield · Space guns · F missile · B repair · N ward · Shift+W cruise / S cancel · T target · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
 		if docked_id != "planet_dock":
@@ -180,7 +180,13 @@ func _update_labels() -> void:
 		ui.get_node("SystemChartButton").visible = not landed
 
 
+func _boost_held() -> bool:
+	return Input.is_physical_key_pressed(KEY_TAB)
+
+
 func _process(delta: float) -> void:
+	space_world.combat.guard_requested = Input.is_physical_key_pressed(KEY_CTRL) and not (landed or transitioning or _recovering or chart.visible or shop_panel.visible or contract_panel.visible)
+	if not space_world.combat.guard_requested: space_world.combat.defence.guard_active = false
 	if space_world.traffic != null:
 		space_world.traffic.player_present = not landed and not transitioning and not _recovering
 		if landed and not transitioning: space_world.traffic.advance(delta)
@@ -202,11 +208,11 @@ func _process(delta: float) -> void:
 		var target := world.target_entry()
 		var distance := world.ship.position.distance_to(world.target_position())
 		_notice_time = maxf(0.0, _notice_time - delta)
-		var mode := "NAVIGATING" if world.autopilot else ("CRUISE" if world.cruise else "FLIGHT")
+		var mode := "NAVIGATING" if world.autopilot else ("CRUISE" if world.cruise else ("SPOOLING %.1fs" % world.cruise_spool if world.cruise_spool > 0 else "FLIGHT"))
 		_status.text = "%s   /   %s  %d m   /   SPEED %d m/s" % [mode, target.name, roundi(distance), roundi(world.speed)]
 		if world.highways.attached(): _status.text = world.highways.status()
 		elif _notice_time > 0: _status.text = _notice
-		elif world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE / ENTER AT " + str(world.port_catalog.profile(world.docking_port()).name).to_upper()
+		elif world.docking_error().is_empty() and not world.cruise and world.cruise_spool == 0: _status.text = "DOCKING AVAILABLE / ENTER AT " + str(world.port_catalog.profile(world.docking_port()).name).to_upper()
 		if world.combat.ordnance.message_time > 0: _status.text = world.combat.ordnance.message
 		_dock_button.disabled = not world.docking_error().is_empty()
 		_dock_button.tooltip_text = world.docking_error()
@@ -299,6 +305,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			world.engage_cruise()
 			get_viewport().set_input_as_handled()
 			return
+		if event.physical_keycode == KEY_S: world.cancel_cruise()
 		if event.physical_keycode in [KEY_W, KEY_S, KEY_A, KEY_D, KEY_Q, KEY_E]:
 			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
@@ -312,10 +319,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_M: toggle_chart()
 			KEY_C: world.toggle_cruise()
 			KEY_X: world.brake()
-			KEY_T: world.align_to_target()
+			KEY_Y: world.align_to_target()
 			KEY_G: world.navigate_to(world.selected_id)
-			KEY_TAB:
+			KEY_T:
 				var targets := world.layout.targets()
+				for fighter in world.combat.enemies: targets.append({"id": str(fighter.get_meta("id"))})
+				for id in world.traffic.nearby_ids(): targets.append({"id": id})
 				var index := 0
 				for i in targets.size():
 					if targets[i].id == world.selected_id: index = i

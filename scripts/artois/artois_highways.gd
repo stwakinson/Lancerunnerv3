@@ -83,7 +83,7 @@ func try_enter(from: Vector3, to: Vector3) -> bool:
 	var gate: Dictionary = gates[chosen]
 	active_route = gate.route
 	travel_sign = gate.sign
-	world.cruise = false
+	world.cancel_cruise()
 	world.autopilot = false
 	world.dodge_velocity = Vector3.ZERO
 	world.reset_taps()
@@ -128,7 +128,7 @@ func escape(push: Vector3) -> void:
 	if not attached(): return
 	var axis := direction()
 	reset()
-	world.cruise = false
+	world.cancel_cruise()
 	world.autopilot = false
 	world.velocity = axis * 55.0 + push.normalized() * 125.0
 	world.arrival_message = "FILAMENT BREAKOUT / MANUAL FLIGHT"

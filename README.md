@@ -10,7 +10,9 @@ Planet Port** within **90 m**, slow below **20 m/s**, then press **Enter** to la
 Enter launches back from the planet market. See [the Artois guide](docs/artois-system.md).
 
 Artois also includes double-tap dodges, fitted weapons, regenerating shields and
-Captain Fluellen's five-enemy test contract on the planet. See
+Captain Fluellen's five-enemy test contract on the planet.
+[Knightly combat](docs/knightly-combat.md) adds power, armour, a Ctrl-held directional
+shield, cruise spooling, Tab afterburner and a bottom-right scanner. See
 [combat and mission controls](docs/artois-combat.md).
 
 [Golden filament highways](docs/artois-highways.md) provide 10× in-system travel

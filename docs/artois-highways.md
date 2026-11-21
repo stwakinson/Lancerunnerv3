@@ -12,7 +12,7 @@ The existing blue system-exit gate placeholders remain separate landmarks.
 4. The filament pulls the ship toward its centreline and accelerates it to **350 m/s**, ten times ordinary thrust speed.
 5. At the far ring, the ship clears the exit and returns to normal flight at 35 m/s. Hold W to continue toward the next ring, or turn toward the nearby settlement.
 
-To leave early, **hold Shift plus a movement direction** (W/S/A/D/Q/E), or
+To leave early, **hold Tab plus a movement direction** (W/S/A/D/Q/E), or
 **double-tap a movement key** for a directional dodge. The boost breaks the pull,
 adds an escape impulse and briefly prevents recapture. **Shift+W breaks out while
 attached**; in ordinary flight it still engages cruise. Releasing boost restores
@@ -115,3 +115,5 @@ crossing, the chart entries and the eastern filament connection.
 ![Hyper-gate chart](artois-hyper-gate-previews/artois-hyper-gates-chart.png)
 
 ![Eastern dormant gate](artois-hyper-gate-previews/artois-east-hyper-gate.png)
+
+See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.

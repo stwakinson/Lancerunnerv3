@@ -99,3 +99,5 @@ Verification uses Godot 4.6.3 and rendered OpenGL Compatibility; Forward+, Godot
 ![Consumables in the outfitter](artois-ordnance-previews/artois-consumables-shop.png)
 
 ![Missile lock and supplies HUD](artois-ordnance-previews/artois-missile-lock.png)
+
+See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.

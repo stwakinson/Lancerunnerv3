@@ -114,12 +114,12 @@ func _run() -> void:
 	scene.toggle_chart()
 
 	# Directional boost, Shift+W shortcut, and double-tap all break free.
-	await key(KEY_SHIFT, true)
+	await key(KEY_TAB, true)
 	await key(KEY_D, true)
 	scene._process(0.016)
 	await key(KEY_D, false)
-	await key(KEY_SHIFT, false)
-	check(not highway.attached() and highway.lockout > 0, "Shift+direction must defeat the magnetic pull")
+	await key(KEY_TAB, false)
+	check(not highway.attached() and highway.lockout > 0, "Tab+direction must defeat the magnetic pull")
 	var escaped := world.ship.position
 	world.advance(0.2, Vector2(1, 0), 0.0, false, false)
 	check(world.ship.position.distance_to(escaped) > 8, "Breakout must produce actual motion")

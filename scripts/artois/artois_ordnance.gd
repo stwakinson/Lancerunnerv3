@@ -75,7 +75,7 @@ func reset_lock() -> void:
 
 
 func transit_locked() -> bool:
-	return combat.dead or world.cruise or world.highways.attached()
+	return combat.dead or world.cruise or world.cruise_spool > 0 or world.highways.attached()
 
 
 func lock_candidate() -> String:
@@ -128,10 +128,14 @@ func launch() -> bool:
 		notify("MISSILE REQUIRES A 1.5s LOCK / TARGET WITHIN 600 m AND 20 DEGREES")
 		return false
 	if missile_cooldown > 0: return false
+	if combat.defence.energy < 12.0:
+		notify("INSUFFICIENT ENERGY / MISSILE REQUIRES 12")
+		return false
 	var error := market.consume(selected_missile)
 	if not error.is_empty():
 		notify(error)
 		return false
+	combat.defence.spend(12.0)
 	var slot: int = combat.weapons.find("missile_rack")
 	var at: Vector3 = world.ship.global_transform * Vector3(-1.05 if slot == 0 else 1.05, 0.12, -3)
 	var target: Node3D = combat.enemy(lock_id)
@@ -164,7 +168,7 @@ func use_recovery(id: String) -> bool:
 	if recovery_cooldown > 0:
 		notify("RECOVERY SERVITORS RECHARGING")
 		return false
-	var full: bool = combat.hull >= combat.HULL_MAX if id == "armourer_mites" else combat.shield >= combat.shield_max
+	var full: bool = (combat.hull >= combat.HULL_MAX and combat.defence.armour >= combat.defence.ARMOUR_MAX) if id == "armourer_mites" else combat.shield >= combat.shield_max
 	if full:
 		notify("HULL ALREADY SOUND" if id == "armourer_mites" else "SHIELDS ALREADY FULL")
 		return false
@@ -172,10 +176,12 @@ func use_recovery(id: String) -> bool:
 	if not error.is_empty():
 		notify(error)
 		return false
-	if id == "armourer_mites": combat.hull = minf(combat.HULL_MAX, combat.hull + 60.0)
+	if id == "armourer_mites":
+		combat.hull = minf(combat.HULL_MAX, combat.hull + 60.0)
+		combat.defence.armour = minf(combat.defence.ARMOUR_MAX, combat.defence.armour + 40.0)
 	else:
 		combat.shield = minf(combat.shield_max, combat.shield + 90.0)
 		combat._shield_flash = 0.25
 	recovery_cooldown = 3.0
-	notify("ARMOURER'S MITES / HULL REPAIRED" if id == "armourer_mites" else "WARD PHIAL / SHIELDS RESTORED")
+	notify("ARMOURER'S MITES / HULL + ARMOUR REPAIRED" if id == "armourer_mites" else "WARD PHIAL / SHIELDS RESTORED")
 	return true
