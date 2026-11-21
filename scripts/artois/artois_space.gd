@@ -1,6 +1,7 @@
 class_name ArtoisSpace
 extends BenchmarkSpace
 
+const Embry = preload("res://scripts/artois/artois_embry.gd")
 const Traffic = preload("res://scripts/artois/artois_traffic.gd")
 const Highways = preload("res://scripts/artois/artois_highways.gd")
 const Combat = preload("res://scripts/artois/artois_combat.gd")
@@ -12,6 +13,7 @@ const DOCK_RANGE := 90.0
 const DOCK_SPEED := 20.0
 const DOCK_ID := "planet_dock"
 
+var embry_art := Embry.new()
 var traffic: ArtoisTraffic
 var highways: ArtoisHighways
 var combat: ArtoisCombat
@@ -74,7 +76,7 @@ func _build_world() -> void:
 	camera.near = 0.3
 	camera.far = 40000
 	for entry in layout.locations:
-		var node := _shapes.make(entry)
+		var node := embry_art.make_station() if entry.id == "embry" else _shapes.make(entry)
 		node.position = layout.world(entry)
 		add_child(node)
 		landmarks[entry.id] = node
@@ -93,6 +95,12 @@ func _build_world() -> void:
 
 
 func _build_field(field: Dictionary) -> void:
+	if field.get("visual_profile", "") == "column_canyon":
+		var node := embry_art.make_field(self, field)
+		add_child(node)
+		field_nodes[field.id] = node
+		asteroid_count += node.multimesh.instance_count
+		return
 	var random := RandomNumberGenerator.new()
 	random.seed = int(field.seed)
 	var source := SphereMesh.new()

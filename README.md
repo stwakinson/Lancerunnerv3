@@ -16,6 +16,8 @@ Captain Fluellen's five-enemy test contract on the planet. See
 [Golden filament highways](docs/artois-highways.md) provide 10× in-system travel
 through paired rings, with directional boost breakouts. North, east and south
 hyper gates are present but offline with null destinations; the demo stays in Artois.
+[Embry's column canyon](docs/embry-art.md) combines towering rectangular rocks
+with an orange industrial station nestled between them.
 [Thirty named locals](docs/artois-locals.md) now trade, salvage, prowl and flee
 inside Artois. Left click or press V to inspect nearby ships and their orders.
 [Cursor guns and ordnance](docs/artois-ordnance.md) add locked missile variants,

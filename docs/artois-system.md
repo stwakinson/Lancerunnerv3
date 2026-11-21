@@ -78,7 +78,7 @@ See [highway controls and routes](artois-highways.md).
 | Region | Placeholders |
 | --- | --- |
 | North | Calais Gate, Border Post, Renty |
-| Embry field | Embry Village and its elliptical asteroid volume |
+| Embry field | Orange industrial Embry station nested among stepped rectangular asteroid columns |
 | West | Asques Gate, Caulers Village, Agincourt Castle |
 | Central wreck field | Arras ruined planet gate, ruined Fressin Castle, wrecked shipyard, ruined merchant guild |
 | Maroeuil field | Long asteroid volume, northern ship wreck and southern freebooter base |
@@ -92,6 +92,9 @@ The two unfinished southern map labels remain named **Southern Outpost
 latest map's working labels (`sdfsdfsdf` and `sdfsdf`); the earlier drawing
 identified a capital ship in the second position. These names are not final
 story decisions. The castle's later battle is not scripted.
+
+Embry has a dedicated [column-canyon art profile](embry-art.md), preserving its
+map position and traffic harbour while replacing its generic rocks and station.
 
 ## Layout and code
 
