@@ -53,7 +53,7 @@ func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 		"role": role, "hostile": hostile, "node": node, "home": home, "origin": home, "destination": home,
 		"cargo": "Empty recovery hold" if role == "salvager" else profile.cargo[index % profile.cargo.size()], "hull": float(profile.hull), "shield": float(profile.shield),
 		"radius": float(profile.radius), "alive": true, "velocity": Vector3.ZERO, "state": "DEPARTING", "path": [],
-		"cruise_charge": 0.0, "cruise": false, "energy": 100.0, "leg": 0, "timer": 0.0, "decision": float(index) * 0.17, "target": "", "provoked": false,
+		"join_leg": -1, "cruise_charge": 0.0, "cruise": false, "energy": 100.0, "leg": 0, "timer": 0.0, "decision": float(index) * 0.17, "target": "", "provoked": false,
 		"threat": "", "disruption": 0.0, "fire_wait": 0.8 + index * 0.25, "trips": 0, "distance": 0.0,
 		"salvage_next": role == "salvager", "patrol_step": index}
 	actors[id] = actor
@@ -218,10 +218,13 @@ func _civilian_step(actor: Dictionary, delta: float) -> void:
 		return
 	var leg: Dictionary = actor.path[actor.leg]
 	actor.state = "FILAMENT TRANSIT" if leg.mode == "filament" else ("SALVAGE RUN" if actor.role == "salvager" else "LOCAL DELIVERY")
+	if leg.mode == "filament" and actor.join_leg != actor.leg:
+		actor.join_leg = actor.leg
+		world.highways.joining.emit_join(actor.node, int(leg.route), float(leg.sign))
+	elif leg.mode != "filament": actor.join_leg = -1
 	var speed := 350.0 if leg.mode == "filament" else float(profiles[actor.faction].speed)
 	if _move(actor, leg.position, speed, delta):
 		actor.leg += 1
-		if leg.mode == "filament": actor.velocity = (actor.velocity as Vector3).limit_length(minf(world.NORMAL_SPEED, float(profiles[actor.faction].speed)))
 
 
 func _hostile_step(actor: Dictionary, delta: float) -> void:
@@ -252,7 +255,9 @@ func _move(actor: Dictionary, target: Vector3, speed: float, delta: float) -> bo
 	if offset.length() < 12:
 		actor.node.position = target
 		return true
-	if speed < 200 and not actor.cruise: speed = minf(speed, world.NORMAL_SPEED)
+	var filament := speed > 200
+	if filament: speed = minf(speed, sqrt(world.highways.EXIT_SPEED * world.highways.EXIT_SPEED + 2.0 * world.highways.ACCELERATION * offset.length()))
+	if not filament and speed < 200 and not actor.cruise: speed = minf(speed, world.NORMAL_SPEED)
 	if actor.disruption > 0: speed = minf(speed, 12.0)
 	var desired := offset.normalized() * speed
 	# A small local separation force avoids identical centreline formations.
@@ -265,7 +270,7 @@ func _move(actor: Dictionary, target: Vector3, speed: float, delta: float) -> bo
 				desired += away.normalized() * 25.0 * (1.0 - away.length() / clearance)
 	desired = desired.limit_length(speed)
 	var velocity: Vector3 = actor.velocity
-	velocity = velocity.move_toward(desired, delta * (210.0 if speed > 200 else (110.0 if actor.cruise else 70.0)))
+	velocity = velocity.move_toward(desired, delta * (110.0 if filament or actor.cruise else 70.0))
 	if actor.disruption > 0: velocity = velocity.limit_length(12)
 	var next := from + velocity * delta
 	if (target - from).dot(target - next) <= 0:

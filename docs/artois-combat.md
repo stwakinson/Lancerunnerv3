@@ -9,7 +9,7 @@ Accept the test sortie, close the conversation and launch with Enter.
 **G** follows the selected mission waypoint; **M** also lists and marks the site.
 Five freebooters wait there and start attacking when approached within **420 m**.
 
-Move the mouse to steer; press Enter for a free cursor and left click an enemy to track it. **Y** aligns, **T** cycles targets,
+Move the mouse to steer; press Space for a free cursor and left click an enemy to track it. **Y** aligns, **T** cycles targets,
 and **LMB** fires fitted guns toward the cursor within a 30-degree forward
 arc. **Z** selects missile ammunition and **F** launches after a 1.5-second lock. Destroy all five, then **G** navigates to the automatically selected
 planet port. Land, speak to Fluellen and claim **1,500 credits**. Payment uses the

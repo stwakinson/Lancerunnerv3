@@ -1,6 +1,11 @@
 class_name ArtoisHighways
 extends Node3D
 ## Bidirectional filament routes, swept gate capture and a damped magnetic pull.
+const Joining = preload("res://scripts/artois/artois_filament_join.gd")
+const LANE_HEIGHT := 40.0
+const ACCELERATION := 110.0
+const EXIT_SPEED := 85.0
+var joining: Node3D
 const SPEED := 350.0 # Ten times standard 35 m/s thrust.
 const ENTRY_RADIUS := 18.0
 const REENTRY_DELAY := 1.4
@@ -24,13 +29,24 @@ func configure(space: Node3D) -> void:
 		var route := {"id": entry.id, "name": entry.name, "start": start, "end": end, "axis": axis, "length": start.distance_to(end)}
 		routes.append(route)
 		for endpoint in ["a", "b"]:
-			var id: String = "highway_" + str(entry.id) + "_" + endpoint
-			var at := start if endpoint == "a" else end
-			var inward := axis if endpoint == "a" else -axis
-			gates[id] = {"position": at, "axis": inward, "route": routes.size() - 1, "sign": 1.0 if endpoint == "a" else -1.0}
-			var gate := _gate(id, at, inward)
-			world.landmarks[id] = gate
-		_build_filament(route)
+			for entrance in [true, false]:
+				var id: String = "highway_" + str(entry.id) + "_" + endpoint + ("" if entrance else "_exit")
+				var sign := (1.0 if endpoint == "a" else -1.0) * (1.0 if entrance else -1.0)
+				var at := (start if endpoint == "a" else end) + Vector3.UP * LANE_HEIGHT * sign
+				var inward := axis * sign
+				gates[id] = {"position": at, "axis": inward, "route": routes.size() - 1, "sign": sign, "entrance": entrance}
+				var gate := _gate(id, at, inward)
+				world.landmarks[id] = gate
+		for sign in [1.0, -1.0]:
+			var visual: Dictionary = route.duplicate()
+			visual.start += Vector3.UP * LANE_HEIGHT * sign
+			visual.end += Vector3.UP * LANE_HEIGHT * sign
+			visual.sign = sign
+			_build_filament(visual)
+	joining = Joining.new()
+	add_child(joining)
+	joining.highways = self
+
 
 
 func attached() -> bool:
@@ -49,14 +65,18 @@ func approach_position(id: String) -> Vector3:
 func tick(delta: float) -> void:
 	lockout = maxf(0.0, lockout - delta)
 	_time += delta
-	for material in _filament_materials: material.set_shader_parameter("ship_position", world.ship.position)
+	for material in _filament_materials:
+		material.set_shader_parameter("ship_position", world.ship.position)
+		material.set_shader_parameter("clock", _time)
+	joining.advance(delta)
 	for i in _sparks.size():
-		var route := routes[i]
+		var route := routes[i / 2]
+		var sign := 1.0 if i % 2 == 0 else -1.0
 		var basis := _axis_basis(route.axis)
 		for j in _sparks[i].multimesh.instance_count:
-			var phase := fposmod(float(j) / 28.0 + _time * (0.14 if j % 2 == 0 else -0.14), 1.0)
+			var phase := fposmod(float(j) / 28.0 + _time * (0.14 * sign), 1.0)
 			var offset := basis.x * sin(j * 2.4 + _time) * 3 + basis.z * cos(j * 1.7 + _time) * 3
-			var at: Vector3 = route.start.lerp(route.end, phase) + offset
+			var at: Vector3 = lane_point(i / 2, route.length * phase, sign) + offset
 			_sparks[i].multimesh.set_instance_transform(j, Transform3D(Basis.IDENTITY, at))
 
 
@@ -67,6 +87,7 @@ func try_enter(from: Vector3, to: Vector3) -> bool:
 	var chosen := ""
 	for id in gates:
 		var gate: Dictionary = gates[id]
+		if not gate.entrance: continue
 		var towards: float = movement.dot(gate.axis)
 		if towards <= 0.00001: continue
 		var before: float = (from - gate.position).dot(gate.axis)
@@ -87,9 +108,10 @@ func try_enter(from: Vector3, to: Vector3) -> bool:
 	world.autopilot = false
 	world.dodge_velocity = Vector3.ZERO
 	world.reset_taps()
-	var destination := "highway_" + str(routes[active_route].id) + ("_b" if travel_sign > 0 else "_a")
+	var destination := "highway_" + str(routes[active_route].id) + ("_b_exit" if travel_sign > 0 else "_a_exit")
 	world.select_target(destination)
-	world.arrival_message = "FILAMENT CAPTURE / SHIFT + DIRECTION TO BREAK FREE"
+	joining.emit_join(world.ship, active_route, travel_sign)
+	world.arrival_message = "FILAMENT CAPTURE / TAB + DIRECTION TO BREAK FREE"
 	return true
 
 
@@ -102,20 +124,21 @@ func advance(delta: float, steering: Vector2) -> void:
 	var step := delta / steps
 	for i in steps:
 		var along: float = (world.ship.position - route.start).dot(route.axis)
-		var centre: Vector3 = route.start + route.axis * along
+		var centre := lane_point(active_route, along, travel_sign)
 		var offset: Vector3 = world.ship.position - centre
 		var forward_speed: float = world.velocity.dot(axis)
 		var lateral: Vector3 = world.velocity - axis * forward_speed
 		var input: Vector3 = world.ship.basis.x * steering.x + world.ship.basis.y * steering.y
 		input -= axis * input.dot(axis)
 		lateral += (-offset * 22.0 - lateral * 8.0 + input * 45.0) * step
-		forward_speed = move_toward(forward_speed, SPEED, 210.0 * step)
+		var remaining: float = route.length - along if travel_sign > 0 else along
+		var desired_speed := minf(SPEED, sqrt(EXIT_SPEED * EXIT_SPEED + 2.0 * ACCELERATION * maxf(0, remaining)))
+		forward_speed = move_toward(forward_speed, desired_speed, ACCELERATION * step)
 		world.velocity = axis * forward_speed + lateral
 		world.ship.position += world.velocity * step
 		var progress: float = (world.ship.position - route.start).dot(route.axis)
 		if (travel_sign > 0 and progress >= float(route.length)) or (travel_sign < 0 and progress <= 0):
-			world.ship.position = (route.end if travel_sign > 0 else route.start) + axis * 25.0
-			world.velocity = axis * world.NORMAL_SPEED
+			# Preserve the integrated position and velocity: manual thrust brakes from here.
 			world.arrival_message = "FILAMENT ARRIVAL / MANUAL FLIGHT"
 			reset()
 			break
@@ -137,13 +160,14 @@ func escape(push: Vector3) -> void:
 func reset() -> void:
 	active_route = -1
 	lockout = REENTRY_DELAY
+	if joining != null: joining.clear_ship(world.ship)
 
 
 func status() -> String:
 	if not attached(): return ""
 	var route := routes[active_route]
-	var end: Vector3 = route.end if travel_sign > 0 else route.start
-	return "FILAMENT 10x / %s / %d m TO EXIT / SHIFT + DIRECTION TO BREAK FREE" % [route.name, roundi(world.ship.position.distance_to(end))]
+	var end: Vector3 = (route.end if travel_sign > 0 else route.start) + Vector3.UP * LANE_HEIGHT * travel_sign
+	return "FILAMENT 10x / %s / %d m TO EXIT / TAB + DIRECTION TO BREAK FREE" % [route.name, roundi(world.ship.position.distance_to(end))]
 
 
 func _axis_basis(axis: Vector3) -> Basis:
@@ -166,7 +190,7 @@ func _gate(id: String, at: Vector3, axis: Vector3) -> Node3D:
 		torus.rings = 48
 		torus.ring_segments = 10
 		ring.mesh = torus
-		ring.material_override = world._material("f6b84f" if i == 0 else "756043", i == 0)
+		ring.material_override = world._material(("f6b84f" if not id.ends_with("_exit") else "a2deec") if i == 0 else "756043", i == 0)
 		ring.position.y = -2 if i == 0 else 2
 		root.add_child(ring)
 	for i in 4:
@@ -190,6 +214,7 @@ func _build_filament(route: Dictionary) -> void:
 		mesh.bottom_radius = radius
 		mesh.height = route.length
 		mesh.radial_segments = 12
+		mesh.rings = maxi(8, ceili(float(route.length) / 20.0))
 		var node := MeshInstance3D.new()
 		node.mesh = mesh
 		node.position = centre
@@ -197,6 +222,7 @@ func _build_filament(route: Dictionary) -> void:
 		var material := ShaderMaterial.new()
 		material.shader = preload("res://shaders/artois/filament.gdshader")
 		material.set_shader_parameter("span", route.length)
+		material.set_shader_parameter("flow_sign", route.sign)
 		material.set_shader_parameter("density", 0.85 if radius < 1 else (0.16 if radius < 3 else 0.07))
 		node.material_override = material
 		_filament_materials.append(material)
@@ -216,3 +242,13 @@ func _build_filament(route: Dictionary) -> void:
 	motes.material_override = world._material("ffe0a1", true)
 	add_child(motes)
 	_sparks.append(motes)
+
+
+func lane_point(route_index: int, along: float, sign: float) -> Vector3:
+	var route := routes[route_index]
+	var distance := clampf(along, 0, route.length)
+	var envelope := sin(PI * distance / float(route.length))
+	var basis := _axis_basis(route.axis)
+	var weave_x := (sin(distance * 0.025 + _time * 0.65) * 3.0 + sin(distance * 0.061 - _time * 0.8) * 1.1) * envelope
+	var weave_z := cos(distance * 0.019 - _time * 0.5) * 2.3 * envelope
+	return route.start + route.axis * distance + Vector3.UP * LANE_HEIGHT * sign + basis.x * weave_x + basis.z * weave_z

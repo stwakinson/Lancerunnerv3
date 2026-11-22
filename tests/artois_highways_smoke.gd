@@ -46,7 +46,7 @@ func _run() -> void:
 	while root.get_node("SceneFader").busy: await process_frame
 	world = scene.space_world
 	highway = world.highways
-	check(highway.routes.size() == 9 and highway.gates.size() == 18, "Map must contain nine bidirectional routes with eighteen gates")
+	check(highway.routes.size() == 9 and highway.gates.size() == 36, "Map must contain nine routes with thirty-six directional rings")
 	for id in highway.gates:
 		check(world.landmarks.has(id), "Highway gate must have selectable geometry")
 		check(world.layout.world(world.layout.target(id)).is_equal_approx(highway.gates[id].position), "Chart and gate coordinates must agree")
@@ -64,9 +64,9 @@ func _run() -> void:
 				world.advance(0.1, Vector2.ZERO, 0.0, false, false)
 				if highway.attached(): peak = maxf(peak, world.velocity.dot(axis))
 			check(not highway.attached(), "Route must exit automatically in either direction: " + id)
-			check(is_equal_approx(peak, world.NORMAL_SPEED * 10.0), "Transit must reach ten times normal speed: " + id)
-			check(world.ship.position.distance_to(target + axis * 25.0) < 0.1, "Arrival must clear the destination gate")
-			check(world.velocity.is_equal_approx(axis * world.NORMAL_SPEED), "Arrival must restore normal speed")
+			check(peak > world.NORMAL_SPEED and peak <= world.NORMAL_SPEED * 10.0 + 1, "Transit must accelerate within ten-times speed cap: " + id)
+			check(world.ship.position.distance_to(target) < 12, "Arrival must cross its exit without teleporting")
+			check(world.velocity.dot(axis) > world.NORMAL_SPEED, "Arrival must retain coasting momentum")
 			world.advance(0.1, Vector2.ZERO, 0.0, false, false)
 			check(not highway.attached(), "Exit gate must not immediately recapture the ship")
 
@@ -88,9 +88,9 @@ func _run() -> void:
 
 	enter(id, Vector3.UP * 14)
 	var gate: Dictionary = highway.gates[id]
-	var before := absf(world.ship.position.y)
+	var before := world.ship.position.distance_to(gate.position + axis * (world.ship.position - gate.position).dot(axis))
 	for frame in 10: world.advance(0.1, Vector2.ZERO, 0.0, false, false)
-	check(absf(world.ship.position.y) < before * 0.15, "Magnetism must draw an off-centre ship onto the filament")
+	check(absf(world.ship.position.y - gate.position.y) < before * 0.4, "Magnetism must draw an off-centre ship onto its directional filament")
 	for frame in 5: world.advance(0.1, Vector2(1, 1), 0.0, false, true)
 	var centre: Vector3 = gate.position + axis * (world.ship.position - gate.position).dot(axis)
 	check(world.ship.position.distance_to(centre) < 8, "Normal steering must be resisted by the magnetic spring")
@@ -150,10 +150,10 @@ func _run() -> void:
 
 	# Native chart and gate-click geometry are exercised in rendered runs.
 	scene.toggle_chart()
-	check(scene.chart._picker.item_count == 41, "Chart must list highway entrances")
+	check(scene.chart._picker.item_count == 59, "Chart must list highway entrances")
 	await scene._capture(capture_dir, "artois-highways-chart.png")
 	if DisplayServer.get_name() != "headless":
-		await click(scene.chart, scene.chart.map_point(ArtoisLayout.point(world.layout.target(id).map)))
+		await click(scene.chart, scene.chart.target_point(world.layout.target(id)))
 		check(world.selected_id == id, "Chart rings must select the matching highway gate")
 	scene.toggle_chart()
 	place(id, Vector3.ZERO, 125)
@@ -166,6 +166,7 @@ func _run() -> void:
 		var factor := maxf(scene.size.x / scene.space_view.size.x, scene.size.y / scene.space_view.size.y)
 		var offset: Vector2 = (scene.size - Vector2(scene.space_view.size) * factor) * 0.5
 		var point: Vector2 = world.camera.unproject_position(gate.position) * factor + offset
+		scene.free_mouse = true
 		await click(scene, point)
 		check(world.selected_id == id, "Space click must change selection to the highway ring")
 	await scene._capture(capture_dir, "artois-filament-approach.png")

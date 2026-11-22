@@ -1,6 +1,6 @@
 # Golden filament highways
 
-Artois has **nine bidirectional highway links**, with eighteen golden entry rings.
+Artois has **nine bidirectional highway links**, each split into upper/lower one-way lanes with 36 rings (18 entrances and 18 exits).
 They follow the map's north–south spine and its western Asques/Caulers branch, plus the eastern hyper-gate approach.
 The existing blue system-exit gate placeholders remain separate landmarks.
 
@@ -9,8 +9,8 @@ The existing blue system-exit gate placeholders remain separate landmarks.
 1. Press **M** and select a golden ring, or choose a highway gate in the destination list.
 2. Choose **NAVIGATE** (or close the chart and press **G**). The ship stops outside that entrance, facing along its filament.
 3. Fly **W** through the open ring. Crossing within 18 m of its centre captures the ship.
-4. The filament pulls the ship toward its centreline and accelerates it to **350 m/s**, ten times ordinary thrust speed.
-5. At the far ring, the ship clears the exit and returns to normal flight at 35 m/s. Hold W to continue toward the next ring, or turn toward the nearby settlement.
+4. The filament pulls the ship toward its centreline and smoothly accelerates it up to **350 m/s**, ten times ordinary thrust speed.
+5. The ship brakes progressively toward the far ring, then coasts out with its remaining momentum. Normal thrust/braking gradually restores ordinary flight; there is no exit speed reset.
 
 To leave early, **hold Tab plus a movement direction** (W/S/A/D/Q/E), or
 **double-tap a movement key** for a directional dodge. The boost breaks the pull,
@@ -19,7 +19,7 @@ attached**; in ordinary flight it still engages cruise. Releasing boost restores
 normal control. Rejoining requires entering a gate again; touching a filament
 halfway along it does not capture the ship.
 
-Normal steering is possible but resisted by a damped magnetic spring. RMB can
+Normal steering is possible but resisted by a damped magnetic spring. The mouse can
 steer the ship while the stream gradually aligns it along the route. Braking or
 pressing C does not turn off the magnetic field. Boosting is the escape mechanic.
 Weapons and docking are unavailable during transit. Opening the chart pauses
@@ -117,3 +117,5 @@ crossing, the chart entries and the eastern filament connection.
 ![Eastern dormant gate](artois-hyper-gate-previews/artois-east-hyper-gate.png)
 
 See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.
+
+See [directional filament lanes](directional-filaments.md) for lane directions, weaving, joining branches and smooth speed transitions.

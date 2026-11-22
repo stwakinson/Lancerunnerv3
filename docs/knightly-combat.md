@@ -63,4 +63,4 @@ on the project's declared Godot 4.7 target was not available here.
 ![Forward knight shield and scanner](knightly-combat-previews/artois-knight-shield.png)
 ![Cruise engine spool particles](knightly-combat-previews/artois-cruise-spool.png)
 
-The latest [mouse flight guide](mouse-flight.md) describes Enter free cursor, J docking and the Escape pause menu.
+The latest [mouse flight guide](mouse-flight.md) describes Space free cursor, J docking and the Escape pause menu.

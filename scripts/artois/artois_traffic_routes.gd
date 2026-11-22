@@ -11,26 +11,27 @@ var filaments := {}
 func configure(space: Node3D) -> void:
 	world = space
 	for route in world.highways.routes:
-		nodes.append(route.start)
-		nodes.append(route.end)
+		var prefix: String = "highway_" + str(route.id)
+		for suffix in ["_a", "_b_exit", "_b", "_a_exit"]:
+			nodes.append(world.highways.gates[prefix + suffix].position)
 	for i in nodes.size():
 		var row := []
 		var next := []
 		for j in nodes.size():
 			var distance := nodes[i].distance_to(nodes[j])
-			row.append(0.0 if i == j else (distance / 50.0 if distance < 600 else INF))
+			var opposite_ends := i / 4 == j / 4 and ((i % 4 in [0, 3]) != (j % 4 in [0, 3]))
+			if opposite_ends: distance = INF
+			row.append(0.0 if i == j else (distance / 35.0 if distance < 600 else INF))
 			next.append(j if i != j and distance < 600 else -1)
 		costs.append(row)
 		next_hop.append(next)
 	for i in world.highways.routes.size():
-		var a: int = i * 2
-		var b: int = a + 1
-		costs[a][b] = nodes[a].distance_to(nodes[b]) / 350.0
-		costs[b][a] = costs[a][b]
-		next_hop[a][b] = b
-		next_hop[b][a] = a
-		filaments[Vector2i(a, b)] = true
-		filaments[Vector2i(b, a)] = true
+		for offset in [0, 2]:
+			var a: int = i * 4 + offset
+			var b: int = a + 1
+			costs[a][b] = nodes[a].distance_to(nodes[b]) / 350.0 + 1.5
+			next_hop[a][b] = b
+			filaments[Vector2i(a, b)] = {"route": i, "sign": 1.0 if offset == 0 else -1.0}
 	for k in nodes.size():
 		for i in nodes.size():
 			for j in nodes.size():
@@ -66,7 +67,11 @@ func plan(from: Vector3, destination: Vector3) -> Array:
 			if cursor == end: break
 			var step: int = next_hop[cursor][end]
 			if step < 0: break
-			result.append({"position": nodes[step], "mode": "filament" if filaments.has(Vector2i(cursor, step)) else "flight"})
+			var leg := {"position": nodes[step], "mode": "flight"}
+			if filaments.has(Vector2i(cursor, step)):
+				leg.mode = "filament"
+				leg.merge(filaments[Vector2i(cursor, step)])
+			result.append(leg)
 			cursor = step
 	result.append({"position": destination, "mode": "flight"})
 	return result
