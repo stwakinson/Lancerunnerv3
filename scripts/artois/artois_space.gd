@@ -255,6 +255,8 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 	if cruise_spool > 0:
 		cruise_spool = maxf(0.0, cruise_spool - delta)
 		if cruise_spool == 0: cruise = true
+	combat.ordnance.update_aim()
+	combat.defence.guard_direction = combat.ordnance.pointer_direction if combat.ordnance.cursor_enabled else -ship.global_basis.z
 	combat.defence.advance(delta, combat.guard_requested and not (cruise or cruise_spool > 0 or highways.attached()), combat.dead)
 	boosting = combat.defence.afterburner(delta, boosting and not cruise and cruise_spool == 0 and disruption_remaining <= 0)
 	if boosting: autopilot = false
@@ -275,13 +277,14 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 	_avoid_planet()
 	speed = (velocity + dodge_velocity).length()
 	for i in ship.engines.size():
-		ship.engines[i].scale.z = 1.0 + (0.6 if boosting or cruise or autopilot or highways.attached() else 0.12) * (1.0 + sin(elapsed * 23))
+		ship.engines[i].visible = speed > 0.5
+		ship.engines[i].scale.z = clampf(speed / NORMAL_SPEED, 0, 2) * (1.0 + (0.6 if boosting or cruise or autopilot or highways.attached() else 0.12) * (1.0 + sin(elapsed * 23)))
 	traffic.advance(delta)
 	combat.advance(delta)
 	if firing and not cruise: _fire_shot()
 	camera.fov = lerpf(camera.fov, 66.0 if highways.attached() else (60.0 if cruise or autopilot else (58.0 if boosting else 54.0)), 1.0 - exp(-delta * 3.0))
 	_update_camera(delta)
-	_effects.advance(delta, ship, camera, boosting or cruise or autopilot or highways.attached())
+	_effects.advance(delta, ship, camera, boosting or cruise or autopilot or highways.attached(), clampf(speed / NORMAL_SPEED, 0, 1))
 
 
 func _advance_manual(delta: float, steering: Vector2, thrust: float, boosting: bool) -> void:

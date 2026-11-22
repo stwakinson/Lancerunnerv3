@@ -19,6 +19,7 @@ var missile_cooldown := 0.0
 var recovery_cooldown := 0.0
 var cursor_enabled := false
 var cursor := Vector2.ZERO
+var pointer_direction := Vector3.FORWARD
 var aim_direction := Vector3.FORWARD
 var aim_depth := 350.0
 var aim_clamped := false
@@ -42,6 +43,7 @@ func set_cursor(pixel: Vector2) -> void:
 func update_aim() -> void:
 	var forward: Vector3 = -world.ship.basis.z
 	aim_direction = forward
+	pointer_direction = forward
 	aim_clamped = false
 	var target: Node3D = combat.enemy(world.selected_id)
 	aim_depth = clampf((target.position - world.ship.position).dot(forward), 20.0, 700.0) if target != null else 350.0
@@ -53,6 +55,7 @@ func update_aim() -> void:
 	if denominator > 0.001:
 		var distance: float = (world.ship.position + forward * aim_depth - origin).dot(forward) / denominator
 		if distance > 0: desired = (origin + ray * distance - world.ship.position).normalized()
+	pointer_direction = desired.normalized()
 	aim_clamped = forward.angle_to(desired) > ARC
 	aim_direction = clamp_direction(forward, desired, ARC, world.ship.basis.y)
 

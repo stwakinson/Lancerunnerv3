@@ -6,14 +6,15 @@ Godot 4.7 port of the Unity "ShipGame" space shooter. Open the folder in Godot a
 
 Choose **ARTOIS SYSTEM / EXPLORE** to fly the new map blockout. **M** opens the
 system chart; select a destination and choose **NAVIGATE**. Approach **Agincourt
-Planet Port** within **90 m**, slow below **20 m/s**, then press **Enter** to land.
+Planet Port** within **90 m**, slow below **20 m/s**, then press **J** to land.
 Enter launches back from the planet market. See [the Artois guide](docs/artois-system.md).
 
 Artois also includes double-tap dodges, fitted weapons, regenerating shields and
 Captain Fluellen's five-enemy test contract on the planet.
-[Knightly combat](docs/knightly-combat.md) adds power, armour, a Ctrl-held directional
+[Knightly combat](docs/knightly-combat.md) adds power, armour, a RMB-held, mouse-directed
 shield, cruise spooling, Tab afterburner and a bottom-right scanner. See
 [combat and mission controls](docs/artois-combat.md).
+[Mouse flight](docs/mouse-flight.md): LMB guns, RMB shield, Enter selection cursor and Esc pause menu.
 
 [Golden filament highways](docs/artois-highways.md) provide 10× in-system travel
 through paired rings, with directional boost breakouts. North, east and south

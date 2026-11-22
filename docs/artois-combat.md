@@ -1,6 +1,6 @@
 # Artois combat test sortie
 
-Open **ARTOIS SYSTEM / EXPLORE**. Approach Agincourt Planet Port and press Enter
+Open **ARTOIS SYSTEM / EXPLORE**. Approach Agincourt Planet Port and press J
 (within 90 m, under 20 m/s), or use G to navigate there first.
 
 On the planet, click the blue-coated **Fluellen** contact beside the market
@@ -9,8 +9,8 @@ Accept the test sortie, close the conversation and launch with Enter.
 **G** follows the selected mission waypoint; **M** also lists and marks the site.
 Five freebooters wait there and start attacking when approached within **420 m**.
 
-Use right mouse drag to steer, left click an enemy to track it, **T** to align,
-and **Space** to fire fitted guns toward the cursor within a 30-degree forward
+Move the mouse to steer; press Enter for a free cursor and left click an enemy to track it. **Y** aligns, **T** cycles targets,
+and **LMB** fires fitted guns toward the cursor within a 30-degree forward
 arc. **Z** selects missile ammunition and **F** launches after a 1.5-second lock. Destroy all five, then **G** navigates to the automatically selected
 planet port. Land, speak to Fluellen and claim **1,500 credits**. Payment uses the
 existing atomic market save and cannot be claimed twice for the same sortie.

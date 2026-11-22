@@ -66,15 +66,18 @@ func _run() -> void:
 	check(scene.Picking.pick(space, centre) == "asques_gate", "Picking must include gate openings")
 	if DisplayServer.get_name() != "headless":
 		space.select_target("embry")
+		scene.free_mouse = true
 		await _click(scene, scene.size * 0.5)
 		check(space.selected_id == "asques_gate", "Real left clicks must select the object under the cursor")
 		scene.toggle_pixels()
 		space.select_target("embry")
+		scene.free_mouse = true
 		await _click(scene, scene.size * 0.5)
 		check(space.selected_id == "asques_gate", "Selection must also work at native rendering resolution")
 		scene.toggle_pixels()
 		space.select_target("embry")
 		scene.toggle_chart()
+		scene.free_mouse = true
 		await _click(scene, scene.size * 0.5)
 		check(space.selected_id != "asques_gate", "Chart UI must prevent clicks reaching space")
 		await _key(KEY_SHIFT, true)
@@ -95,6 +98,7 @@ func _run() -> void:
 	check(space.ship.position == paused_position, "Chart must pause flight")
 	await scene._capture(capture_dir, "artois-chart.png")
 	if DisplayServer.get_name() != "headless":
+		scene.free_mouse = true
 		await _click(scene.chart, scene.chart.map_point(Layout.point(layout.target("calais_gate").map)))
 		check(space.selected_id == "calais_gate", "Clicking Calais on the chart must select it")
 		for button in scene.chart.find_children("*", "Button", true, false):
@@ -157,6 +161,8 @@ func _run() -> void:
 	for samples in space._effects._samples:
 		check(samples.is_empty(), "Launch must clear old exhaust history")
 	scene._menu()
+	check(scene.pause_menu.visible, "Menu action must open pause before quitting")
+	scene.pause_menu.get_child(0).get_child(2).pressed.emit()
 	await process_frame
 	await process_frame
 	var menu := current_scene

@@ -139,6 +139,7 @@ func _run() -> void:
 
 	# Fight the actual moving ships using equipped projectiles, not direct kills.
 	# Repair between isolated engagements so this is a deterministic hit test.
+	combat.ordnance.cursor_enabled = false # This fixture steers the nose directly, independent of OS pointer.
 	for id in ["patrol_1", "patrol_2", "patrol_3", "patrol_4", "patrol_5"]:
 		world.select_target(id)
 		for frame in 240:

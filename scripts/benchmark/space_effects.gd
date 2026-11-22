@@ -21,7 +21,7 @@ func _ready() -> void:
 		_ribbons.append(ribbon)
 
 
-func advance(delta: float, ship: Node3D, camera: Camera3D, boosting: bool) -> void:
+func advance(delta: float, ship: Node3D, camera: Camera3D, boosting: bool, intensity: float = 1.0) -> void:
 	_sample_wait -= delta
 	for lane in 2:
 		var history: Array = _samples[lane]
@@ -30,9 +30,10 @@ func advance(delta: float, ship: Node3D, camera: Camera3D, boosting: bool) -> vo
 			sample.position += ship.global_basis.z * delta * (22.0 if boosting else 9.0)
 		while not history.is_empty() and (history.back().age > LIFETIME or history.size() >= CAPACITY):
 			history.pop_back()
-		if _sample_wait <= 0.0:
+		if _sample_wait <= 0.0 and intensity > 0.01:
 			var nozzle := ship.to_global(Vector3(-0.48 if lane == 0 else 0.48, 0, 3.12))
 			history.push_front({"position": nozzle, "age": 0.0})
+		_ribbons[lane].transparency = 1.0 - clampf(intensity, 0, 1)
 		_rebuild(lane, camera, boosting)
 	if _sample_wait <= 0.0:
 		_sample_wait = 1.0 / 45.0
@@ -41,6 +42,7 @@ func advance(delta: float, ship: Node3D, camera: Camera3D, boosting: bool) -> vo
 func _rebuild(lane: int, camera: Camera3D, boosting: bool) -> void:
 	var history: Array = _samples[lane]
 	if history.size() < 2:
+		_ribbons[lane].mesh = null
 		return
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)

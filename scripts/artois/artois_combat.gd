@@ -182,18 +182,21 @@ func advance(delta: float) -> void:
 			continue
 		if distance > 0.1:
 			var direction := to_player / distance
-			var cruising := distance > 300 and disruption <= 0
+			var charge := float(fighter.get_meta("cruise_charge", 0.0))
+			charge = charge + delta if distance > 300 and disruption <= 0 else 0.0
+			fighter.set_meta("cruise_charge", charge)
+			var cruising: bool = charge >= world.CRUISE_SPOOL_TIME
 			fighter.set_meta("cruise", cruising)
-			var desired := direction * ((130.0 if cruising else 26.0) if distance > 130 else (-18.0 if distance < 75 else 0.0))
+			var desired := direction * ((175.0 if cruising else 26.0) if distance > 130 else (-18.0 if distance < 75 else 0.0))
 			if disruption > 0: desired = desired.limit_length(12.0)
 			var previous: Vector3 = fighter.get_meta("velocity")
-			var velocity := previous.move_toward(desired, delta * 32.0)
+			var velocity := previous.move_toward(desired, delta * (110.0 if cruising else 32.0))
 			fighter.position += velocity * delta
 			fighter.set_meta("velocity", velocity)
 			var up := Vector3.RIGHT if absf(direction.y) > 0.98 else Vector3.UP
-			fighter.basis = Basis(fighter.basis.orthonormalized().get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * 2.5))).scaled(Vector3.ONE * 1.6)
+			fighter.basis = Basis(fighter.basis.orthonormalized().get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * (0.45 if cruising else 2.5)))).scaled(Vector3.ONE * 1.6)
 		var wait := float(fighter.get_meta("cooldown")) - delta
-		if wait <= 0 and distance < 350:
+		if wait <= 0 and distance < 350 and not fighter.get_meta("cruise", false) and float(fighter.get_meta("cruise_charge", 0.0)) == 0:
 			var aim: Vector3 = world.ship.position + world.velocity * minf(distance / 150.0, 0.6)
 			var shot := _projectile(fighter.position - fighter.basis.z * 5, fighter.position.direction_to(aim) * 110.0, 26.0, "ff7059", 3.5)
 			hostile_shots.append(shot)

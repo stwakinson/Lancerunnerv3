@@ -9,10 +9,10 @@ their existing controls and combat.
 | Shift+W or C | Start 1.8-second cruise spool; engine particles build before 175 m/s cruise |
 | S, C, X | Cancel cruise or its spool (X also brakes) |
 | Tab (hold) | Afterburner, up to 105 m/s, consuming 25 energy/s |
-| Ctrl (hold) | Raise the directional knight shield |
+| RMB (hold) | Raise the directional knight shield |
 | T | Cycle system destinations, patrol enemies and nearby local ships |
 | Y | Align with selected target |
-| Space | Fire fitted primary guns within the existing cursor firing arc |
+| LMB | Fire fitted primary guns within the existing cursor firing arc |
 | Double-tap W/S/A/D/Q/E | Existing local-direction dodge; no energy cost |
 | B / N | Armourer's Mites / Ward Phial |
 
@@ -29,10 +29,10 @@ release before restarting. Missiles cost 12 energy on successful launch and reta
 Patrol rounds now travel at 110 m/s and deal 26 damage; local attackers deal 22.
 These are initial tuning values; playtesting remains necessary for combat feel.
 
-Holding Ctrl blocks 95% of hits arriving within a 120-degree forward cone.
+Holding RMB blocks 95% of hits arriving within a 120-degree cone centred on mouse aim.
 Upkeep costs 14 energy/s, plus 0.45 energy per blocked damage point. Insufficient
 power limits the amount blocked; an exhausted guard drops. The visible heater
-shield follows the ship, so rear and flank attacks remain dangerous. Guns may
+shield follows the pointer, so rear and flank attacks remain dangerous. Guns may
 fire while guarding, competing for the same reserve.
 
 Remaining damage reaches the passive regenerating ward, then 80 points of
@@ -57,8 +57,10 @@ modal pause, scanner rotation and a real projectile dodged versus stationary hit
 Godot 4.6.3 headless checks passed: `artois_knightly_smoke`, `artois_smoke`,
 `artois_combat_smoke`, `artois_ordnance_smoke`, `artois_highways_smoke` and
 `artois_traffic_smoke`. The knightly smoke also passed with rendered OpenGL
-Compatibility, including physical Tab/T/S/Ctrl inputs and chart pause. Forward+
+Compatibility, including physical Tab/T/S/RMB inputs and chart pause. Forward+
 on the project's declared Godot 4.7 target was not available here.
 
 ![Forward knight shield and scanner](knightly-combat-previews/artois-knight-shield.png)
 ![Cruise engine spool particles](knightly-combat-previews/artois-cruise-spool.png)
+
+The latest [mouse flight guide](mouse-flight.md) describes Enter free cursor, J docking and the Escape pause menu.

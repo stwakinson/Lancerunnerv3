@@ -26,15 +26,15 @@ profile. An open shop blocks launch.
 | W / S | Forward / reverse thrust |
 | A / D | Strafe |
 | Q / E | Descend / climb along the ship's local up axis |
-| Right mouse drag | Steer yaw and pitch |
+| Mouse | Steer toward the pointer in flight mode |
 | Tab | Afterburner (25 energy/s) |
 | Shift + W | Spool for 1.8s then engage latched forward cruise at 175 m/s (5× normal); weapons locked |
-| Ctrl (hold) | Raise forward knight shield; drains energy |
+| RMB (hold) | Raise mouse-directed knight shield; drains energy |
 | S | Cancel cruise or spool |
 | C | Toggle cruise off/on |
-| Left click | Select a structure, wreck or planet; a rock selects its asteroid field |
+| LMB | Fire guns; in free cursor mode select structures, ships or fields |
 | X | Brake immediately and cancel cruise/course following |
-| Space | Fire cursor-directed guns within a 30° forward arc (disabled in transit) |
+| Enter | Toggle free cursor mode in space; launch when landed |
 | Z / F | Select missile type / launch after 1.5-second lock |
 | B / N | Use Armourer's Mites for hull and armour / Ward Phial for shields |
 | Double-tap W/S/A/D/Q/E | Dodge in that local direction; 0.65-second cooldown |
@@ -44,10 +44,10 @@ profile. An open shop blocks launch.
 | V | Cycle nearby local ships; inspect their faction, pilot, cargo and orders |
 | Y | Align the ship toward the tracked destination |
 | G | Navigate toward the tracked destination and stop short of it |
-| Enter | Dock at a nearby station/planet within 90 m below 20 m/s; launch from that port |
+| J | Dock at a station/planet within 90 m below 20 m/s |
 | P | Compare pixel/native space rendering |
 | R | Snap the chase camera back into position |
-| Esc | Close a chart/shop first, otherwise return to the menu |
+| Esc | Close a chart/shop first, otherwise open pause menu; choose Quit to Main Menu |
 
 A [finite local population](artois-locals.md) now runs trade, salvage and pirate
 routines inside Artois, including while the player visits the planet.
@@ -154,3 +154,5 @@ hardware performance remain unverified.
 ![Planet landing](artois-previews/artois-planet-landing.png)
 
 See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.
+
+See [mouse flight and NPC cruise](mouse-flight.md) for current controls and speed-dependent exhaust.
