@@ -1,6 +1,7 @@
 class_name ArtoisTraffic
 extends Node3D
 ## A bounded, session-stable local population. No distance LOD or respawn director.
+const FighterBrain = preload("res://scripts/artois/artois_fighter_brain.gd")
 const Models = preload("res://scripts/artois/artois_local_models.gd")
 const Routes = preload("res://scripts/artois/artois_traffic_routes.gd")
 var world: Node3D
@@ -58,6 +59,8 @@ func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 		"salvage_next": role == "salvager", "patrol_step": index}
 	actors[id] = actor
 	if hostile:
+		actor.brain = FighterBrain.new()
+		actor.brain.configure(world, node, "valois" if role == "raider" else "freebooter", index)
 		actor.state = "PROWLING"
 		actor.path = [{"position": _patrol_point(actor), "mode": "flight"}]
 	else: _next_trip(actor)
@@ -127,7 +130,7 @@ func _step(delta: float) -> void:
 	elapsed += delta
 	for actor in actors.values():
 		if not actor.alive: continue
-		actor.energy = minf(100, actor.energy + 18.0 * delta)
+		if not actor.hostile: actor.energy = minf(100, actor.energy + 18.0 * delta)
 		actor.disruption = maxf(0.0, actor.disruption - delta)
 		actor.fire_wait = maxf(0.0, actor.fire_wait - delta)
 		actor.decision -= delta
@@ -230,20 +233,26 @@ func _civilian_step(actor: Dictionary, delta: float) -> void:
 func _hostile_step(actor: Dictionary, delta: float) -> void:
 	var target: Variant = _target_position(actor.target)
 	if target != null and not actor.target.is_empty():
-		var distance: float = actor.node.position.distance_to(target)
-		actor.state = "ATTACKING" if distance < 300 else "INTERCEPTING"
-		var direction: Vector3 = actor.node.position.direction_to(target)
-		var aim: Vector3 = target - direction * (100.0 if distance > 100 else 140.0)
-		_move(actor, aim, float(profiles[actor.faction].speed), delta)
-		var up := Vector3.RIGHT if absf(direction.y) > 0.98 else Vector3.UP
-		actor.node.basis = Basis(actor.node.basis.get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * 6)))
-		if distance < 310 and actor.fire_wait <= 0 and actor.energy >= 12 and not actor.cruise and actor.cruise_charge <= 0:
-			actor.energy -= 12
-			var shot: MeshInstance3D = world.combat._projectile(actor.node.position + direction * 14, direction * 110, 22.0, "f7a36c" if actor.role == "pirate" else "c5b0ef", 3.5)
+		var target_node: Node3D = world.ship if actor.target == "player" else actors[actor.target].node
+		var target_velocity: Vector3 = world.velocity if actor.target == "player" else actors[actor.target].velocity
+		actor.node.set_meta("velocity", actor.velocity)
+		actor.brain.target_key = actor.target
+		var action: Dictionary = actor.brain.advance(delta, target_node, target_velocity, world.combat.committed_attackers(actor.target) < 2, actor.hull / float(profiles[actor.faction].hull), actor.disruption)
+		actor.velocity = actor.brain.velocity
+		actor.energy = actor.brain.defence.energy
+		actor.cruise = actor.brain.cruise
+		actor.cruise_charge = actor.brain.charge
+		actor.state = actor.brain.state
+		if action.fire:
+			var shot: MeshInstance3D = world.combat._projectile(actor.node.position - actor.node.basis.z.normalized() * 8, action.direction * 110 + actor.velocity, 22.0, "f7a36c" if actor.role == "pirate" else "c5b0ef", 3.5)
 			shot.set_meta("source", actor.id)
 			shots.append(shot)
-			actor.fire_wait = 2.6
 		return
+	actor.brain.target_key = ""
+	actor.brain.idle(delta)
+	actor.energy = actor.brain.defence.energy
+	actor.cruise = false
+	actor.cruise_charge = 0.0
 	actor.state = "PROWLING"
 	var point := _patrol_point(actor)
 	if _move(actor, point, 25.0, delta): actor.patrol_step += 1
@@ -296,9 +305,17 @@ func _sync(actor: Dictionary) -> void:
 	actor.node.set_meta("cruise", (actor.cruise or actor.state == "FILAMENT TRANSIT") and actor.disruption <= 0)
 
 
-func damage(id: String, shield_damage: float, hull_damage: float, source := "player", disruption := 0.0) -> void:
+func damage(id: String, shield_damage: float, hull_damage: float, source := "player", disruption := 0.0, source_position: Vector3 = Vector3.INF) -> void:
 	var actor := get_actor(id)
 	if actor.is_empty() or not actor.node.visible or shield_damage <= 0: return
+	if actor.hostile:
+		var position: Vector3 = source_position
+		if not position.is_finite():
+			var known: Variant = _target_position(source)
+			if known != null: position = known
+		var original := shield_damage
+		shield_damage = actor.brain.block_damage(shield_damage, position)
+		hull_damage *= shield_damage / original
 	var absorbed := minf(actor.shield, shield_damage)
 	actor.shield -= absorbed
 	actor.hull = maxf(0.0, actor.hull - hull_damage * (1.0 - absorbed / shield_damage))
@@ -355,8 +372,8 @@ func _advance_shots(delta: float) -> void:
 		if player_present and not world.combat.dead:
 			var distance: float = world.combat._segment_hit(from, next, world.ship.position, 3.2)
 			if distance >= 0 and distance < nearest: hit = "player"
-		if hit == "player": world.combat.damage_player(float(shot.get_meta("damage")))
-		elif not hit.is_empty(): damage(hit, 6, 6, source)
+		if hit == "player": world.combat.damage_player(float(shot.get_meta("damage")), -1.0, from)
+		elif not hit.is_empty(): damage(hit, float(shot.get_meta("damage")), float(shot.get_meta("damage")), source, 0.0, from)
 		shot.position = next
 		var remaining := float(shot.get_meta("remaining")) - delta
 		shot.set_meta("remaining", remaining)

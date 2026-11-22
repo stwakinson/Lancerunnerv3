@@ -14,6 +14,8 @@ Captain Fluellen's five-enemy test contract on the planet.
 [Knightly combat](docs/knightly-combat.md) adds power, armour, a RMB-held, mouse-directed
 shield, cruise spooling, Tab afterburner and a bottom-right scanner. See
 [combat and mission controls](docs/artois-combat.md).
+[Enemy tactics](docs/enemy-tactics.md) add attack runs, recovery windows, delayed
+defensive reactions and small-group flanking to pirates, raiders and the quest patrol.
 [Mouse flight](docs/mouse-flight.md): LMB guns, RMB shield, Space selection cursor and Esc pause menu.
 
 [Golden filament highways](docs/artois-highways.md) provide 10× in-system travel
