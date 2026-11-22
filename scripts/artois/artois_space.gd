@@ -29,6 +29,8 @@ var landmarks := {}
 var field_nodes := {}
 var selected_id := DOCK_ID
 var velocity := Vector3.ZERO
+const CRUISE_SPOOL_TIME := 1.8
+var cruise_spool := 0.0
 var cruise := false
 var autopilot := false
 var arrival_message := ""
@@ -60,7 +62,7 @@ func tap_direction(key: int, now: float) -> bool:
 	_last_taps[key] = now
 	if now - previous > 0.27 or now < previous or dodge_cooldown > 0: return false
 	_last_taps.clear()
-	cruise = false
+	cancel_cruise()
 	autopilot = false
 	if highways.attached():
 		highways.escape(ship.basis * DIRECTIONS[key])
@@ -165,10 +167,11 @@ func navigate_to(id: String) -> void:
 	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()): return
 	select_target(id)
 	autopilot = true
-	cruise = false
+	cancel_cruise()
 
 
 func align_to_target() -> void:
+	cancel_cruise()
 	var direction := target_position() - ship.position
 	if direction.length_squared() < 0.01: return
 	var up := Vector3.FORWARD if absf(direction.normalized().dot(Vector3.UP)) > 0.98 else Vector3.UP
@@ -183,20 +186,26 @@ func engage_cruise() -> void:
 	if highways.attached():
 		highways.escape(-ship.basis.z)
 		return
-	cruise = true
+	if cruise or cruise_spool > 0: return
+	cruise_spool = CRUISE_SPOOL_TIME
 	autopilot = false
 
 
 func toggle_cruise() -> void:
 	if disruption_remaining > 0: return
 	if highways.attached(): return
-	cruise = not cruise
-	autopilot = false
+	if cruise or cruise_spool > 0: cancel_cruise()
+	else: engage_cruise()
+
+
+func cancel_cruise() -> void:
+	cruise = false
+	cruise_spool = 0.0
 
 
 func brake() -> void:
 	if highways != null and highways.attached(): return
-	cruise = false
+	cancel_cruise()
 	autopilot = false
 	velocity = Vector3.ZERO
 	speed = 0.0
@@ -242,6 +251,14 @@ func docking_error() -> String:
 
 func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, firing: bool) -> void:
 	if combat.dead: return
+	if thrust < 0: cancel_cruise()
+	if cruise_spool > 0:
+		cruise_spool = maxf(0.0, cruise_spool - delta)
+		if cruise_spool == 0: cruise = true
+	combat.defence.advance(delta, combat.guard_requested and not (cruise or cruise_spool > 0 or highways.attached()), combat.dead)
+	boosting = combat.defence.afterburner(delta, boosting and not cruise and cruise_spool == 0 and disruption_remaining <= 0)
+	if boosting: autopilot = false
+	combat.defence.update_visual(cruise_spool / CRUISE_SPOOL_TIME)
 	elapsed += delta
 	disruption_remaining = maxf(0.0, disruption_remaining - delta)
 	dodge_cooldown = maxf(0.0, dodge_cooldown - delta)
@@ -330,8 +347,9 @@ func _sync_angles() -> void:
 
 func orbit(relative: Vector2) -> void:
 	autopilot = false
-	_yaw -= relative.x * 0.004
-	_pitch = clampf(_pitch - relative.y * 0.003, -1.35, 1.35)
+	var turn_scale := 0.18 if cruise else 1.0
+	_yaw -= relative.x * 0.004 * turn_scale
+	_pitch = clampf(_pitch - relative.y * 0.003 * turn_scale, -1.35, 1.35)
 	ship.rotation = Vector3(_pitch, _yaw, 0)
 
 
@@ -352,7 +370,7 @@ func target_entry() -> Dictionary:
 func apply_disruption(duration: float) -> void:
 	disruption_remaining = maxf(disruption_remaining, duration)
 	highways.reset()
-	cruise = false
+	cancel_cruise()
 	autopilot = false
 	dodge_velocity = Vector3.ZERO
 	velocity = velocity.limit_length(12.0)

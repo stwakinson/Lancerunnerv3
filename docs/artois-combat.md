@@ -49,8 +49,8 @@ slots do not fire. Removing Aegis restores the standard built-in shield.
 
 | Weapon | Damage | Interval | Projectile speed |
 | --- | --- | --- | --- |
-| Lance pulse laser | 24 | 0.24 s | 360 m/s |
-| Longbow autocannon | 10 | 0.085 s | 460 m/s |
+| Lance pulse laser | 48 | 0.38 s | 125 m/s |
+| Longbow autocannon | 24 | 0.16 s | 165 m/s |
 | Falcon missile rack | By ammunition | 1.2 s | 160–220 m/s |
 
 Missiles steer toward the locked hostile after launch and consume purchased
@@ -103,3 +103,5 @@ Godot 4.7 and target hardware performance remain unverified.
 ![Contract accepted](artois-combat-previews/artois-contract.png)
 
 ![Patrol combat and shield HUD](artois-combat-previews/artois-patrol.png)
+
+See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.

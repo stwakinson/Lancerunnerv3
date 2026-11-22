@@ -221,7 +221,7 @@ func _process(delta: float) -> void:
 		var steering := Vector2(float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)),
 			float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q)))
 		var thrust := float(Input.is_physical_key_pressed(KEY_W)) - float(Input.is_physical_key_pressed(KEY_S))
-		space_world.advance(delta, steering, thrust, Input.is_physical_key_pressed(KEY_SHIFT), Input.is_physical_key_pressed(KEY_SPACE))
+		space_world.advance(delta, steering, thrust, _boost_held(), Input.is_physical_key_pressed(KEY_SPACE))
 		_status.text = "EMBRY FIELD EDGE   /   AGINCOURT CASTLE %03d m   /   SPEED %02d" % [roundi(space_world.ship.position.distance_to(space_world.station.position) * 10), roundi(absf(space_world.speed) * 10)]
 
 
@@ -434,3 +434,7 @@ func _capture(directory: String, filename: String) -> void:
 	DirAccess.make_dir_recursive_absolute(directory)
 	var error := get_viewport().get_texture().get_image().save_png(directory.path_join(filename))
 	assert(error == OK, "Screenshot must save successfully")
+
+
+func _boost_held() -> bool:
+	return Input.is_physical_key_pressed(KEY_SHIFT)

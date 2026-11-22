@@ -27,20 +27,22 @@ profile. An open shop blocks launch.
 | A / D | Strafe |
 | Q / E | Descend / climb along the ship's local up axis |
 | Right mouse drag | Steer yaw and pitch |
-| Shift | Boost |
-| Shift + W | Engage latched forward cruise at 175 m/s (5× normal); weapons locked |
+| Tab | Afterburner (25 energy/s) |
+| Shift + W | Spool for 1.8s then engage latched forward cruise at 175 m/s (5× normal); weapons locked |
+| Ctrl (hold) | Raise forward knight shield; drains energy |
+| S | Cancel cruise or spool |
 | C | Toggle cruise off/on |
 | Left click | Select a structure, wreck or planet; a rock selects its asteroid field |
 | X | Brake immediately and cancel cruise/course following |
 | Space | Fire cursor-directed guns within a 30° forward arc (disabled in transit) |
 | Z / F | Select missile type / launch after 1.5-second lock |
-| B / N | Use Armourer's Mites for hull / Ward Phial for shields |
+| B / N | Use Armourer's Mites for hull and armour / Ward Phial for shields |
 | Double-tap W/S/A/D/Q/E | Dodge in that local direction; 0.65-second cooldown |
 | 3 (landed) | Talk to Fluellen for the five-enemy test sortie |
 | M | Open/close the system chart; flight pauses while it is open |
-| Tab | Cycle tracked destinations |
+| T | Cycle destinations and nearby contacts |
 | V | Cycle nearby local ships; inspect their faction, pilot, cargo and orders |
-| T | Align the ship toward the tracked destination |
+| Y | Align the ship toward the tracked destination |
 | G | Navigate toward the tracked destination and stop short of it |
 | Enter | Dock at a nearby station/planet within 90 m below 20 m/s; launch from that port |
 | P | Compare pixel/native space rendering |
@@ -55,7 +57,7 @@ the destination picker, then **NAVIGATE** to engage course following. **TRACK
 ONLY** keeps the marker for manual flight. Asteroid field centres can also be
 selected. Manual thrust/strafe/steering cancels course following. Normal thrust
 is 35 m/s, boost 105 m/s, cruise 175 m/s and automatic course speed up to 280 m/s, with acceleration
-and braking. Cruise stays engaged after releasing Shift+W; C or X exits it.
+and braking. Cruise stays engaged after releasing Shift+W; S, C or X exits it.
 Space selection respects UI panels and the planet obscuring objects behind it.
 Course following is simple point-to-point navigation, not an AI
 traffic or obstacle-routing system.
@@ -70,7 +72,7 @@ Fitted weapons, regenerating shields and the planet contact's repeatable
 five-enemy test mission are described in [Artois combat](artois-combat.md).
 
 Golden filaments connect the main north–south route and western branch. Fly
-through a ring for 10× travel; Shift plus a direction breaks the magnetic pull.
+through a ring for 10× travel; Tab plus a direction breaks the magnetic pull.
 See [highway controls and routes](artois-highways.md).
 
 ## Included map elements
@@ -150,3 +152,5 @@ hardware performance remain unverified.
 ![Planet port approach](artois-previews/artois-system.png)
 
 ![Planet landing](artois-previews/artois-planet-landing.png)
+
+See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.
