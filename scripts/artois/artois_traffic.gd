@@ -53,7 +53,7 @@ func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 		"role": role, "hostile": hostile, "node": node, "home": home, "origin": home, "destination": home,
 		"cargo": "Empty recovery hold" if role == "salvager" else profile.cargo[index % profile.cargo.size()], "hull": float(profile.hull), "shield": float(profile.shield),
 		"radius": float(profile.radius), "alive": true, "velocity": Vector3.ZERO, "state": "DEPARTING", "path": [],
-		"leg": 0, "timer": 0.0, "decision": float(index) * 0.17, "target": "", "provoked": false,
+		"cruise_charge": 0.0, "cruise": false, "energy": 100.0, "leg": 0, "timer": 0.0, "decision": float(index) * 0.17, "target": "", "provoked": false,
 		"threat": "", "disruption": 0.0, "fire_wait": 0.8 + index * 0.25, "trips": 0, "distance": 0.0,
 		"salvage_next": role == "salvager", "patrol_step": index}
 	actors[id] = actor
@@ -127,6 +127,7 @@ func _step(delta: float) -> void:
 	elapsed += delta
 	for actor in actors.values():
 		if not actor.alive: continue
+		actor.energy = minf(100, actor.energy + 18.0 * delta)
 		actor.disruption = maxf(0.0, actor.disruption - delta)
 		actor.fire_wait = maxf(0.0, actor.fire_wait - delta)
 		actor.decision -= delta
@@ -178,6 +179,9 @@ func _sense_threat(actor: Dictionary) -> void:
 	if not threat.is_empty():
 		if actor.state != "FLEEING": _radio(actor, "Mayday! We are a civilian vessel. Breaking for harbour!", true)
 		actor.threat = threat
+		if actor.state != "FLEEING":
+			actor.cruise_charge = 0.0
+			actor.cruise = false
 		actor.state = "FLEEING"
 		actor.timer = 7.0
 
@@ -192,8 +196,12 @@ func _civilian_step(actor: Dictionary, delta: float) -> void:
 		var threat: Variant = _target_position(actor.threat)
 		if threat != null and actor.timer > 0:
 			var away: Vector3 = (actor.node.position - threat).normalized()
-			_move(actor, actor.node.position + away * 300 + Vector3.UP * 30, 125.0, delta)
+			actor.cruise_charge = actor.cruise_charge + delta if actor.disruption <= 0 else 0.0
+			actor.cruise = actor.cruise_charge >= world.CRUISE_SPOOL_TIME
+			_move(actor, actor.node.position + away * 300 + Vector3.UP * 30, world.CRUISE_SPEED if actor.cruise else world.NORMAL_SPEED, delta)
 			return
+		actor.cruise = false
+		actor.cruise_charge = 0.0
 		actor.provoked = false
 		actor.threat = ""
 		actor.path = routes.plan(actor.node.position, routes.harbour(actor.destination))
@@ -213,7 +221,7 @@ func _civilian_step(actor: Dictionary, delta: float) -> void:
 	var speed := 350.0 if leg.mode == "filament" else float(profiles[actor.faction].speed)
 	if _move(actor, leg.position, speed, delta):
 		actor.leg += 1
-		if leg.mode == "filament": actor.velocity = (actor.velocity as Vector3).limit_length(float(profiles[actor.faction].speed))
+		if leg.mode == "filament": actor.velocity = (actor.velocity as Vector3).limit_length(minf(world.NORMAL_SPEED, float(profiles[actor.faction].speed)))
 
 
 func _hostile_step(actor: Dictionary, delta: float) -> void:
@@ -226,7 +234,8 @@ func _hostile_step(actor: Dictionary, delta: float) -> void:
 		_move(actor, aim, float(profiles[actor.faction].speed), delta)
 		var up := Vector3.RIGHT if absf(direction.y) > 0.98 else Vector3.UP
 		actor.node.basis = Basis(actor.node.basis.get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * 6)))
-		if distance < 310 and actor.fire_wait <= 0:
+		if distance < 310 and actor.fire_wait <= 0 and actor.energy >= 12 and not actor.cruise and actor.cruise_charge <= 0:
+			actor.energy -= 12
 			var shot: MeshInstance3D = world.combat._projectile(actor.node.position + direction * 14, direction * 110, 22.0, "f7a36c" if actor.role == "pirate" else "c5b0ef", 3.5)
 			shot.set_meta("source", actor.id)
 			shots.append(shot)
@@ -243,6 +252,7 @@ func _move(actor: Dictionary, target: Vector3, speed: float, delta: float) -> bo
 	if offset.length() < 12:
 		actor.node.position = target
 		return true
+	if speed < 200 and not actor.cruise: speed = minf(speed, world.NORMAL_SPEED)
 	if actor.disruption > 0: speed = minf(speed, 12.0)
 	var desired := offset.normalized() * speed
 	# A small local separation force avoids identical centreline formations.
@@ -253,8 +263,9 @@ func _move(actor: Dictionary, target: Vector3, speed: float, delta: float) -> bo
 			var clearance: float = actor.radius + other.radius + 12
 			if away.length_squared() > 0.1 and away.length() < clearance:
 				desired += away.normalized() * 25.0 * (1.0 - away.length() / clearance)
+	desired = desired.limit_length(speed)
 	var velocity: Vector3 = actor.velocity
-	velocity = velocity.move_toward(desired, delta * (210.0 if speed > 200 else 70.0))
+	velocity = velocity.move_toward(desired, delta * (210.0 if speed > 200 else (110.0 if actor.cruise else 70.0)))
 	if actor.disruption > 0: velocity = velocity.limit_length(12)
 	var next := from + velocity * delta
 	if (target - from).dot(target - next) <= 0:
@@ -265,7 +276,7 @@ func _move(actor: Dictionary, target: Vector3, speed: float, delta: float) -> bo
 	if velocity.length_squared() > 0.1:
 		var direction := velocity.normalized()
 		var up := Vector3.RIGHT if absf(direction.y) > 0.98 else Vector3.UP
-		actor.node.basis = Basis(actor.node.basis.get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * 3)))
+		actor.node.basis = Basis(actor.node.basis.get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * (0.54 if actor.cruise else 3.0))))
 	return next.is_equal_approx(target)
 
 
@@ -277,7 +288,7 @@ func _target_position(id: String) -> Variant:
 
 func _sync(actor: Dictionary) -> void:
 	for key in ["hull", "shield", "velocity", "disruption"]: actor.node.set_meta(key, actor[key])
-	actor.node.set_meta("cruise", actor.state == "FILAMENT TRANSIT" and actor.disruption <= 0)
+	actor.node.set_meta("cruise", (actor.cruise or actor.state == "FILAMENT TRANSIT") and actor.disruption <= 0)
 
 
 func damage(id: String, shield_damage: float, hull_damage: float, source := "player", disruption := 0.0) -> void:
@@ -288,6 +299,8 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 	actor.hull = maxf(0.0, actor.hull - hull_damage * (1.0 - absorbed / shield_damage))
 	actor.disruption = maxf(actor.disruption, disruption)
 	if disruption > 0:
+		actor.cruise = false
+		actor.cruise_charge = 0.0
 		actor.velocity = (actor.velocity as Vector3).limit_length(12)
 		actor.node.set_meta("cruise", false)
 	if source == "player":
@@ -295,11 +308,17 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 		if actor.hostile: actor.target = "player"
 		else:
 			actor.threat = "player"
+			if actor.state != "FLEEING":
+				actor.cruise_charge = 0.0
+				actor.cruise = false
 			actor.state = "FLEEING"
 			actor.timer = 7.0
 			_radio(actor, "Hold your fire! We are civilians!", true)
 	elif not actor.hostile:
 		actor.threat = source
+		if actor.state != "FLEEING":
+			actor.cruise_charge = 0.0
+			actor.cruise = false
 		actor.state = "FLEEING"
 		actor.timer = 7.0
 		_radio(actor, "Taking fire! Breaking for harbour!", true)

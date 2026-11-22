@@ -9,9 +9,9 @@ They do not need fitting. The Falcon launcher still occupies a weapon hardpoint.
 
 | Control | Action |
 | --- | --- |
-| Move cursor + Space | Fire fitted guns at the cursor, limited to a 30° cone around the ship's nose |
-| Left click | Select a target; it does not fire |
-| Right mouse drag | Steer the ship to bring targets inside the gun/seeker arcs |
+| Move cursor + LMB | Fire fitted guns at the cursor, limited to a 30° cone around the ship's nose |
+| Enter, then left click | Select a target; it does not fire |
+| Mouse in flight mode | Steer the ship to bring targets inside the gun/seeker arcs |
 | Z | Cycle Pavise / Bodkin / Fetter ammunition |
 | F | Launch one selected missile after acquiring a lock |
 | B | Use Armourer's Mites to restore hull |
@@ -32,7 +32,7 @@ nose** and **600 m** for **1.5 seconds**. The HUD shows acquisition progress and
 the seeker cone/range, losing the target, entering cruise/highway transit, or
 when the planet blocks line of sight. Missiles cannot launch during transit.
 
-F launches a single homing round with a 1.2-second launcher cooldown. Space fires
+F launches a single homing round with a 1.2-second launcher cooldown. LMB fires
 only guns, so it cannot accidentally waste missiles. A valid lock and successful
 inventory save are required before ammunition is spent. In-flight seekers follow
 their original target; if it is destroyed, the round continues without retargeting.

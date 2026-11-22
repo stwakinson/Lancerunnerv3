@@ -59,18 +59,22 @@ func _draw_combat() -> void:
 		draw_string(_font, at, "%s %d / %d" % [names[i], roundi(values[i]), roundi(maxima[i])], HORIZONTAL_ALIGNMENT_LEFT, 240, 13, colour)
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230, 5)), Color("182c38"))
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230 * values[i] / maxima[i], 5)), colour)
-	draw_string(_font, origin + Vector2(0, 119), "CTRL / KNIGHT SHIELD " + ("RAISED" if combat.defence.guard_active else "LOWERED"), HORIZONTAL_ALIGNMENT_LEFT, 260, 12, Color("edc38d"))
+	draw_string(_font, origin + Vector2(0, 119), "RMB / KNIGHT SHIELD " + ("RAISED" if combat.defence.guard_active else "LOWERED"), HORIZONTAL_ALIGNMENT_LEFT, 260, 12, Color("edc38d"))
 	var fitted := PackedStringArray()
 	for id in combat.weapons:
 		if not str(id).is_empty() and id != "missile_rack": fitted.append(str(id).replace("_", " ").to_upper())
-	var weapon_text := "WEAPONS LOCKED / TRANSIT" if world.cruise or world.cruise_spool > 0 or world.highways.attached() else "SPACE / " + (" + ".join(fitted) if not fitted.is_empty() else "NO GUNS FITTED")
+	var weapon_text := "WEAPONS LOCKED / TRANSIT" if world.cruise or world.cruise_spool > 0 or world.highways.attached() else "LMB / " + (" + ".join(fitted) if not fitted.is_empty() else "NO GUNS FITTED")
 	draw_string(_font, origin + Vector2(0, 152), weapon_text, HORIZONTAL_ALIGNMENT_LEFT, 260, 12, Color("bdd4dc"))
 	var factor := maxf(size.x / source_view.size.x, size.y / source_view.size.y)
 	var offset := (size - Vector2(source_view.size) * factor) * 0.5
 	var aim: Vector3 = combat.ordnance.aim_point()
 	var cross := world.camera.unproject_position(aim) * factor + offset
-	draw_line(cross - Vector2(5, 0), cross + Vector2(5, 0), Color("eeb76b") if combat.ordnance.aim_clamped else Color("8de4e5"))
-	draw_line(cross - Vector2(0, 5), cross + Vector2(0, 5), Color("eeb76b") if combat.ordnance.aim_clamped else Color("8de4e5"))
+	draw_line(cross - Vector2(14, 0), cross + Vector2(14, 0), Color("eeb76b") if combat.ordnance.aim_clamped else Color("8de4e5"))
+	draw_line(cross - Vector2(0, 14), cross + Vector2(0, 14), Color("eeb76b") if combat.ordnance.aim_clamped else Color("8de4e5"))
+	draw_arc(cross, 10, 0, TAU, 32, Color("8de4e5"), 1.5, true)
+	if combat.defence.guard_active:
+		var guard_at := world.camera.unproject_position(world.ship.position + combat.defence.guard_direction * 350) * factor + offset
+		draw_arc(guard_at, 20, 0, TAU, 40, Color("ffd18a"), 2.0, true)
 	var ordnance := combat.ordnance
 	var count := ordnance.market.owned(ordnance.selected_missile)
 	draw_string(_font, origin + Vector2(0, 174), "F / %s  x%d     Z: CYCLE" % [ordnance.MISSILES[ordnance.selected_missile].name, count], HORIZONTAL_ALIGNMENT_LEFT, 270, 12, Color("edc38d"))

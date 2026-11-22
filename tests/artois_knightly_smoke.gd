@@ -109,15 +109,15 @@ func run() -> void:
 	combat.repair()
 	combat.ordnance.message_time = 0
 	world.prepare_launch()
-	await key(KEY_CTRL, true)
+	await mouse(MOUSE_BUTTON_RIGHT, true)
 	scene._process(0.1)
-	check(power.guard_active, "Physical Ctrl must raise guard")
+	check(power.guard_active, "Physical RMB must raise guard")
 	scene.toggle_chart()
 	var reserve := power.energy
 	scene._process(0.5)
 	check(not power.guard_active and power.energy == reserve, "Chart must pause energy spending and lower guard")
 	scene.toggle_chart()
-	await key(KEY_CTRL, false)
+	await mouse(MOUSE_BUTTON_RIGHT, false)
 	combat.guard_requested = true
 	world.advance(0.1, Vector2.ZERO, 0, false, false)
 	scene.target_hud.queue_redraw()
@@ -141,6 +141,15 @@ func key(code: Key, pressed: bool) -> void:
 	event.physical_keycode = code
 	event.keycode = code
 	event.pressed = pressed
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+	await process_frame
+
+func mouse(button: MouseButton, pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = button
+	event.pressed = pressed
+	event.position = root.size * 0.5
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
 	await process_frame

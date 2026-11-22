@@ -7,6 +7,7 @@ const GUARD_COS := 0.5 # 120 degree forward arc.
 var energy := ENERGY_MAX
 var armour := ARMOUR_MAX
 var guard_active := false
+var guard_direction := Vector3.ZERO
 var _quiet := 0.0
 var _broken := 0.0
 var _boost_exhausted := false
@@ -117,7 +118,7 @@ func afterburner(delta: float, requested: bool) -> bool:
 func block(amount: float, source: Vector3, ship: Node3D) -> float:
 	if not guard_active or not source.is_finite(): return amount
 	var incoming := ship.global_position.direction_to(source)
-	if incoming.dot(-ship.global_basis.z) < GUARD_COS: return amount
+	if incoming.dot(guard_direction.normalized() if guard_direction.length_squared() > 0.01 else -ship.global_basis.z) < GUARD_COS: return amount
 	var blocked := minf(amount * 0.95, energy / 0.45)
 	spend(blocked * 0.45)
 	if energy < 0.01:
@@ -126,7 +127,10 @@ func block(amount: float, source: Vector3, ship: Node3D) -> float:
 	return amount - blocked
 
 func update_visual(spool_fraction: float) -> void:
-	if _guard != null: _guard.visible = guard_active
+	if _guard != null:
+		_guard.visible = guard_active
+		if guard_direction.length_squared() > 0.01:
+			_guard.global_basis = Basis.looking_at(guard_direction, Vector3.RIGHT if absf(guard_direction.y) > 0.98 else Vector3.UP)
 	for particles in _particles:
 		particles.emitting = spool_fraction > 0
 		particles.speed_scale = 1.0 + (1.0 - spool_fraction) * 2.0

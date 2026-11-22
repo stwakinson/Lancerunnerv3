@@ -6,6 +6,8 @@ const Contact = preload("res://scripts/artois/artois_contact.gd")
 const Picking = preload("res://scripts/artois/artois_picking.gd")
 const Chart = preload("res://scripts/artois/artois_chart.gd")
 const TargetHud = preload("res://scripts/artois/artois_target_hud.gd")
+var free_mouse := false
+var pause_menu: Control
 var docked_id := "planet_dock"
 var _landing_cache := {}
 var mission := Sortie.new()
@@ -35,6 +37,14 @@ func _ready() -> void:
 	landing_world.layers[4].add_child(contact)
 	_mission_changed()
 	_sync_shop_hotspots()
+	pause_menu = preload("res://scripts/artois/artois_pause_menu.gd").new()
+	add_child(pause_menu)
+	pause_menu.resumed.connect(_resume_game)
+	pause_menu.quit_requested.connect(func() -> void:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		get_tree().change_scene_to_file("res://scenes/menu.tscn"))
+	_centre_cursor()
+	_sync_mouse_mode()
 
 
 func _apply_loadout() -> void:
@@ -106,6 +116,8 @@ func _build_ui() -> void:
 	add_child(target_hud)
 	move_child(target_hud, get_node("Interface").get_index())
 	var ui := get_node("Interface") as Control
+	for child in ui.get_children():
+		if child is Button and child.text == "ESC  MAIN MENU": child.text = "ESC  PAUSE"
 	var map_button := _button(ui, "M  SYSTEM CHART", Vector2(678, 634), 190, toggle_chart)
 	map_button.name = "SystemChartButton"
 	chart = Chart.new()
@@ -156,12 +168,12 @@ func _update_labels() -> void:
 		_heading.text = "ARTOIS"
 		_subheading.text = "VALOIS SPACE  /  SYSTEM NAVIGATION"
 		_section.text = "SYSTEM FLIGHT"
-		_dock_button.text = "ENTER  LAND AT PORT" if space_world.docking_port() == "planet_dock" else "ENTER  DOCK AT STATION"
+		_dock_button.text = "J  LAND AT PORT" if space_world.docking_port() == "planet_dock" else "J  DOCK AT STATION"
 		_dock_button.disabled = not space_world.docking_error().is_empty()
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
-		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   ENTER TO LAND"
-		_hint.text = "Tab boost · Ctrl knight shield · Space guns · F missile · B repair · N ward · Shift+W cruise / S cancel · T target · M chart"
+		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   J TO LAND"
+		_hint.text = "Mouse steer · LMB guns · RMB shield · Enter cursor · J dock · Tab boost · F missile · B repair · N ward · Shift+W cruise / S cancel · T target · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
 		if docked_id != "planet_dock":
@@ -184,8 +196,14 @@ func _boost_held() -> bool:
 	return Input.is_physical_key_pressed(KEY_TAB)
 
 
+func _fire_held() -> bool:
+	return not free_mouse and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+
+
 func _process(delta: float) -> void:
-	space_world.combat.guard_requested = Input.is_physical_key_pressed(KEY_CTRL) and not (landed or transitioning or _recovering or chart.visible or shop_panel.visible or contract_panel.visible)
+	if pause_menu != null and pause_menu.visible: return
+	_sync_mouse_mode()
+	space_world.combat.guard_requested = not free_mouse and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and not (landed or transitioning or _recovering or chart.visible or shop_panel.visible or contract_panel.visible)
 	if not space_world.combat.guard_requested: space_world.combat.defence.guard_active = false
 	if space_world.traffic != null:
 		space_world.traffic.player_present = not landed and not transitioning and not _recovering
@@ -196,8 +214,11 @@ func _process(delta: float) -> void:
 		_sync_shop_hotspots()
 		return
 	if chart != null and chart.visible: return
-	if not landed and not transitioning and space_world.combat.ordnance.cursor_enabled:
-		space_world.combat.ordnance.cursor = _space_pixel(get_local_mouse_position())
+	if not landed and not transitioning:
+		space_world.combat.ordnance.set_cursor(_space_pixel(get_local_mouse_position()))
+		if not free_mouse and not space_world.autopilot:
+			var offset := (get_local_mouse_position() / size - Vector2(0.5, 0.5)) * 2.0
+			if offset.length() > 0.08: space_world.orbit(offset * delta * 170.0)
 	super._process(delta)
 	if not landed and not transitioning:
 		radio_label.text = space_world.traffic.radio_line
@@ -212,7 +233,7 @@ func _process(delta: float) -> void:
 		_status.text = "%s   /   %s  %d m   /   SPEED %d m/s" % [mode, target.name, roundi(distance), roundi(world.speed)]
 		if world.highways.attached(): _status.text = world.highways.status()
 		elif _notice_time > 0: _status.text = _notice
-		elif world.docking_error().is_empty() and not world.cruise and world.cruise_spool == 0: _status.text = "DOCKING AVAILABLE / ENTER AT " + str(world.port_catalog.profile(world.docking_port()).name).to_upper()
+		elif world.docking_error().is_empty() and not world.cruise and world.cruise_spool == 0: _status.text = "DOCKING AVAILABLE / J AT " + str(world.port_catalog.profile(world.docking_port()).name).to_upper()
 		if world.combat.ordnance.message_time > 0: _status.text = world.combat.ordnance.message
 		_dock_button.disabled = not world.docking_error().is_empty()
 		_dock_button.tooltip_text = world.docking_error()
@@ -275,11 +296,12 @@ func _space_pixel(local: Vector2) -> Vector2:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if landed or transitioning or shop_panel.visible or (chart != null and chart.visible): return
+	if landed or transitioning or shop_panel.visible or (chart != null and chart.visible) or (pause_menu != null and pause_menu.visible): return
 	if event is InputEventMouseMotion:
+		if not free_mouse and event.relative.length_squared() > 0: space_world.autopilot = false
 		var local: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
 		space_world.combat.ordnance.set_cursor(_space_pixel(local))
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and free_mouse:
 		var factor := maxf(size.x / space_view.size.x, size.y / space_view.size.y)
 		var offset := (size - Vector2(space_view.size) * factor) * 0.5
 		var local: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
@@ -288,11 +310,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			space_world.select_target(id)
 			get_viewport().set_input_as_handled()
 		return
-	super._unhandled_input(event)
+	# RMB is the active shield; mouse steering is sampled in _process.
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not event is InputEventKey or not event.pressed or event.echo or transitioning or shop_panel.visible or _recovering or contract_panel.visible: return
+	if not event is InputEventKey or not event.pressed or event.echo or transitioning or shop_panel.visible or _recovering or contract_panel.visible or (pause_menu != null and pause_menu.visible): return
 	if chart.visible:
 		if event.physical_keycode in [KEY_M, KEY_ESCAPE]:
 			chart.close_chart()
@@ -309,6 +331,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.physical_keycode in [KEY_W, KEY_S, KEY_A, KEY_D, KEY_Q, KEY_E]:
 			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
+			KEY_ENTER:
+				free_mouse = not free_mouse
+				if not free_mouse: _centre_cursor()
+				space_world.reset_taps()
+				_sync_mouse_mode()
+			KEY_J: toggle_docking()
 			KEY_F: world.combat.ordnance.launch()
 			KEY_Z: world.combat.ordnance.cycle_missile()
 			KEY_B: world.combat.ordnance.use_recovery("armourer_mites")
@@ -341,6 +369,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if pause_menu != null and pause_menu.visible:
+		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE: _resume_game()
+		if event is InputEventKey or event is InputEventMouse:
+			if event is InputEventKey: get_viewport().set_input_as_handled()
+		return
 	if contract_panel != null and contract_panel.visible and event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
 		contract_panel.close_panel()
 		get_viewport().set_input_as_handled()
@@ -355,4 +388,38 @@ func _menu() -> void:
 	if chart != null and chart.visible:
 		chart.close_chart()
 		return
-	super._menu()
+	if shop_panel.visible:
+		shop_panel.close_shop()
+		return
+	if not transitioning:
+		pause_menu.show()
+		space_world.process_mode = Node.PROCESS_MODE_DISABLED
+		target_hud.queue_redraw()
+		space_world.reset_taps()
+		space_world.combat.guard_requested = false
+		space_world.combat.defence.guard_active = false
+		space_world.combat.defence.update_visual(space_world.cruise_spool / space_world.CRUISE_SPOOL_TIME)
+		_sync_mouse_mode()
+
+
+func _resume_game() -> void:
+	pause_menu.hide()
+	space_world.process_mode = Node.PROCESS_MODE_INHERIT
+	_sync_mouse_mode()
+
+
+func _sync_mouse_mode() -> void:
+	var interactive := landed or free_mouse or transitioning or chart.visible or shop_panel.visible or contract_panel.visible or (pause_menu != null and pause_menu.visible)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if interactive else Input.MOUSE_MODE_HIDDEN
+	var ui := get_node_or_null("Interface")
+	if ui != null:
+		for child in ui.get_children():
+			if child is Button: child.mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
+
+
+func _exit_tree() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _centre_cursor() -> void:
+	Input.warp_mouse(get_viewport().get_final_transform() * (get_global_transform_with_canvas() * (size * 0.5)))
