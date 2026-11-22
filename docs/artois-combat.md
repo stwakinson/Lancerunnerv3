@@ -105,3 +105,5 @@ Godot 4.7 and target hardware performance remain unverified.
 ![Patrol combat and shield HUD](artois-combat-previews/artois-patrol.png)
 
 See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.
+
+[Enemy tactics](enemy-tactics.md) now govern the patrol: watch for weapon windup, lead moving ships, and exploit attack/recovery openings.

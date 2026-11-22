@@ -131,6 +131,11 @@ func _run() -> void:
 	brit.provoked = false
 	brit.decision = 0
 	pirate.node.position = zone
+	pirate.node.look_at(brit.node.position, Vector3.UP)
+	pirate.brain.idle(0)
+	# Start an already-signalled ambush; the trader can still spool and flee.
+	pirate.brain.state = "WINDUP"
+	pirate.brain.timer = 0.7
 	pirate.velocity = Vector3.ZERO
 	pirate.target = brit.id
 	pirate.fire_wait = 0
@@ -138,7 +143,7 @@ func _run() -> void:
 	world.ship.position = brit.node.position + Vector3(300, 0, 0)
 	traffic._radio_ready = 0
 	var before: Vector3 = brit.node.position
-	for i in 30: traffic.advance(0.05)
+	for i in 120: traffic.advance(0.05)
 	check(brit.state == "FLEEING" and brit.node.position.distance_to(before) > 20, "Civilian must evade an actual local attacker")
 	check(brit.shield < 40, "NPC projectiles must damage other NPCs")
 	check(not traffic.radio_history.is_empty(), "Local actions must produce contextual radio messages")
@@ -171,12 +176,19 @@ func _run() -> void:
 	world.combat.ordnance.cursor_enabled = false
 	traffic.player_present = true
 	world.select_target(enemy.id)
-	for i in 150:
-		world.align_to_target()
+	# Give a telegraphed attacker time to commit before the player retaliates.
+	enemy.node.look_at(world.ship.position, Vector3.UP)
+	enemy.brain.idle(0)
+	for i in 180: world.advance(1.0 / 30, Vector2.ZERO, 0, false, false)
+	var took_damage: bool = world.combat.shield < world.combat.shield_max
+	for i in 360:
+		var lead: Vector3 = enemy.node.position + enemy.velocity * minf(world.ship.position.distance_to(enemy.node.position) / 125.0, 1.4)
+		world.ship.look_at(lead, Vector3.UP)
+		world._sync_angles()
 		world.advance(1.0 / 30, Vector2.ZERO, 0, false, true)
 		if not enemy.alive: break
 	check(not enemy.alive, "Player projectiles must destroy a local hostile")
-	check(world.combat.shield < world.combat.shield_max, "Local hostile fire must damage the player")
+	check(took_damage, "Local hostile fire must damage the player before retaliation")
 	check(scene.mission.kills == 0, "Local kills must not count toward the separate five-enemy contract")
 	world.combat.clear_encounter()
 	check(traffic.actors.size() == 30 and not enemy.alive, "Resetting the test encounter must not reset ambient locals")

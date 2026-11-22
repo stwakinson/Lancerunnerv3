@@ -142,9 +142,13 @@ func _run() -> void:
 	combat.ordnance.cursor_enabled = false # This fixture steers the nose directly, independent of OS pointer.
 	for id in ["patrol_1", "patrol_2", "patrol_3", "patrol_4", "patrol_5"]:
 		world.select_target(id)
-		for frame in 240:
+		for frame in 480:
 			if combat.enemy(id) == null: break
-			world.align_to_target()
+			# Lead the moving target: this fixture tests actual hits, not OS mouse aim.
+			var target: Node3D = combat.enemy(id)
+			var lead: Vector3 = target.position + (target.get_meta("velocity") as Vector3) * minf(world.ship.position.distance_to(target.position) / 150.0, 1.4)
+			world.ship.look_at(lead, Vector3.UP)
+			world._sync_angles()
 			world.advance(1.0 / 30.0, Vector2.ZERO, 0, false, true)
 		check(combat.enemy(id) == null, "Equipped projectiles must destroy " + id)
 		combat.repair()

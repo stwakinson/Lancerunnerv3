@@ -4,6 +4,7 @@ extends Node3D
 signal enemy_destroyed(id: String)
 signal player_destroyed
 
+const FighterBrain = preload("res://scripts/artois/artois_fighter_brain.gd")
 const Ordnance = preload("res://scripts/artois/artois_ordnance.gd")
 const Defence = preload("res://scripts/artois/artois_ship_defence.gd")
 const Fighter = preload("res://scripts/benchmark/voxel_ship.gd")
@@ -133,6 +134,11 @@ func spawn_patrol(centre: Vector3) -> void:
 		fighter.set_meta("active", false)
 		fighter.set_meta("cooldown", 0.8 + i * 0.35)
 		fighter.set_meta("velocity", Vector3.ZERO)
+		fighter.look_at(centre + Vector3(0, 0, 120), Vector3.UP)
+		var brain := FighterBrain.new()
+		brain.configure(world, fighter, "freebooter", i)
+		brain.target_key = "player"
+		fighter.set_meta("brain", brain)
 		enemies.append(fighter)
 
 
@@ -174,34 +180,21 @@ func advance(delta: float) -> void:
 		var to_player: Vector3 = world.ship.position - fighter.position
 		var distance := to_player.length()
 		if distance < AGGRO_RANGE: fighter.set_meta("active", true)
-		if dead or not fighter.get_meta("active"): continue
-		# Stop pursuit if the player pulls far ahead of this fighter.
+		var brain: RefCounted = fighter.get_meta("brain")
+		if dead or not fighter.get_meta("active"):
+			brain.idle(delta)
+			continue
 		if distance > 850:
 			fighter.set_meta("active", false)
 			fighter.set_meta("velocity", Vector3.ZERO)
+			brain.idle(delta)
 			continue
-		if distance > 0.1:
-			var direction := to_player / distance
-			var charge := float(fighter.get_meta("cruise_charge", 0.0))
-			charge = charge + delta if distance > 300 and disruption <= 0 else 0.0
-			fighter.set_meta("cruise_charge", charge)
-			var cruising: bool = charge >= world.CRUISE_SPOOL_TIME
-			fighter.set_meta("cruise", cruising)
-			var desired := direction * ((175.0 if cruising else 26.0) if distance > 130 else (-18.0 if distance < 75 else 0.0))
-			if disruption > 0: desired = desired.limit_length(12.0)
-			var previous: Vector3 = fighter.get_meta("velocity")
-			var velocity := previous.move_toward(desired, delta * (110.0 if cruising else 32.0))
-			fighter.position += velocity * delta
-			fighter.set_meta("velocity", velocity)
-			var up := Vector3.RIGHT if absf(direction.y) > 0.98 else Vector3.UP
-			fighter.basis = Basis(fighter.basis.orthonormalized().get_rotation_quaternion().slerp(Basis.looking_at(direction, up).get_rotation_quaternion(), 1.0 - exp(-delta * (0.45 if cruising else 2.5)))).scaled(Vector3.ONE * 1.6)
-		var wait := float(fighter.get_meta("cooldown")) - delta
-		if wait <= 0 and distance < 350 and not fighter.get_meta("cruise", false) and float(fighter.get_meta("cruise_charge", 0.0)) == 0:
-			var aim: Vector3 = world.ship.position + world.velocity * minf(distance / 150.0, 0.6)
-			var shot := _projectile(fighter.position - fighter.basis.z * 5, fighter.position.direction_to(aim) * 110.0, 26.0, "ff7059", 3.5)
+		var action: Dictionary = brain.advance(delta, world.ship, world.velocity, committed_attackers("player") < 2, float(fighter.get_meta("hull")) / 65.0, disruption)
+		if action.fire:
+			var shot := _projectile(fighter.position - fighter.basis.z.normalized() * 5, action.direction * 110.0 + brain.velocity, 26.0, "ff7059", 3.5)
+			shot.set_meta("source", str(fighter.get_meta("id")))
 			hostile_shots.append(shot)
-			wait = 2.4
-		fighter.set_meta("cooldown", wait)
+
 	_advance_shots(world.shots, delta, true)
 	_advance_shots(hostile_shots, delta, false)
 	for i in range(_bursts.size() - 1, -1, -1):
@@ -245,8 +238,8 @@ func _advance_shots(list: Array, delta: float, friendly: bool) -> void:
 						victim = actor.node
 			if victim != null:
 				if shot.has_meta("missile"):
-					apply_missile_to_enemy(str(victim.get_meta("id")), str(shot.get_meta("missile")))
-				else: damage_enemy(str(victim.get_meta("id")), float(shot.get_meta("damage")))
+					apply_missile_to_enemy(str(victim.get_meta("id")), str(shot.get_meta("missile")), shot.position)
+				else: damage_enemy(str(victim.get_meta("id")), float(shot.get_meta("damage")), -1.0, shot.position)
 				hit = true
 		elif not dead and _segment_hit(shot.position, next, world.ship.position, 3.2) >= 0:
 			if shot.has_meta("missile"): apply_missile_to_player(str(shot.get_meta("missile")), shot.position)
@@ -293,12 +286,16 @@ func damage_player(amount: float, hull_amount: float = -1.0, source: Vector3 = V
 		player_destroyed.emit()
 
 
-func damage_enemy(id: String, amount: float, hull_amount: float = -1.0) -> void:
+func damage_enemy(id: String, amount: float, hull_amount: float = -1.0, source_position: Vector3 = Vector3.INF) -> void:
 	if world.traffic != null and not world.traffic.get_actor(id).is_empty():
-		world.traffic.damage(id, amount, amount if hull_amount < 0 else hull_amount)
+		world.traffic.damage(id, amount, amount if hull_amount < 0 else hull_amount, "player", 0.0, source_position)
 		return
 	var fighter := enemy(id)
 	if fighter == null or amount <= 0: return
+	var original := amount
+	amount = fighter.get_meta("brain").block_damage(amount, source_position)
+	if hull_amount >= 0: hull_amount *= amount / original
+	if amount <= 0: return
 	var absorbed := minf(float(fighter.get_meta("shield")), amount)
 	fighter.set_meta("shield", float(fighter.get_meta("shield")) - absorbed)
 	var health := maxf(0.0, float(fighter.get_meta("hull")) - (amount if hull_amount < 0 else hull_amount) * (1.0 - absorbed / amount))
@@ -324,13 +321,13 @@ func _explosion(at: Vector3) -> void:
 	_bursts.append(burst)
 
 
-func apply_missile_to_enemy(id: String, type: String) -> void:
+func apply_missile_to_enemy(id: String, type: String, source_position: Vector3 = Vector3.INF) -> void:
 	if not Ordnance.MISSILES.has(type): return
 	var stats: Dictionary = Ordnance.MISSILES[type]
 	if world.traffic != null and not world.traffic.get_actor(id).is_empty():
-		world.traffic.damage(id, float(stats.shield), float(stats.hull), "player", 6.0 if type == "fetter_missile" else 0.0)
+		world.traffic.damage(id, float(stats.shield), float(stats.hull), "player", 6.0 if type == "fetter_missile" else 0.0, source_position)
 		return
-	damage_enemy(id, float(stats.shield), float(stats.hull))
+	damage_enemy(id, float(stats.shield), float(stats.hull), source_position)
 	var fighter := enemy(id)
 	if type == "fetter_missile" and fighter != null:
 		fighter.set_meta("disruption", 6.0)
@@ -343,3 +340,14 @@ func apply_missile_to_player(type: String, source: Vector3 = Vector3.INF) -> voi
 	var stats: Dictionary = Ordnance.MISSILES[type]
 	damage_player(float(stats.shield), float(stats.hull), source)
 	if type == "fetter_missile" and not dead: world.apply_disruption(6.0)
+
+
+func committed_attackers(target: String) -> int:
+	var count := 0
+	for fighter in enemies:
+		var brain: RefCounted = fighter.get_meta("brain")
+		if fighter.get_meta("active") and brain.target_key == target and brain.committed(): count += 1
+	if world.traffic != null:
+		for actor in world.traffic.actors.values():
+			if actor.alive and actor.hostile and actor.target == target and actor.brain.committed(): count += 1
+	return count

@@ -366,7 +366,7 @@ func target_entry() -> Dictionary:
 		if not entry.is_empty(): return entry
 	var hostile := combat.enemy(selected_id) if combat != null else null
 	if hostile != null:
-		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "Hull %d / Shield %d" % [roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield"))]}
+		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "%s / Hull %d / Shield %d" % [str(hostile.get_meta("tactic", "WAITING")), roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield"))]}
 	return layout.target(selected_id)
 
 
