@@ -173,7 +173,7 @@ func _update_labels() -> void:
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
 		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   J TO LAND"
-		_hint.text = "Mouse steer · LMB guns · RMB shield · Enter cursor · J dock · Tab boost · F missile · B repair · N ward · Shift+W cruise / S cancel · T target · M chart"
+		_hint.text = "Mouse steer · LMB guns · RMB shield · Space cursor · J dock · Tab boost · F missile · B repair · N ward · Shift+W cruise / S cancel · T target · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
 		if docked_id != "planet_dock":
@@ -331,12 +331,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.physical_keycode in [KEY_W, KEY_S, KEY_A, KEY_D, KEY_Q, KEY_E]:
 			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
-			KEY_ENTER:
+			KEY_SPACE:
 				free_mouse = not free_mouse
 				if not free_mouse: _centre_cursor()
 				space_world.reset_taps()
 				_sync_mouse_mode()
-			KEY_J: toggle_docking()
+			KEY_J, KEY_ENTER: toggle_docking()
 			KEY_F: world.combat.ordnance.launch()
 			KEY_Z: world.combat.ordnance.cycle_missile()
 			KEY_B: world.combat.ordnance.use_recovery("armourer_mites")

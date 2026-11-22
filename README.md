@@ -14,11 +14,12 @@ Captain Fluellen's five-enemy test contract on the planet.
 [Knightly combat](docs/knightly-combat.md) adds power, armour, a RMB-held, mouse-directed
 shield, cruise spooling, Tab afterburner and a bottom-right scanner. See
 [combat and mission controls](docs/artois-combat.md).
-[Mouse flight](docs/mouse-flight.md): LMB guns, RMB shield, Enter selection cursor and Esc pause menu.
+[Mouse flight](docs/mouse-flight.md): LMB guns, RMB shield, Space selection cursor and Esc pause menu.
 
 [Golden filament highways](docs/artois-highways.md) provide 10× in-system travel
-through paired rings, with directional boost breakouts. North, east and south
+through paired directional lanes, with weaving light, smooth acceleration/braking and boost breakouts. North, east and south
 hyper gates are present but offline with null destinations; the demo stays in Artois.
+[Directional filament details](docs/directional-filaments.md) cover paired lanes and joining light.
 [Station interiors and local markets](docs/station-markets.md) let you dock at
 14 ports, use both shops, and make modest regional commodity runs.
 [Embry's column canyon](docs/embry-art.md) combines towering rectangular rocks

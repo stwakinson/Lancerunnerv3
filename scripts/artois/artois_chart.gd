@@ -79,9 +79,10 @@ func _build() -> void:
 	_picker.clip_text = true
 	_picker.item_selected.connect(func(index: int) -> void: _select(str(_targets[index].id)))
 	add_child(_picker)
-	_title = _label("", Vector2(932, 278), Vector2(262, 60), 21, Color("e5c18e"))
+	_title = _label("", Vector2(932, 278), Vector2(262, 94), 18, Color("e5c18e"))
+	_title.max_lines_visible = 4
 	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_description = _label("", Vector2(932, 355), Vector2(260, 100), 15, Color("a4bac3"))
+	_description = _label("", Vector2(932, 380), Vector2(260, 80), 13, Color("a4bac3"))
 	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_description.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_distance = _label("", Vector2(932, 469), Vector2(260, 35), 17, Color("e4ded0"))
@@ -139,10 +140,17 @@ func _draw() -> void:
 	for lane in world.layout.highways:
 		var start := map_point(ArtoisLayout.point(lane.from))
 		var end := map_point(ArtoisLayout.point(lane.to))
-		draw_line(start, end, Color(1.0, 0.69, 0.28, 0.22), 6, true)
-		draw_line(start, end, Color("eab562"), 1.5, true)
+		for sign in [1.0, -1.0]:
+			var flat_axis := start.direction_to(end)
+			var shift: Vector2 = Vector2(flat_axis.y, -flat_axis.x) * 8 * sign
+			draw_line(start + shift, end + shift, Color(1.0, 0.69, 0.28, 0.15), 4, true)
+			draw_line(start + shift, end + shift, Color("eab562"), 1.0, true)
+			var direction: Vector2 = start.direction_to(end) * sign
+			var side := Vector2(-direction.y, direction.x)
+			var middle := (start + end) * 0.5 + shift
+			draw_colored_polygon(PackedVector2Array([middle + direction * 5, middle - direction * 4 + side * 3, middle - direction * 4 - side * 3]), Color("ffd18a"))
 	for gate in world.layout.highway_targets():
-		var at := map_point(ArtoisLayout.point(gate.map))
+		var at := target_point(gate)
 		draw_arc(at, 3.5, 0, TAU, 16, Color("ffd18a"), 1.5, true)
 		if gate.id == world.selected_id: draw_arc(at, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
 	var player := map_point(world.layout.to_map(world.ship.position))
@@ -177,7 +185,7 @@ func _gui_input(event: InputEvent) -> void:
 	var nearest := ""
 	var distance := 14.0
 	for entry in world.layout.locations + world.layout.highway_targets():
-		var candidate := map_point(ArtoisLayout.point(entry.map)).distance_to(event.position)
+		var candidate := target_point(entry).distance_to(event.position)
 		if candidate < distance:
 			distance = candidate
 			nearest = entry.id
@@ -193,3 +201,11 @@ func _gui_input(event: InputEvent) -> void:
 			_select(field.id)
 			accept_event()
 			return
+
+
+func target_point(entry: Dictionary) -> Vector2:
+	var at := map_point(ArtoisLayout.point(entry.map))
+	if entry.kind == "highway_gate":
+		var axis: Vector2 = entry.chart_axis.normalized()
+		at += Vector2(axis.y, -axis.x) * 8 * signf(float(entry.altitude))
+	return at

@@ -34,7 +34,8 @@ profile. An open shop blocks launch.
 | C | Toggle cruise off/on |
 | LMB | Fire guns; in free cursor mode select structures, ships or fields |
 | X | Brake immediately and cancel cruise/course following |
-| Enter | Toggle free cursor mode in space; launch when landed |
+| Space | Toggle free cursor mode in space |
+| Enter | Dock in space or launch when landed |
 | Z / F | Select missile type / launch after 1.5-second lock |
 | B / N | Use Armourer's Mites for hull and armour / Ward Phial for shields |
 | Double-tap W/S/A/D/Q/E | Dodge in that local direction; 0.65-second cooldown |
@@ -52,7 +53,7 @@ profile. An open shop blocks launch.
 A [finite local population](artois-locals.md) now runs trade, salvage and pirate
 routines inside Artois, including while the player visits the planet.
 
-The chart lists **41 navigation targets**, including eighteen highway entrances. Click a location on the chart or use
+The chart lists **59 navigation targets**, including eighteen highway entrances and eighteen exits. Click a location on the chart or use
 the destination picker, then **NAVIGATE** to engage course following. **TRACK
 ONLY** keeps the marker for manual flight. Asteroid field centres can also be
 selected. Manual thrust/strafe/steering cancels course following. Normal thrust

@@ -10,7 +10,7 @@ They do not need fitting. The Falcon launcher still occupies a weapon hardpoint.
 | Control | Action |
 | --- | --- |
 | Move cursor + LMB | Fire fitted guns at the cursor, limited to a 30° cone around the ship's nose |
-| Enter, then left click | Select a target; it does not fire |
+| Space, then left click | Select a target; it does not fire |
 | Mouse in flight mode | Steer the ship to bring targets inside the gun/seeker arcs |
 | Z | Cycle Pavise / Bodkin / Fetter ammunition |
 | F | Launch one selected missile after acquiring a lock |

@@ -7,9 +7,9 @@ shield follows the unclamped pointer direction, with a gold aim ring while
 raised; its 120-degree blocking cone follows that direction instead of the nose.
 Energy, upkeep, impact drain and rear vulnerability remain unchanged.
 
-**Enter** toggles a visible free cursor: mouse steering, guns and active guard
+**Space** toggles a visible free cursor: mouse steering, guns and active guard
 are disabled, and LMB selects objects or operates UI. WASD/QE movement remains
-available. Enter returns to flight and centres the cursor. **J** docks in space;
+available. Space returns to flight and centres the cursor. **J** or **Enter** docks in space;
 Enter still launches while landed. Tab remains afterburner, T cycles targets.
 Autopilot continues with a stationary pointer; moving the mouse in flight cancels it.
 
@@ -31,7 +31,7 @@ NPC spool/cruise and enforce the existing 12 m/s limit. Quest patrol interceptio
 also spools and cannot fire during charge/cruise. Locals retain their role-specific
 health, loadouts and routines; this does not add NPC dodge or shield AI.
 
-Validation: `artois_mouse_smoke.gd` covers physical LMB/RMB/Enter/Escape, free-cursor
+Validation: `artois_mouse_smoke.gd` covers physical LMB/RMB/Space/Escape, free-cursor
 selection, pause/resume/explicit quit, pointer-directed blocks, stationary versus
 moving exhaust and civilian spool/disruption. Existing knightly, combat, ordnance,
 traffic, navigation and highway smoke checks cover regressions. Rendered checks
