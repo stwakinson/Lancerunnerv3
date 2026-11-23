@@ -31,6 +31,13 @@ inside Artois. Left click or press V to inspect nearby ships and their orders.
 [Cursor guns and ordnance](docs/artois-ordnance.md) add locked missile variants,
 ammunition and period-inspired hull/shield recovery supplies in the outfitter.
 
+## Pilgrim model and textures
+
+Choose **PILGRIM / MODEL PREVIEW** on the main menu to inspect the real low-poly
+hauler (812 triangles, or 341 for its distance mesh). [Model files, UV texture
+sheet and editing guide](docs/pilgrim-model.md) include an editable Blender source.
+The [fleet-detail plan](docs/fleet-detail-plan.md) is bookmarked for later.
+
 ## Lancerunner visual benchmark
 
 The main menu's **ARTOIS / VISUAL BENCHMARK** opens an isolated pixel-style 3D

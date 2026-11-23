@@ -180,6 +180,14 @@ func _build_ui() -> void:
 	_ui.add_child(benchmark)
 	_place(benchmark, 0.5, 0.5, 0.89, 0.89, -210.0, 210.0, -18.0, 18.0)
 
+	var pilgrim := UiStyle.button("PILGRIM  /  MODEL PREVIEW", 14)
+	pilgrim.name = "PilgrimPreviewButton"
+	pilgrim.pressed.connect(func() -> void:
+		if not _launching and not SceneFader.busy:
+			SceneFader.change_scene("res://scenes/ships/pilgrim_preview.tscn"))
+	_ui.add_child(pilgrim)
+	_place(pilgrim, 1, 1, 0, 0, -300, -30, 26, 62)
+
 	_build_picker()
 
 

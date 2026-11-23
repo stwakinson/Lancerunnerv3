@@ -1,0 +1,21 @@
+{
+  "name": "Pilgrim Light Trader",
+  "lod0_triangles": 812,
+  "lod1_triangles": 341,
+  "materials_per_lod": 1,
+  "atlas_size": [
+    512,
+    512
+  ],
+  "front_axis": "-Z (Godot/glTF)",
+  "dimensions_godot": [
+    9.28,
+    9.65,
+    21.25
+  ],
+  "source": "tools/assets/build_pilgrim.py",
+  "textures": [
+    "pilgrim_albedo.png",
+    "pilgrim_emission.png"
+  ]
+}
