@@ -17,6 +17,14 @@ func _draw() -> void:
 	if world == null: return
 	_draw_combat()
 	Scanner.draw_scope(self, world, _font)
+	draw_string(_font, Vector2(24, 280), "F2 / FACTION STANDINGS", HORIZONTAL_ALIGNMENT_LEFT, 340, 13, Color("edc38d"))
+	if world.law.ledger_visible:
+		draw_rect(Rect2(16, 294, 460, 220), Color(0.02, 0.04, 0.06, 0.95))
+		var row := 0
+		for id in world.law.Factions.data.factions:
+			draw_string(_font, Vector2(28, 320 + row * 27), world.law.description(id), HORIZONTAL_ALIGNMENT_LEFT, 440, 14, Color("ff765f") if world.law.hostile(id) else Color("8ed4d7"))
+			row += 1
+		draw_string(_font, Vector2(28, 495), "Hostile at -50 / Assault -8 / Destruction -30", HORIZONTAL_ALIGNMENT_LEFT, 440, 13, Color("edc38d"))
 	for crate in world.loot.canisters.values():
 		if crate.id == world.selected_id or world.camera.is_position_behind(crate.node.position): continue
 		if world.ship.position.distance_to(crate.node.position) > 500: continue
@@ -103,7 +111,7 @@ func _draw_combat() -> void:
 			if world.ship.position.distance_to(actor.node.position) > 1000: continue
 			var at := world.camera.unproject_position(actor.node.position) * factor + offset
 			if Rect2(origin + Vector2(-12, -20), Vector2(272, 298)).has_point(at): continue
-			var colour := Color("e28262") if actor.hostile else Color("8ed4d7")
+			var colour := Color("e28262") if world.law.enemy(actor) else Color("8ed4d7")
 			draw_rect(Rect2(at - Vector2(6, 6), Vector2(12, 12)), colour, false, 1)
 	for fighter in combat.enemies:
 		if world.camera.is_position_behind(fighter.position): continue

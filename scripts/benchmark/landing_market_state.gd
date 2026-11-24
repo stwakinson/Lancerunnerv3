@@ -6,7 +6,9 @@ extends RefCounted
 
 const ShipHolds = preload("res://scripts/artois/artois_ship_holds.gd")
 const Markets = preload("res://scripts/artois/artois_markets.gd")
+const Factions = preload("res://scripts/artois/artois_factions.gd")
 const VERSION := 1
+var reputation := Factions.defaults()
 const BASE_CAPACITY := 20
 const ITEMS := {
 	"grain": {"name": "Wheat & Grain", "kind": "commodity", "buy": 40, "sell": 32, "stock": 90, "description": "Planet-grown wheat and staple grain. Orbital settlements pay a small premium. One hold space."},
@@ -130,7 +132,7 @@ func unmount(slot: int) -> String:
 func save_state() -> bool:
 	var file := FileAccess.open(save_path + ".tmp", FileAccess.WRITE)
 	if file == null: return false
-	file.store_string(JSON.stringify({"version": VERSION, "ship_class": ship_class, "credits": credits, "cargo": cargo, "locker": locker, "weapons": weapons, "utility": utility, "stock": stock, "market_id": market_id, "market_stocks": market_stocks}))
+	file.store_string(JSON.stringify({"reputation": reputation, "version": VERSION, "ship_class": ship_class, "credits": credits, "cargo": cargo, "locker": locker, "weapons": weapons, "utility": utility, "stock": stock, "market_id": market_id, "market_stocks": market_stocks}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -142,6 +144,8 @@ func load_state() -> bool:
 	if not FileAccess.file_exists(save_path): return false
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
 	if not _valid_save(data): return false
+	reputation = Factions.defaults()
+	reputation.merge(_integer_inventory(data.get("reputation", {})), true)
 	ship_class = str(data.get("ship_class", "fighter"))
 	credits = int(data.credits)
 	cargo = _integer_inventory(data.cargo)
@@ -172,6 +176,7 @@ func _whole(value: Variant, maximum: int) -> bool:
 
 func _valid_save(data: Variant) -> bool:
 	if not data is Dictionary or data.get("version") != VERSION or not _whole(data.get("credits"), 1000000000): return false
+	if data.has("reputation") and not Factions.valid(data.reputation): return false
 	for key in ["cargo", "locker", "stock"]:
 		if not data.get(key) is Dictionary: return false
 		for id in data[key]:

@@ -40,7 +40,7 @@ func configure(space: Node3D) -> void:
 func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 	var id := "local_%s_%02d" % [profile.id, index + 1]
 	var home: String = profile.ports[index % profile.ports.size()]
-	var hostile: bool = profile.role in ["pirate", "raider"]
+	var hostile: bool = profile.role in ["pirate", "raider", "guard"]
 	var role: String = "salvager" if profile.id == "borderlander" and index >= 5 else profile.role
 	var pilot: String = str(profile.first[index % profile.first.size()]) + " " + str(profile.last[(index * 3 + 1) % profile.last.size()])
 	var position := routes.harbour(home)
@@ -54,6 +54,7 @@ func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 	node.set_meta("id", id)
 	node.set_meta("local", true)
 	var actor := {"id": id, "pilot": pilot.strip_edges(), "name": profile.ships[index], "faction": profile.id,
+		"allegiance": str(profile.get("allegiance", profile.id)),
 		"hold": {}, "ship_class": "salvager" if role == "salvager" else profile.ship_class, "cargo_capacity": Holds.capacity("salvager" if role == "salvager" else str(profile.ship_class)),
 		"role": role, "hostile": hostile, "node": node, "home": home, "origin": home, "destination": home,
 		"cargo": "Empty recovery hold" if role == "salvager" else profile.cargo[index % profile.cargo.size()], "hull": float(profile.hull), "shield": float(profile.shield),
@@ -65,7 +66,7 @@ func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 	if hostile:
 		_load_manifest(actor)
 		actor.brain = FighterBrain.new()
-		actor.brain.configure(world, node, "valois" if role == "raider" else "freebooter", index)
+		actor.brain.configure(world, node, "valois" if role in ["raider", "guard"] else "freebooter", index)
 		actor.state = "PROWLING"
 		actor.path = [{"position": _patrol_point(actor), "mode": "flight"}]
 	else: _next_trip(actor)
@@ -88,9 +89,9 @@ func target_entry(id: String) -> Dictionary:
 	var profile: Dictionary = profiles[actor.faction]
 	var destination: Dictionary = world.layout.target(actor.destination)
 	var destination_name: String = str(destination.get("name", "Local patrol"))
-	return {"id": id, "name": actor.name, "kind": "hostile" if actor.hostile else "local",
+	return {"id": id, "name": actor.name, "kind": "hostile" if world.law.enemy(actor) else "local",
 		"faction": profile.name, "pilot": actor.pilot, "role": actor.role, "state": actor.state,
-		"notes": "%s / %s / %s → %s / Cargo: %s / Hull %d / Shield %d" % [profile.name, actor.pilot, actor.state, destination_name, Holds.summary(actor.hold, LandingMarketState.ITEMS) + " / HOLD %d/%d" % [Holds.used(actor.hold), actor.cargo_capacity], roundi(actor.hull), roundi(actor.shield)]}
+		"notes": "%s / %s / %s → %s / Cargo: %s / Hull %d / Shield %d" % [profile.name + " / " + world.law.description(actor.allegiance), actor.pilot, actor.state, destination_name, Holds.summary(actor.hold, LandingMarketState.ITEMS) + " / HOLD %d/%d" % [Holds.used(actor.hold), actor.cargo_capacity], roundi(actor.hull), roundi(actor.shield)]}
 
 
 func nearby_ids(radius := 1800.0) -> Array:
@@ -151,6 +152,9 @@ func _step(delta: float) -> void:
 
 
 func _choose_prey(actor: Dictionary) -> void:
+	if actor.role == "guard":
+		_choose_guard_target(actor)
+		return
 	if actor.provoked and player_present and not world.combat.dead and actor.node.position.distance_to(world.ship.position) < 850:
 		actor.target = "player"
 		return
@@ -169,16 +173,33 @@ func _choose_prey(actor: Dictionary) -> void:
 		if distance < nearest:
 			nearest = distance
 			actor.target = prey.id
-	if actor.target.is_empty() and player_present and not world.combat.dead and actor.node.position.distance_to(world.ship.position) < 300:
+	if actor.target.is_empty() and world.law.enemy(actor) and player_present and not world.combat.dead and actor.node.position.distance_to(world.ship.position) < 300:
 		actor.target = "player"
 	if not actor.target.is_empty():
 		_radio(actor, "Stand to. Surrender your cargo." if actor.role == "pirate" else "Contact identified. Maintain formation.", true)
 
 
+func _choose_guard_target(actor: Dictionary) -> void:
+	actor.target = ""
+	var home: Vector3 = routes.harbour(actor.home)
+	if actor.node.position.distance_to(home) > 1800: return
+	if player_present and not world.combat.dead and world.law.enemy(actor) and world.ship.position.distance_to(home) < 1400 and actor.node.position.distance_to(world.ship.position) < 900:
+		actor.target = "player"
+		return
+	var nearest := 650.0
+	for other in actors.values():
+		if not other.alive or not other.node.visible or other.role not in ["pirate", "raider"]: continue
+		if other.node.position.distance_to(home) > 1400: continue
+		var distance: float = actor.node.position.distance_to(other.node.position)
+		if distance < nearest:
+			nearest = distance
+			actor.target = other.id
+
+
 func _sense_threat(actor: Dictionary) -> void:
 	if actor.state in ["DOCKED", "SALVAGING"]: return
 	var nearest := 450.0
-	var threat := "player" if actor.provoked and player_present and actor.node.position.distance_to(world.ship.position) < 700 else ""
+	var threat := "player" if world.law.enemy(actor) and player_present and actor.node.position.distance_to(world.ship.position) < 700 else ""
 	for other in actors.values():
 		if not other.alive or not other.hostile or other.target != actor.id: continue
 		var distance: float = actor.node.position.distance_to(other.node.position)
@@ -320,6 +341,7 @@ func _sync(actor: Dictionary) -> void:
 func damage(id: String, shield_damage: float, hull_damage: float, source := "player", disruption := 0.0, source_position: Vector3 = Vector3.INF) -> void:
 	var actor := get_actor(id)
 	if actor.is_empty() or not actor.node.visible or shield_damage <= 0: return
+	if source == "player": world.law.record(actor.node, actor.allegiance, not actor.hostile)
 	if actor.hostile:
 		var position: Vector3 = source_position
 		if not position.is_finite():
@@ -348,6 +370,9 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 			actor.state = "FLEEING"
 			actor.timer = 7.0
 			_radio(actor, "Hold your fire! We are civilians!", true)
+	elif actor.hostile:
+		var attacker := get_actor(source)
+		if not attacker.is_empty(): actor.target = source
 	elif not actor.hostile:
 		actor.threat = source
 		if actor.state != "FLEEING":
@@ -357,6 +382,7 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 		actor.timer = 7.0
 		_radio(actor, "Taking fire! Breaking for harbour!", true)
 	if actor.hull <= 0:
+		if source == "player": world.law.record(actor.node, actor.allegiance, not actor.hostile, true)
 		world.loot.drop_ship(actor.node, actor.hold, actor.velocity)
 		world.combat._explosion(actor.node.position)
 		actor.alive = false

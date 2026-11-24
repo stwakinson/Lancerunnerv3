@@ -19,7 +19,7 @@ static func draw_scope(canvas: Control, world: ArtoisSpace, font: Font) -> void:
 	for entry in world.layout.targets():
 		contacts.append({"id": entry.id, "position": world.target_position(entry.id), "colour": Color("a6b7b1")})
 	for actor in world.traffic.actors.values():
-		if actor.alive and actor.node.visible: contacts.append({"id": actor.id, "position": actor.node.position, "colour": Color("ff765f") if actor.hostile else Color("83ceef")})
+		if actor.alive and actor.node.visible: contacts.append({"id": actor.id, "position": actor.node.position, "colour": Color("ff765f") if world.law.enemy(actor) else Color("83ceef")})
 	for fighter in world.combat.enemies: contacts.append({"id": str(fighter.get_meta("id")), "position": fighter.position, "colour": Color("ff765f")})
 	for crate in world.loot.canisters.values(): contacts.append({"id": crate.id, "position": crate.node.position, "colour": Color("b7e6a3")})
 	for contact in contacts:
