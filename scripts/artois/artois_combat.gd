@@ -74,6 +74,7 @@ func configure(space: Node3D, market: LandingMarketState) -> void:
 
 func repair() -> void:
 	defence.repair()
+	if world.ship.has_meta("cargo_dropped"): world.ship.remove_meta("cargo_dropped")
 	guard_requested = false
 	hull = HULL_MAX
 	shield = shield_max
@@ -131,6 +132,9 @@ func spawn_patrol(centre: Vector3) -> void:
 		fighter.set_meta("id", "patrol_%d" % (i + 1))
 		fighter.set_meta("hull", 65.0)
 		fighter.set_meta("shield", 20.0)
+		fighter.set_meta("cargo_capacity", 8)
+		fighter.set_meta("ship_class", "interceptor")
+		fighter.set_meta("cargo_hold", {"fuel": 2 + i % 3, "alloy": 1})
 		fighter.set_meta("active", false)
 		fighter.set_meta("cooldown", 0.8 + i * 0.35)
 		fighter.set_meta("velocity", Vector3.ZERO)
@@ -283,6 +287,7 @@ func damage_player(amount: float, hull_amount: float = -1.0, source: Vector3 = V
 	if absorbed > 0: _shield_flash = 0.25
 	if hull <= 0:
 		dead = true
+		world.loot.drop_player()
 		player_destroyed.emit()
 
 
@@ -301,6 +306,7 @@ func damage_enemy(id: String, amount: float, hull_amount: float = -1.0, source_p
 	var health := maxf(0.0, float(fighter.get_meta("hull")) - (amount if hull_amount < 0 else hull_amount) * (1.0 - absorbed / amount))
 	fighter.set_meta("hull", health)
 	if health > 0: return
+	world.loot.drop_ship(fighter, fighter.get_meta("cargo_hold"), fighter.get_meta("velocity"))
 	_explosion(fighter.position)
 	enemies.erase(fighter)
 	fighter.queue_free()

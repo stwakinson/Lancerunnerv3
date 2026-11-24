@@ -21,6 +21,7 @@ static func draw_scope(canvas: Control, world: ArtoisSpace, font: Font) -> void:
 	for actor in world.traffic.actors.values():
 		if actor.alive and actor.node.visible: contacts.append({"id": actor.id, "position": actor.node.position, "colour": Color("ff765f") if actor.hostile else Color("83ceef")})
 	for fighter in world.combat.enemies: contacts.append({"id": str(fighter.get_meta("id")), "position": fighter.position, "colour": Color("ff765f")})
+	for crate in world.loot.canisters.values(): contacts.append({"id": crate.id, "position": crate.node.position, "colour": Color("b7e6a3")})
 	for contact in contacts:
 		var local := project(world.ship, contact.position)
 		if local.length() > RANGE: continue

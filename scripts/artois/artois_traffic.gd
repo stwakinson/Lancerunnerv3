@@ -1,6 +1,7 @@
 class_name ArtoisTraffic
 extends Node3D
 ## A bounded, session-stable local population. No distance LOD or respawn director.
+const Holds = preload("res://scripts/artois/artois_ship_holds.gd")
 const FighterBrain = preload("res://scripts/artois/artois_fighter_brain.gd")
 const Models = preload("res://scripts/artois/artois_local_models.gd")
 const Routes = preload("res://scripts/artois/artois_traffic_routes.gd")
@@ -15,6 +16,7 @@ var radio_line := ""
 var elapsed := 0.0
 var _radio_until := 0.0
 var _radio_ready := 0.0
+var _cargo_random := RandomNumberGenerator.new()
 var _random := RandomNumberGenerator.new()
 var population_limit := 30
 var player_present := true
@@ -25,6 +27,7 @@ func configure(space: Node3D) -> void:
 	routes.configure(world)
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/artois_population.json"))
 	_random.seed = int(data.seed)
+	_cargo_random.seed = int(data.seed) + 72
 	population_limit = int(data.limit)
 	var port_counts := {}
 	for profile in data.factions:
@@ -51,6 +54,7 @@ func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 	node.set_meta("id", id)
 	node.set_meta("local", true)
 	var actor := {"id": id, "pilot": pilot.strip_edges(), "name": profile.ships[index], "faction": profile.id,
+		"hold": {}, "ship_class": "salvager" if role == "salvager" else profile.ship_class, "cargo_capacity": Holds.capacity("salvager" if role == "salvager" else str(profile.ship_class)),
 		"role": role, "hostile": hostile, "node": node, "home": home, "origin": home, "destination": home,
 		"cargo": "Empty recovery hold" if role == "salvager" else profile.cargo[index % profile.cargo.size()], "hull": float(profile.hull), "shield": float(profile.shield),
 		"radius": float(profile.radius), "alive": true, "velocity": Vector3.ZERO, "state": "DEPARTING", "path": [],
@@ -59,6 +63,7 @@ func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 		"salvage_next": role == "salvager", "patrol_step": index}
 	actors[id] = actor
 	if hostile:
+		_load_manifest(actor)
 		actor.brain = FighterBrain.new()
 		actor.brain.configure(world, node, "valois" if role == "raider" else "freebooter", index)
 		actor.state = "PROWLING"
@@ -85,7 +90,7 @@ func target_entry(id: String) -> Dictionary:
 	var destination_name: String = str(destination.get("name", "Local patrol"))
 	return {"id": id, "name": actor.name, "kind": "hostile" if actor.hostile else "local",
 		"faction": profile.name, "pilot": actor.pilot, "role": actor.role, "state": actor.state,
-		"notes": "%s / %s / %s → %s / Cargo: %s / Hull %d / Shield %d" % [profile.name, actor.pilot, actor.state, destination_name, actor.cargo, roundi(actor.hull), roundi(actor.shield)]}
+		"notes": "%s / %s / %s → %s / Cargo: %s / Hull %d / Shield %d" % [profile.name, actor.pilot, actor.state, destination_name, Holds.summary(actor.hold, LandingMarketState.ITEMS) + " / HOLD %d/%d" % [Holds.used(actor.hold), actor.cargo_capacity], roundi(actor.hull), roundi(actor.shield)]}
 
 
 func nearby_ids(radius := 1800.0) -> Array:
@@ -104,6 +109,7 @@ func _next_trip(actor: Dictionary) -> void:
 	for attempt in choices.size():
 		if destination != actor.destination: break
 		destination = choices[(choices.find(destination) + 1) % choices.size()]
+	if actor.role != "salvager": _load_manifest(actor)
 	actor.origin = actor.destination
 	actor.destination = destination
 	if actor.role == "salvager": actor.salvage_next = not actor.salvage_next
@@ -214,7 +220,12 @@ func _civilian_step(actor: Dictionary, delta: float) -> void:
 		actor.trips += 1
 		var salvage: bool = actor.role == "salvager" and actor.destination in profiles[actor.faction].salvage
 		actor.state = "SALVAGING" if salvage else "DOCKED"
-		if actor.role == "salvager": actor.cargo = "Recovered scrap" if salvage else "Empty recovery hold"
+		if salvage:
+			actor.hold = {"alloy": _cargo_random.randi_range(8, 20), "argent_ore": _cargo_random.randi_range(2, 7)}
+			actor.cargo = "Recovered scrap"
+		else:
+			actor.hold.clear()
+			actor.cargo = "Empty recovery hold" if actor.role == "salvager" else "Delivered"
 		actor.node.visible = salvage
 		actor.timer = 10.0 + _random.randf() * 10.0
 		_radio(actor, "Holding for salvage recovery." if salvage else "Cargo delivered. Requesting a berth.")
@@ -301,7 +312,8 @@ func _target_position(id: String) -> Variant:
 
 
 func _sync(actor: Dictionary) -> void:
-	for key in ["hull", "shield", "velocity", "disruption"]: actor.node.set_meta(key, actor[key])
+	for key in ["hull", "shield", "velocity", "disruption", "cargo_capacity", "ship_class"]: actor.node.set_meta(key, actor[key])
+	actor.node.set_meta("cargo_hold", actor.hold)
 	actor.node.set_meta("cruise", (actor.cruise or actor.state == "FILAMENT TRANSIT") and actor.disruption <= 0)
 
 
@@ -345,6 +357,7 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 		actor.timer = 7.0
 		_radio(actor, "Taking fire! Breaking for harbour!", true)
 	if actor.hull <= 0:
+		world.loot.drop_ship(actor.node, actor.hold, actor.velocity)
 		world.combat._explosion(actor.node.position)
 		actor.alive = false
 		actor.state = "DESTROYED"
@@ -390,3 +403,26 @@ func _radio(actor: Dictionary, text: String, urgent := false) -> void:
 	_radio_ready = elapsed + (3.0 if urgent else 10.0)
 	radio_history.append({"pilot": actor.pilot, "ship": actor.name, "text": text, "time": elapsed})
 	if radio_history.size() > 8: radio_history.pop_front()
+
+
+func _load_manifest(actor: Dictionary) -> void:
+	var profile: Dictionary = profiles[actor.faction]
+	var port: Dictionary = world.port_catalog.profile(actor.destination)
+	var goods: Array = profile.cargo_goods.duplicate()
+	if not actor.hostile:
+		if port.theme == "planet": goods = ["grain", "oxygen", "lamp_oil"]
+		elif port.theme in ["mining", "salvage"]: goods = ["argent_ore", "alloy"]
+		var available := []
+		for id in goods:
+			if port.quotes.has(id): available.append(id)
+		if available.is_empty(): available = port.quotes.keys()
+		goods = available
+	actor.hold = {}
+	if goods.is_empty(): return
+	var remaining := _cargo_random.randi_range(maxi(2, int(actor.cargo_capacity * (0.2 if actor.hostile else 0.5))), maxi(2, int(actor.cargo_capacity * (0.6 if actor.hostile else 0.85))))
+	for i in mini(2, goods.size()):
+		var id: String = goods[(int(_cargo_random.randi()) + i) % goods.size()]
+		var amount := remaining if i == mini(2, goods.size()) - 1 else maxi(1, remaining / 2)
+		actor.hold[id] = int(actor.hold.get(id, 0)) + amount
+		remaining -= amount
+	actor.cargo = Holds.summary(actor.hold, LandingMarketState.ITEMS)

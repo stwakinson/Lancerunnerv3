@@ -173,7 +173,7 @@ func _update_labels() -> void:
 		_dock_button.tooltip_text = space_world.docking_error()
 		_status.text = "ARTOIS   /   " + space_world.docking_error()
 		if space_world.docking_error().is_empty(): _status.text = "DOCKING AVAILABLE   /   J TO LAND"
-		_hint.text = "Mouse steer · LMB guns · RMB shield · Space cursor · J dock · Tab boost · F missile · B repair · N ward · Shift+W cruise / S cancel · T target · M chart"
+		_hint.text = "Mouse steer · LMB guns · RMB shield · Space cursor · H cargo · J dock · Tab boost · F missile · B repair · N ward · Shift+W cruise / S cancel · T target · M chart"
 	else:
 		_dock_button.text = "ENTER  LAUNCH TO ARTOIS"
 		if docked_id != "planet_dock":
@@ -207,7 +207,9 @@ func _process(delta: float) -> void:
 	if not space_world.combat.guard_requested: space_world.combat.defence.guard_active = false
 	if space_world.traffic != null:
 		space_world.traffic.player_present = not landed and not transitioning and not _recovering
-		if landed and not transitioning: space_world.traffic.advance(delta)
+		if landed and not transitioning:
+			space_world.traffic.advance(delta)
+			space_world.loot.advance(delta)
 	if _recovering: return
 	if contract_panel != null and contract_panel.visible:
 		landing_world.advance(delta, Vector2.ZERO, 0.0, true)
@@ -234,6 +236,7 @@ func _process(delta: float) -> void:
 		if world.highways.attached(): _status.text = world.highways.status()
 		elif _notice_time > 0: _status.text = _notice
 		elif world.docking_error().is_empty() and not world.cruise and world.cruise_spool == 0: _status.text = "DOCKING AVAILABLE / J AT " + str(world.port_catalog.profile(world.docking_port()).name).to_upper()
+		if not world.loot.nearby_ids(world.loot.RANGE).is_empty() and not world.cruise and world.cruise_spool == 0 and not world.highways.attached(): _status.text = "H / COLLECT NEARBY CARGO   /   HOLD %d / %d" % [market_state.cargo_used(), market_state.capacity()]
 		if world.combat.ordnance.message_time > 0: _status.text = world.combat.ordnance.message
 		_dock_button.disabled = not world.docking_error().is_empty()
 		_dock_button.tooltip_text = world.docking_error()
@@ -337,6 +340,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				space_world.reset_taps()
 				_sync_mouse_mode()
 			KEY_J, KEY_ENTER: toggle_docking()
+			KEY_H:
+				var result: Dictionary = world.loot.pickup()
+				if not str(result.error).is_empty(): world.combat.ordnance.notify(str(result.error))
 			KEY_F: world.combat.ordnance.launch()
 			KEY_Z: world.combat.ordnance.cycle_missile()
 			KEY_B: world.combat.ordnance.use_recovery("armourer_mites")
@@ -353,6 +359,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				var targets := world.layout.targets()
 				for fighter in world.combat.enemies: targets.append({"id": str(fighter.get_meta("id"))})
 				for id in world.traffic.nearby_ids(): targets.append({"id": id})
+				for id in world.loot.nearby_ids(): targets.append({"id": id})
 				var index := 0
 				for i in targets.size():
 					if targets[i].id == world.selected_id: index = i

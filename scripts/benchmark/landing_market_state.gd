@@ -4,6 +4,7 @@ extends RefCounted
 # Shared landing economy. Artois reads this loadout on launch; the original
 # combat mission remains separate. Prices are fixed; quantities and stock persist.
 
+const ShipHolds = preload("res://scripts/artois/artois_ship_holds.gd")
 const Markets = preload("res://scripts/artois/artois_markets.gd")
 const VERSION := 1
 const BASE_CAPACITY := 20
@@ -31,6 +32,7 @@ const ITEMS := {
 }
 const LEGACY_IDS := ["grain", "alloy", "medicine", "textiles", "fuel", "pulse_laser", "autocannon", "missile_rack", "shield", "cargo_expander"]
 
+var ship_class := "fighter"
 var credits := 7500
 var cargo := {"grain": 3, "alloy": 1}
 var locker := {}
@@ -57,7 +59,7 @@ func cargo_used() -> int:
 
 
 func capacity() -> int:
-	return BASE_CAPACITY + (10 if utility == "cargo_expander" else 0)
+	return ShipHolds.capacity(ship_class) + (10 if utility == "cargo_expander" else 0)
 
 
 func owned(id: String) -> int:
@@ -117,7 +119,7 @@ func unmount(slot: int) -> String:
 	if slot < 0 or slot > 2: return "Invalid equipment slot."
 	var id: String = utility if slot == 2 else weapons[slot]
 	if id.is_empty(): return "This slot is empty."
-	if id == "cargo_expander" and cargo_used() > BASE_CAPACITY: return "Sell cargo down to 20 spaces before removing the expansion module."
+	if id == "cargo_expander" and cargo_used() > ShipHolds.capacity(ship_class): return "Reduce cargo to %d units before removing the expansion module." % ShipHolds.capacity(ship_class)
 	if int(locker.get(id, 0)) >= 99: return "Equipment locker limit reached."
 	locker[id] = int(locker.get(id, 0)) + 1
 	if slot == 2: utility = ""
@@ -128,7 +130,7 @@ func unmount(slot: int) -> String:
 func save_state() -> bool:
 	var file := FileAccess.open(save_path + ".tmp", FileAccess.WRITE)
 	if file == null: return false
-	file.store_string(JSON.stringify({"version": VERSION, "credits": credits, "cargo": cargo, "locker": locker, "weapons": weapons, "utility": utility, "stock": stock, "market_id": market_id, "market_stocks": market_stocks}))
+	file.store_string(JSON.stringify({"version": VERSION, "ship_class": ship_class, "credits": credits, "cargo": cargo, "locker": locker, "weapons": weapons, "utility": utility, "stock": stock, "market_id": market_id, "market_stocks": market_stocks}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -140,6 +142,7 @@ func load_state() -> bool:
 	if not FileAccess.file_exists(save_path): return false
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
 	if not _valid_save(data): return false
+	ship_class = str(data.get("ship_class", "fighter"))
 	credits = int(data.credits)
 	cargo = _integer_inventory(data.cargo)
 	locker = _integer_inventory(data.locker)
@@ -172,7 +175,7 @@ func _valid_save(data: Variant) -> bool:
 	for key in ["cargo", "locker", "stock"]:
 		if not data.get(key) is Dictionary: return false
 		for id in data[key]:
-			if not ITEMS.has(id) or not _whole(data[key][id], 9999 if key == "stock" else 99): return false
+			if not ITEMS.has(id) or not _whole(data[key][id], 9999 if key in ["stock", "cargo"] else 99): return false
 			if key == "cargo" and ITEMS[id].kind != "commodity": return false
 			if key == "locker" and ITEMS[id].kind == "commodity": return false
 	# New supply stock is additive; preserve all original save validation.
@@ -191,9 +194,11 @@ func _valid_save(data: Variant) -> bool:
 		if not id is String or (not id.is_empty() and (not ITEMS.has(id) or ITEMS[id].kind != "weapon")): return false
 	var util: Variant = data.get("utility")
 	if not util is String or (not util.is_empty() and (not ITEMS.has(util) or ITEMS[util].kind != "utility")): return false
+	var hull_class: Variant = data.get("ship_class", "fighter")
+	if not hull_class is String or not ShipHolds.CAPACITIES.has(hull_class): return false
 	var used := 0
 	for amount in data.cargo.values(): used += int(amount)
-	return used <= BASE_CAPACITY + (10 if util == "cargo_expander" else 0)
+	return used <= ShipHolds.capacity(hull_class) + (10 if util == "cargo_expander" else 0)
 
 
 func consume(id: String) -> String:
@@ -237,3 +242,26 @@ func set_market(port: String) -> bool:
 	market_id = port
 	stock = market_stocks[port]
 	return true
+
+
+func acquire_cargo(id: String, requested: int) -> Dictionary:
+	if not ITEMS.has(id) or ITEMS[id].kind != "commodity" or requested < 1: return {"taken": 0, "error": "Invalid recovered cargo."}
+	var amount := mini(requested, maxi(0, capacity() - cargo_used()))
+	if amount == 0: return {"taken": 0, "error": "HOLD FULL / %d OF %d" % [cargo_used(), capacity()]}
+	var before := cargo.duplicate(true)
+	cargo[id] = int(cargo.get(id, 0)) + amount
+	if not save_state():
+		cargo = before
+		return {"taken": 0, "error": "Cargo recovery could not be saved; canister unchanged."}
+	return {"taken": amount, "error": ""}
+
+
+func set_ship_class(id: String) -> String:
+	if not ShipHolds.CAPACITIES.has(id): return "Unknown ship class."
+	if cargo_used() > ShipHolds.capacity(id) + (10 if utility == "cargo_expander" else 0): return "Cargo will not fit this ship."
+	var before := ship_class
+	ship_class = id
+	if not save_state():
+		ship_class = before
+		return "Ship class could not be saved."
+	return ""
