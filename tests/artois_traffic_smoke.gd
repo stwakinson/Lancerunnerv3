@@ -34,7 +34,10 @@ func _run() -> void:
 	while root.get_node("SceneFader").busy: await process_frame
 	world = scene.space_world
 	traffic = world.traffic
-	check(traffic.actors.size() == 30 and traffic.population_limit == 30, "Population must be bounded at thirty session locals")
+	var test_market := LandingMarketState.new()
+	test_market.save_path = "user://traffic_law_smoke_%d.json" % OS.get_process_id()
+	world.combat.configure(world, test_market)
+	check(traffic.actors.size() == 38 and traffic.population_limit == 38, "Population must be bounded at thirty-eight session locals")
 	var counts := {}
 	var identities := {}
 	var names := {}
@@ -46,7 +49,7 @@ func _run() -> void:
 		if not actor.hostile:
 			check(world.layout.target(actor.destination).kind != "hyper_gate", "Local trade must never target closed hyper gates")
 			check(not actor.path.is_empty(), "Civilian ships must start with real orders")
-	check(counts == {"hanseatic": 6, "britannian": 5, "valois": 5, "borderlander": 8, "freebooter": 4, "raider": 2}, "Faction mix must match the finite roster")
+	check(counts == {"hanseatic": 6, "britannian": 5, "valois": 5, "borderlander": 8, "freebooter": 4, "raider": 2, "britannian_navy": 2, "valois_navy": 6}, "Faction mix must match the finite roster")
 	var cog: Dictionary = traffic.actors.local_hanseatic_01
 	world.select_target(cog.id)
 	check(world.target_entry().pilot == cog.pilot and world.target_entry().notes.contains("Cargo:"), "Tracking must expose pilot, cargo and current orders")
@@ -102,7 +105,7 @@ func _run() -> void:
 	check(salvager.destination in traffic.profiles.borderlander.ports, "Salvager must return to a local port")
 	for actor in traffic.actors.values():
 		check(identities[actor.id] == [actor.pilot, actor.name, actor.node.get_instance_id()], "Distance and elapsed time must not replace NPC identity")
-	check(traffic.actors.size() == 30, "No background spawn loop may exceed the roster cap")
+	check(traffic.actors.size() == 38, "No background spawn loop may exceed the roster cap")
 
 	# Disguised raiders choose trade targets without revealing their allegiance.
 	quiet()
@@ -121,6 +124,9 @@ func _run() -> void:
 
 	# A pirate fires a swept projectile at a trader; the trader flees and calls out.
 	quiet()
+	# Clear the preceding target-selection fixtures from the projectile corridor.
+	valois.node.position = zone + Vector3(2000, 0, 0)
+	raider.node.position = zone + Vector3(2000, 0, 1000)
 	var pirate: Dictionary = traffic.actors.local_freebooter_02
 	brit.node.position = zone + Vector3(0, 0, 90)
 	brit.node.visible = true
@@ -133,6 +139,11 @@ func _run() -> void:
 	pirate.node.position = zone
 	pirate.node.look_at(brit.node.position, Vector3.UP)
 	pirate.brain.idle(0)
+	pirate.brain.velocity = Vector3.ZERO
+	pirate.brain._shot_wait = 0
+	brit.cruise_charge = 0.0
+	brit.cruise = false
+
 	# Start an already-signalled ambush; the trader can still spool and flee.
 	pirate.brain.state = "WINDUP"
 	pirate.brain.timer = 0.7
@@ -143,7 +154,8 @@ func _run() -> void:
 	world.ship.position = brit.node.position + Vector3(300, 0, 0)
 	traffic._radio_ready = 0
 	var before: Vector3 = brit.node.position
-	for i in 120: traffic.advance(0.05)
+	for i in 120:
+		traffic.advance(0.05)
 	check(brit.state == "FLEEING" and brit.node.position.distance_to(before) > 20, "Civilian must evade an actual local attacker")
 	check(brit.shield < 40, "NPC projectiles must damage other NPCs")
 	check(not traffic.radio_history.is_empty(), "Local actions must produce contextual radio messages")
@@ -191,7 +203,7 @@ func _run() -> void:
 	check(took_damage, "Local hostile fire must damage the player before retaliation")
 	check(scene.mission.kills == 0, "Local kills must not count toward the separate five-enemy contract")
 	world.combat.clear_encounter()
-	check(traffic.actors.size() == 30 and not enemy.alive, "Resetting the test encounter must not reset ambient locals")
+	check(traffic.actors.size() == 38 and not enemy.alive, "Resetting the test encounter must not reset ambient locals")
 	traffic.advance(5)
 	check(not enemy.alive, "Destroyed locals must not immediately respawn")
 	var disrupted: Dictionary = traffic.actors.local_freebooter_03
@@ -216,7 +228,8 @@ func _run() -> void:
 	check(traffic.elapsed > clock and not traffic.player_present and world.combat.shield == shield, "Routines must continue safely while the player visits the planet contact")
 	scene.contract_panel.close_panel()
 	await scene.toggle_docking()
-	check(world.traffic == traffic and traffic.actors.size() == 30 and not enemy.alive, "Launching must retain the same local population")
+	check(world.traffic == traffic and traffic.actors.size() == 38 and not enemy.alive, "Launching must retain the same local population")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_market.save_path))
 	if failures == 0: print("PASS: finite factions, persistent identities, route planning, delivery/docking/salvage, selective raiders, NPC combat/fleeing, player combat, mission isolation and planet continuity")
 	quit(0 if failures == 0 else 1)
 

@@ -20,6 +20,7 @@ var port_catalog := Markets.new()
 var active_port := DOCK_ID
 var embry_art := Embry.new()
 var loot: Node3D
+var law: Node
 var traffic: ArtoisTraffic
 var highways: ArtoisHighways
 var combat: ArtoisCombat
@@ -56,6 +57,10 @@ func _ready() -> void:
 	loot.name = "CargoCanisters"
 	add_child(loot)
 	loot.configure(self)
+	law = preload("res://scripts/artois/artois_law.gd").new()
+	law.name = "FactionLaw"
+	law.world = self
+	add_child(law)
 	traffic = Traffic.new()
 	traffic.name = "LocalTraffic"
 	add_child(traffic)
@@ -377,7 +382,10 @@ func target_entry() -> Dictionary:
 	var hostile := combat.enemy(selected_id) if combat != null else null
 	if hostile != null:
 		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "%s / Hull %d / Shield %d / HOLD %d/%d" % [str(hostile.get_meta("tactic", "WAITING")), roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield")), Holds.used(hostile.get_meta("cargo_hold", {})), int(hostile.get_meta("cargo_capacity", 0))]}
-	return layout.target(selected_id)
+	var entry: Dictionary = layout.target(selected_id).duplicate()
+	var owner: String = law.territory_owner(selected_id)
+	if not owner.is_empty(): entry["notes"] = str(entry.get("notes", "")) + " / " + law.description(owner)
+	return entry
 
 
 func apply_disruption(duration: float) -> void:

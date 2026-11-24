@@ -1,6 +1,6 @@
 {
   "seed": 1415,
-  "limit": 30,
+  "limit": 38,
   "factions": [
     {
       "id": "hanseatic",
@@ -301,6 +301,96 @@
         "medicine",
         "alloy"
       ]
+    },
+    {
+      "id": "britannian_navy",
+      "name": "Britannia Guard",
+      "count": 2,
+      "role": "guard",
+      "model": "britannian_guard",
+      "colour": "e5dcd5",
+      "speed": 42,
+      "hull": 155,
+      "shield": 55,
+      "radius": 9,
+      "cargo": [
+        "Patrol supplies"
+      ],
+      "ports": [
+        "calais_gate"
+      ],
+      "first": [
+        "Thomas",
+        "Alice",
+        "William",
+        "Joan",
+        "Edmund"
+      ],
+      "last": [
+        "Hale",
+        "Mercer",
+        "Wyatt",
+        "Baker",
+        "Ashford"
+      ],
+      "ships": [
+        "Britannia Watch 1",
+        "Britannia Watch 2"
+      ],
+      "ship_class": "fighter",
+      "cargo_goods": [
+        "fuel",
+        "alloy"
+      ],
+      "allegiance": "britannian"
+    },
+    {
+      "id": "valois_navy",
+      "name": "Valois Guard",
+      "count": 6,
+      "role": "guard",
+      "model": "valois_guard",
+      "colour": "79a8d9",
+      "speed": 40,
+      "hull": 155,
+      "shield": 55,
+      "radius": 9,
+      "cargo": [
+        "Patrol supplies"
+      ],
+      "ports": [
+        "agincourt",
+        "east_gate",
+        "picardie_gate"
+      ],
+      "first": [
+        "Jehan",
+        "Margot",
+        "Pierre",
+        "Isabeau",
+        "Martin"
+      ],
+      "last": [
+        "Moreau",
+        "Dufour",
+        "Leclerc",
+        "Roux",
+        "Petit"
+      ],
+      "ships": [
+        "Valois Watch 1",
+        "Valois Watch 2",
+        "Valois Watch 3",
+        "Valois Watch 4",
+        "Valois Watch 5",
+        "Valois Watch 6"
+      ],
+      "ship_class": "fighter",
+      "cargo_goods": [
+        "fuel",
+        "alloy"
+      ],
+      "allegiance": "valois"
     }
   ]
 }

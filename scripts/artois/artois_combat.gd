@@ -297,6 +297,7 @@ func damage_enemy(id: String, amount: float, hull_amount: float = -1.0, source_p
 		return
 	var fighter := enemy(id)
 	if fighter == null or amount <= 0: return
+	world.law.record(fighter, "freebooter", false)
 	var original := amount
 	amount = fighter.get_meta("brain").block_damage(amount, source_position)
 	if hull_amount >= 0: hull_amount *= amount / original
@@ -306,6 +307,7 @@ func damage_enemy(id: String, amount: float, hull_amount: float = -1.0, source_p
 	var health := maxf(0.0, float(fighter.get_meta("hull")) - (amount if hull_amount < 0 else hull_amount) * (1.0 - absorbed / amount))
 	fighter.set_meta("hull", health)
 	if health > 0: return
+	world.law.record(fighter, "freebooter", false, true)
 	world.loot.drop_ship(fighter, fighter.get_meta("cargo_hold"), fighter.get_meta("velocity"))
 	_explosion(fighter.position)
 	enemies.erase(fighter)

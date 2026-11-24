@@ -1,0 +1,41 @@
+{
+  "factions": {
+    "britannian": {
+      "name": "Britannia",
+      "initial": 0,
+      "lawful": true
+    },
+    "valois": {
+      "name": "Valois",
+      "initial": 0,
+      "lawful": true
+    },
+    "hanseatic": {
+      "name": "Hanseatic League",
+      "initial": 0,
+      "lawful": true
+    },
+    "borderlander": {
+      "name": "Borderlanders",
+      "initial": 0,
+      "lawful": true
+    },
+    "freebooter": {
+      "name": "Freebooters",
+      "initial": -60,
+      "lawful": false
+    },
+    "raider": {
+      "name": "Unidentified Raiders",
+      "initial": -60,
+      "lawful": false
+    }
+  },
+  "owners": {
+    "agincourt": "valois",
+    "east_gate": "valois",
+    "picardie_gate": "valois",
+    "calais_gate": "britannian",
+    "freebooter_base": "freebooter"
+  }
+}

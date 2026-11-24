@@ -334,6 +334,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.physical_keycode in [KEY_W, KEY_S, KEY_A, KEY_D, KEY_Q, KEY_E]:
 			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
+			KEY_F2:
+				world.law.ledger_visible = not world.law.ledger_visible
 			KEY_SPACE:
 				free_mouse = not free_mouse
 				if not free_mouse: _centre_cursor()
