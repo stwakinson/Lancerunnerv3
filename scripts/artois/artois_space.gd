@@ -1,6 +1,8 @@
 class_name ArtoisSpace
 extends BenchmarkSpace
 
+const Holds = preload("res://scripts/artois/artois_ship_holds.gd")
+const Loot = preload("res://scripts/artois/artois_cargo_loot.gd")
 const Markets = preload("res://scripts/artois/artois_markets.gd")
 const Embry = preload("res://scripts/artois/artois_embry.gd")
 const Traffic = preload("res://scripts/artois/artois_traffic.gd")
@@ -17,6 +19,7 @@ const DOCK_ID := "planet_dock"
 var port_catalog := Markets.new()
 var active_port := DOCK_ID
 var embry_art := Embry.new()
+var loot: Node3D
 var traffic: ArtoisTraffic
 var highways: ArtoisHighways
 var combat: ArtoisCombat
@@ -49,6 +52,10 @@ func _ready() -> void:
 	highways.name = "GoldenHighways"
 	add_child(highways)
 	highways.configure(self)
+	loot = Loot.new()
+	loot.name = "CargoCanisters"
+	add_child(loot)
+	loot.configure(self)
 	traffic = Traffic.new()
 	traffic.name = "LocalTraffic"
 	add_child(traffic)
@@ -145,6 +152,7 @@ func _build_field(field: Dictionary) -> void:
 
 func target_position(id: String = "") -> Vector3:
 	var resolved := selected_id if id.is_empty() else id
+	if loot != null and loot.has(resolved): return loot.canisters[resolved].node.position
 	if traffic != null:
 		var local := traffic.get_actor(resolved)
 		if not local.is_empty(): return local.node.position
@@ -155,7 +163,7 @@ func target_position(id: String = "") -> Vector3:
 
 
 func select_target(id: String) -> void:
-	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()) and (loot == null or not loot.has(id)): return
 	if selected_id != id and combat != null: combat.ordnance.reset_lock()
 	selected_id = id
 	autopilot = false
@@ -164,7 +172,7 @@ func select_target(id: String) -> void:
 
 func navigate_to(id: String) -> void:
 	if highways.attached(): return
-	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()): return
+	if layout.target(id).is_empty() and (combat == null or combat.enemy(id) == null) and (traffic == null or traffic.get_actor(id).is_empty()) and (loot == null or not loot.has(id)): return
 	select_target(id)
 	autopilot = true
 	cancel_cruise()
@@ -281,6 +289,7 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 		ship.engines[i].scale.z = clampf(speed / NORMAL_SPEED, 0, 2) * (1.0 + (0.6 if boosting or cruise or autopilot or highways.attached() else 0.12) * (1.0 + sin(elapsed * 23)))
 	traffic.advance(delta)
 	combat.advance(delta)
+	loot.advance(delta)
 	if firing and not cruise: _fire_shot()
 	camera.fov = lerpf(camera.fov, 66.0 if highways.attached() else (60.0 if cruise or autopilot else (58.0 if boosting else 54.0)), 1.0 - exp(-delta * 3.0))
 	_update_camera(delta)
@@ -296,7 +305,7 @@ func _advance_manual(delta: float, steering: Vector2, thrust: float, boosting: b
 		var destination := highways.approach_position(selected_id) if highways.gates.has(selected_id) else target_position()
 		var to_target := destination - ship.position
 		var distance := to_target.length()
-		var stopping_distance := 12.0 if highways.gates.has(selected_id) else (55.0 if selected_id == DOCK_ID else 75.0)
+		var stopping_distance := 12.0 if highways.gates.has(selected_id) else (15.0 if loot.has(selected_id) else (55.0 if selected_id == DOCK_ID else 75.0))
 		if distance > 0.01:
 			var direction := to_target / distance
 			var up := Vector3.FORWARD if absf(direction.dot(Vector3.UP)) > 0.98 else Vector3.UP
@@ -361,12 +370,13 @@ func reset_view() -> void:
 
 
 func target_entry() -> Dictionary:
+	if loot != null and loot.has(selected_id): return loot.entry(selected_id)
 	if traffic != null:
 		var entry := traffic.target_entry(selected_id)
 		if not entry.is_empty(): return entry
 	var hostile := combat.enemy(selected_id) if combat != null else null
 	if hostile != null:
-		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "%s / Hull %d / Shield %d" % [str(hostile.get_meta("tactic", "WAITING")), roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield"))]}
+		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "%s / Hull %d / Shield %d / HOLD %d/%d" % [str(hostile.get_meta("tactic", "WAITING")), roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield")), Holds.used(hostile.get_meta("cargo_hold", {})), int(hostile.get_meta("cargo_capacity", 0))]}
 	return layout.target(selected_id)
 
 

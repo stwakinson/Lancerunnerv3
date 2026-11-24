@@ -31,6 +31,10 @@ inside Artois. Left click or press V to inspect nearby ships and their orders.
 [Cursor guns and ordnance](docs/artois-ordnance.md) add locked missile variants,
 ammunition and period-inspired hull/shield recovery supplies in the outfitter.
 
+[Cargo and salvage](docs/cargo-and-salvage.md) give ships sized holds and real
+commodity manifests. Destroyed cargo can survive in canisters: **H** collects
+within **25 m**, limited by your remaining hold space.
+
 ## Pilgrim model and textures
 
 Choose **PILGRIM / MODEL PREVIEW** on the main menu to inspect the real low-poly

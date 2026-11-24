@@ -11,6 +11,11 @@ static func pick(world: ArtoisSpace, pixel: Vector2) -> String:
 	if planet_distance >= 0:
 		nearest = planet_distance
 		selected = world.DOCK_ID
+	for crate in world.loot.canisters.values():
+		var distance := _sphere(origin, direction, crate.node.global_position, 2.0)
+		if distance >= 0 and distance < nearest:
+			nearest = distance
+			selected = crate.id
 	for fighter in world.combat.enemies:
 		var distance := _sphere(origin, direction, fighter.global_position, 6.0)
 		if distance >= 0 and distance < nearest:

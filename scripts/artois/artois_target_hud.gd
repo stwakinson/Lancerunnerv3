@@ -17,6 +17,13 @@ func _draw() -> void:
 	if world == null: return
 	_draw_combat()
 	Scanner.draw_scope(self, world, _font)
+	for crate in world.loot.canisters.values():
+		if crate.id == world.selected_id or world.camera.is_position_behind(crate.node.position): continue
+		if world.ship.position.distance_to(crate.node.position) > 500: continue
+		var factor := maxf(size.x / source_view.size.x, size.y / source_view.size.y)
+		var offset := (size - Vector2(source_view.size) * factor) * 0.5
+		var at := world.camera.unproject_position(crate.node.position) * factor + offset
+		draw_rect(Rect2(at - Vector2(4, 4), Vector2(8, 8)), Color("b7e6a3"), false, 1)
 	var target := world.target_position()
 	var camera := world.camera
 	var factor := maxf(size.x / source_view.size.x, size.y / source_view.size.y)
@@ -42,6 +49,7 @@ func _draw() -> void:
 	var entry := world.target_entry()
 	var text := "%s  ·  %d m" % [entry.name, roundi(world.ship.position.distance_to(target))]
 	if entry.kind == "hostile" and not entry.has("pilot"): text += "  /  " + str(entry.notes)
+	if entry.kind == "cargo": text += "  /  %d units" % int(world.loot.canisters[world.selected_id].quantity)
 	var label_x := clampf(point.x - 140, 12, maxf(12, size.x - 330))
 	draw_string(_font, Vector2(label_x, point.y + 30), text, HORIZONTAL_ALIGNMENT_LEFT, 320, 14, colour)
 
@@ -56,7 +64,9 @@ func _draw_combat() -> void:
 	for i in 4:
 		var colour := Color("78c9e9") if i == 0 else (Color("85dfbf") if i == 3 else Color("e8b879"))
 		var at := origin + Vector2(0, i * 28)
-		draw_string(_font, at, "%s %d / %d" % [names[i], roundi(values[i]), roundi(maxima[i])], HORIZONTAL_ALIGNMENT_LEFT, 240, 13, colour)
+		var caption := "%s %d / %d" % [names[i], roundi(values[i]), roundi(maxima[i])]
+		if i == 3: caption += "   HOLD %d / %d" % [combat.ordnance.market.cargo_used(), combat.ordnance.market.capacity()]
+		draw_string(_font, at, caption, HORIZONTAL_ALIGNMENT_LEFT, 240, 13, colour)
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230, 5)), Color("182c38"))
 		draw_rect(Rect2(at + Vector2(0, 7), Vector2(230 * values[i] / maxima[i], 5)), colour)
 	draw_string(_font, origin + Vector2(0, 119), "RMB / KNIGHT SHIELD " + ("RAISED" if combat.defence.guard_active else "LOWERED"), HORIZONTAL_ALIGNMENT_LEFT, 260, 12, Color("edc38d"))

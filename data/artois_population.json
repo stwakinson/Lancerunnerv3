@@ -48,6 +48,12 @@
         "Salt Ledger",
         "Baltic Star",
         "Three Keys"
+      ],
+      "ship_class": "cog",
+      "cargo_goods": [
+        "grain",
+        "alloy",
+        "textiles"
       ]
     },
     {
@@ -93,6 +99,12 @@
         "White Rose",
         "Good Fortune",
         "Northward"
+      ],
+      "ship_class": "light_freighter",
+      "cargo_goods": [
+        "medicine",
+        "fuel",
+        "wool"
       ]
     },
     {
@@ -138,6 +150,12 @@
         "Aube Claire",
         "Bon Retour",
         "Alouette"
+      ],
+      "ship_class": "light_freighter",
+      "cargo_goods": [
+        "textiles",
+        "ale",
+        "lamp_oil"
       ]
     },
     {
@@ -197,6 +215,12 @@
         "Last Penny",
         "Low Tide",
         "Borrowed Time"
+      ],
+      "ship_class": "hauler",
+      "cargo_goods": [
+        "grain",
+        "oxygen",
+        "alloy"
       ]
     },
     {
@@ -234,6 +258,12 @@
         "Red Knife",
         "Carrion",
         "No Quarter"
+      ],
+      "ship_class": "fighter",
+      "cargo_goods": [
+        "fuel",
+        "ale",
+        "alloy"
       ]
     },
     {
@@ -264,7 +294,13 @@
         "Unmarked Vessel 17",
         "Unmarked Vessel 23"
       ],
-      "hidden_allegiance": "Valois military"
+      "hidden_allegiance": "Valois military",
+      "ship_class": "fighter",
+      "cargo_goods": [
+        "fuel",
+        "medicine",
+        "alloy"
+      ]
     }
   ]
 }

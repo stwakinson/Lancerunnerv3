@@ -35,6 +35,7 @@ profile. An open shop blocks launch.
 | LMB | Fire guns; in free cursor mode select structures, ships or fields |
 | X | Brake immediately and cancel cruise/course following |
 | Space | Toggle free cursor mode in space |
+| H | Collect a selected/nearest cargo canister within 25 m; free hold space required |
 | Enter | Dock in space or launch when landed |
 | Z / F | Select missile type / launch after 1.5-second lock |
 | B / N | Use Armourer's Mites for hull and armour / Ward Phial for shields |
@@ -157,3 +158,5 @@ hardware performance remain unverified.
 See [knightly combat](knightly-combat.md) for cruise spool, energy, armour, active shield and scanner updates.
 
 See [mouse flight and NPC cruise](mouse-flight.md) for current controls and speed-dependent exhaust.
+
+See [ship cargo and salvage](cargo-and-salvage.md) for capacities, death drops and pickup persistence.
