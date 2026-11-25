@@ -18,6 +18,7 @@ const DOCK_ID := "planet_dock"
 
 var port_catalog := Markets.new()
 var active_port := DOCK_ID
+var docked := false
 var embry_art := Embry.new()
 var loot: Node3D
 var law: Node
@@ -239,6 +240,7 @@ func launch_position() -> Vector3:
 
 
 func prepare_launch() -> void:
+	docked = false
 	disruption_remaining = 0.0
 	highways.reset()
 	ship.position = launch_position()
@@ -393,7 +395,7 @@ func target_entry() -> Dictionary:
 		if not entry.is_empty(): return entry
 	var hostile := combat.enemy(selected_id) if combat != null else null
 	if hostile != null:
-		return {"id": selected_id, "name": "Freebooter " + selected_id.trim_prefix("patrol_"), "kind": "hostile", "notes": "%s / Hull %d / Shield %d / HOLD %d/%d" % [str(hostile.get_meta("tactic", "WAITING")), roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield")), Holds.used(hostile.get_meta("cargo_hold", {})), int(hostile.get_meta("cargo_capacity", 0))]}
+		return {"id": selected_id, "name": str(hostile.get_meta("display_name", "Freebooter " + selected_id.trim_prefix("patrol_"))), "kind": "hostile", "notes": "%s / Hull %d / Shield %d / HOLD %d/%d" % [str(hostile.get_meta("tactic", "WAITING")), roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield")), Holds.used(hostile.get_meta("cargo_hold", {})), int(hostile.get_meta("cargo_capacity", 0))]}
 	var entry: Dictionary = layout.target(selected_id).duplicate()
 	var owner: String = law.territory_owner(selected_id)
 	if not owner.is_empty(): entry["notes"] = str(entry.get("notes", "")) + " / " + law.description(owner)

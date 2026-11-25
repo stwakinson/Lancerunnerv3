@@ -1,0 +1,115 @@
+{
+  "contacts": [
+    {
+      "id": "fluellen",
+      "name": "Captain Fluellen",
+      "faction": "britannian",
+      "port": "planet_dock",
+      "coat": "8c3330"
+    },
+    {
+      "id": "reeve",
+      "name": "Reeve Alice Fenwick",
+      "faction": "borderlander",
+      "port": "planet_dock",
+      "coat": "657c59"
+    },
+    {
+      "id": "factor",
+      "name": "Factor Hinrik Voss",
+      "faction": "hanseatic",
+      "port": "planet_dock",
+      "coat": "936f43"
+    },
+    {
+      "id": "envoy",
+      "name": "Envoy Ysabeau de Renty",
+      "faction": "valois",
+      "port": "planet_dock",
+      "coat": "4b6597"
+    },
+    {
+      "id": "british_marshal",
+      "name": "Marshal Eleanor Talbot",
+      "faction": "britannian",
+      "port": "britannian_carrier",
+      "coat": "8c3330"
+    },
+    {
+      "id": "valois_captain",
+      "name": "Capitaine Jehan de Dreux",
+      "faction": "valois",
+      "port": "valois_carrier",
+      "coat": "4b6597"
+    }
+  ],
+  "templates": [
+    {
+      "id": "clearance",
+      "title": "Freebooter clearance",
+      "enemy_faction": "freebooter",
+      "minimum_reputation": -19,
+      "minimum_ships": 3,
+      "maximum_ships": 6,
+      "base_pay": 650,
+      "per_ship": 220,
+      "reputation": 7,
+      "hull_scale": 1.0,
+      "brief": "Freebooters are threatening local traffic. Destroy the entire marked patrol."
+    },
+    {
+      "id": "interception",
+      "title": "Raider interception",
+      "enemy_faction": "raider",
+      "minimum_reputation": 0,
+      "minimum_ships": 2,
+      "maximum_ships": 4,
+      "base_pay": 900,
+      "per_ship": 300,
+      "reputation": 9,
+      "hull_scale": 1.25,
+      "brief": "Unidentified raiders have been sighted off the trade routes. Intercept and destroy the wing."
+    },
+    {
+      "id": "bounty",
+      "title": "Captain bounty",
+      "enemy_faction": "freebooter",
+      "minimum_reputation": 10,
+      "minimum_ships": 3,
+      "maximum_ships": 4,
+      "base_pay": 1500,
+      "per_ship": 220,
+      "reputation": 12,
+      "hull_scale": 1.15,
+      "brief": "A wanted freebooter captain is travelling with escorts. Destroy the named captain; escort kills are optional."
+    }
+  ],
+  "first": [
+    "Guillaume",
+    "Robin",
+    "Martin",
+    "Colin",
+    "Hugh",
+    "Alys",
+    "Margot",
+    "Roger",
+    "Perrin",
+    "Jeanne",
+    "Walter",
+    "Thomas"
+  ],
+  "last": [
+    "Blackwake",
+    "Harrow",
+    "Ashcombe",
+    "Redhand",
+    "Bracken",
+    "Malvoisin",
+    "Crowe",
+    "Ironwake",
+    "Rook",
+    "Holt",
+    "Faucon",
+    "Dacre"
+  ]
+}

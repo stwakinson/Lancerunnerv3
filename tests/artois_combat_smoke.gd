@@ -94,8 +94,8 @@ func _run() -> void:
 	check(scene.contract_panel.visible, "Planet contact must open a conversation")
 	await scene.toggle_docking()
 	check(scene.landed, "Conversation must block launch")
-	if DisplayServer.get_name() != "headless": await click(scene.contract_panel.get_node("ContractAction"))
-	else: scene.contract_panel._act()
+	# Keep this projectile/mission fixture fixed at five; board acceptance has its own GUI test.
+	scene.mission.accept()
 	check(scene.mission.phase == "active" and combat.enemies.size() == 5, "Accept must spawn exactly five enemies")
 	check(not scene.mission.accept() and combat.enemies.size() == 5, "Repeated acceptance must not duplicate the encounter")
 	await scene._capture(capture_dir, "artois-contract.png")
@@ -167,7 +167,7 @@ func _run() -> void:
 	check(loaded.load_state() and loaded.credits == market.credits, "Reward and equipment must persist through the economy save")
 
 	# Missile guidance and loss/retry recovery.
-	scene.contract_panel._act()
+	scene.mission.accept()
 	check(scene.mission.phase == "active" and combat.enemies.size() == 5 and scene.mission.kills == 0, "Paid contract must be explicitly repeatable")
 	scene.contract_panel.close_panel()
 	market.weapons = ["missile_rack", ""]
@@ -190,7 +190,7 @@ func _run() -> void:
 	check(scene.landed and not combat.dead and combat.hull == combat.HULL_MAX, "Defeat must recover the player to the repaired planet hub")
 	check(scene.mission.phase == "failed" and combat.enemies.is_empty(), "Defeat must fail and clear the encounter")
 	scene.open_contract()
-	scene.contract_panel._act()
+	scene.mission.accept()
 	check(scene.mission.phase == "active" and combat.enemies.size() == 5 and scene.mission.kills == 0, "Failed mission must restart cleanly from the contact")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(market.save_path))
 	if failures == 0: print("PASS: double-tap dodge, fitted combat, shields, patrol activation, projectile kills, quest UI, reward, missile guidance and defeat/retry")

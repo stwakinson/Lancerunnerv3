@@ -126,19 +126,29 @@ func _projectile(at: Vector3, velocity: Vector3, damage: float, colour: String, 
 	return shot
 
 
-func spawn_patrol(centre: Vector3) -> void:
+func spawn_patrol(centre: Vector3, options: Dictionary = {}) -> void:
 	clear_encounter()
-	for i in 5:
+	var count := clampi(int(options.get("count", 5)), 1, 6)
+	var faction: String = str(options.get("faction", "freebooter"))
+	for i in count:
 		var fighter := Fighter.new()
 		fighter.name = "PatrolEnemy%d" % (i + 1)
 		add_child(fighter)
-		fighter.global_position = centre + Vector3((i - 2) * 38.0, (i % 2) * 22.0, -65.0 - absf(i - 2) * 15.0)
+		fighter.global_position = centre + Vector3((i - (count - 1) * 0.5) * 38.0, (i % 2) * 22.0, -65.0 - absf(i - 2) * 15.0)
 		fighter.scale = Vector3.ONE * 1.6
-		# Visible red identification fins distinguish this hostile patrol.
-		fighter._box(Vector3(0, 0.8, 0.4), Vector3(1.8, 0.35, 1.5), "f65c45", true)
-		fighter.set_meta("id", "patrol_%d" % (i + 1))
-		fighter.set_meta("hull", 65.0)
-		fighter.set_meta("shield", 20.0)
+		var captain := i == 0 and not str(options.get("captain", "")).is_empty()
+		fighter.set_meta("bounty_target", captain)
+		# Gold identifies the wanted captain; raiders retain an anonymous livery.
+		fighter._box(Vector3(0, 0.8, 0.4), Vector3(1.8, 0.35, 1.5), "edc38d" if captain else ("b995ed" if faction == "raider" else "f65c45"), true)
+		fighter.set_meta("id", str(options.get("prefix", "patrol_")) + str(i + 1))
+		fighter.set_meta("faction", faction)
+		fighter.set_meta("display_name", "Captain " + str(options.captain) if captain else ("Unidentified Raider " if faction == "raider" else "Freebooter ") + str(i + 1))
+		var health := 65.0 * float(options.get("hull_scale", 1.0)) * (2.0 if captain else 1.0)
+		var ward := 20.0 * (1.5 if captain else 1.0)
+		fighter.set_meta("hull", health)
+		fighter.set_meta("hull_max", health)
+		fighter.set_meta("shield", ward)
+		fighter.set_meta("shield_max", ward)
 		fighter.set_meta("cargo_capacity", 8)
 		fighter.set_meta("ship_class", "interceptor")
 		fighter.set_meta("cargo_hold", {"fuel": 2 + i % 3, "alloy": 1})
@@ -147,7 +157,7 @@ func spawn_patrol(centre: Vector3) -> void:
 		fighter.set_meta("velocity", Vector3.ZERO)
 		fighter.look_at(centre + Vector3(0, 0, 120), Vector3.UP)
 		var brain := FighterBrain.new()
-		brain.configure(world, fighter, "freebooter", i)
+		brain.configure(world, fighter, "valois" if faction == "raider" else "freebooter", i)
 		brain.target_key = "player"
 		fighter.set_meta("brain", brain)
 		enemies.append(fighter)
@@ -200,7 +210,7 @@ func advance(delta: float) -> void:
 			fighter.set_meta("velocity", Vector3.ZERO)
 			brain.idle(delta)
 			continue
-		var action: Dictionary = brain.advance(delta, world.ship, world.velocity, committed_attackers("player") < 2, float(fighter.get_meta("hull")) / 65.0, disruption)
+		var action: Dictionary = brain.advance(delta, world.ship, world.velocity, committed_attackers("player") < 2, float(fighter.get_meta("hull")) / float(fighter.get_meta("hull_max", 65.0)), disruption)
 		if action.fire:
 			var shot := _projectile(fighter.position - fighter.basis.z.normalized() * 5, action.direction * 110.0 + brain.velocity, 26.0, "ff7059", 3.5)
 			shot.set_meta("source", str(fighter.get_meta("id")))
@@ -304,7 +314,7 @@ func damage_enemy(id: String, amount: float, hull_amount: float = -1.0, source_p
 		return
 	var fighter := enemy(id)
 	if fighter == null or amount <= 0: return
-	world.law.record(fighter, "freebooter", false)
+	world.law.record(fighter, str(fighter.get_meta("faction", "freebooter")), false)
 	var original := amount
 	amount = fighter.get_meta("brain").block_damage(amount, source_position)
 	if hull_amount >= 0: hull_amount *= amount / original
@@ -314,7 +324,7 @@ func damage_enemy(id: String, amount: float, hull_amount: float = -1.0, source_p
 	var health := maxf(0.0, float(fighter.get_meta("hull")) - (amount if hull_amount < 0 else hull_amount) * (1.0 - absorbed / amount))
 	fighter.set_meta("hull", health)
 	if health > 0: return
-	world.law.record(fighter, "freebooter", false, true)
+	world.law.record(fighter, str(fighter.get_meta("faction", "freebooter")), false, true)
 	world.loot.drop_ship(fighter, fighter.get_meta("cargo_hold"), fighter.get_meta("velocity"))
 	_explosion(fighter.position)
 	enemies.erase(fighter)

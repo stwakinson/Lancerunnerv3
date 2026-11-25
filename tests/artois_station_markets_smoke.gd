@@ -89,7 +89,7 @@ func _run() -> void:
 		check(scene.landed and scene.docked_id == id and state.market_id == id, "Docking must choose the matching interior and market")
 		check(scene.landing_world.scene_file_path == state.markets.scene_path(id), "Each station must use its own scene resource")
 		check(scene.landing_world.layers.size() == 6, "Landing must have six parallax layers")
-		check(scene.contact_button.visible == (id == "planet_dock"), "Fluellen must remain on the planet only")
+		check(scene.contact_button.visible == (id in ["planet_dock", "britannian_carrier", "valois_carrier"]), "Faction contacts must be available at planet and both carriers")
 		scene.open_shop("commodities")
 		check(scene.shop_panel.visible and scene.shop_panel._venue.text.contains(state.markets.profile(id).name.to_upper()), "Commodity shop must show the local venue")
 		if id == "border_post":

@@ -1,10 +1,11 @@
 extends Node2D
-## Small original pixel placeholder, attached to the market's street-life layer.
+## Faction contact placeholder, attached to the street-life layer.
+var coat := Color("39596a")
 func _draw() -> void:
 	draw_ellipse_shadow()
 	draw_rect(Rect2(-4, -25, 8, 7), Color("d9b18a"))
 	draw_rect(Rect2(-5, -27, 10, 4), Color("465c72"))
-	draw_rect(Rect2(-6, -18, 12, 13), Color("39596a"))
+	draw_rect(Rect2(-6, -18, 12, 13), coat)
 	draw_rect(Rect2(-2, -18, 4, 12), Color("d8ac68"))
 	draw_rect(Rect2(-9, -17, 3, 12), Color("243643"))
 	draw_rect(Rect2(6, -17, 3, 12), Color("243643"))
