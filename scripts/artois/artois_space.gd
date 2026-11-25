@@ -353,9 +353,9 @@ func _avoid_planet() -> void:
 
 
 func _update_camera(delta: float) -> void:
-	var target := ship.position + ship.basis * Vector3(4.8, 3.7, 11.7)
+	var target := ship.position + ship.basis * Vector3(0, 3.7, 14.0)
 	camera.position = camera.position.lerp(target, 1.0 - exp(-delta * 7.0)) if delta > 0 else target
-	camera.look_at(ship.position - ship.basis.z * 16, ship.basis.y)
+	camera.look_at(ship.position, ship.basis.y)
 	if _sun != null: _sun.look_at(camera.position, Vector3.UP)
 
 

@@ -67,7 +67,7 @@ func open_contract() -> void:
 
 
 func open_shop(kind: String) -> void:
-	if kind == "ships" and docked_id != "planet_dock": return
+	if kind == "ships" and market_state.Ships.offers(docked_id).is_empty(): return
 	if contract_panel != null and contract_panel.visible: return
 	space_world.reset_taps()
 	super.open_shop(kind)
@@ -206,7 +206,7 @@ func _update_labels() -> void:
 	if radio_label != null: radio_label.visible = not landed
 	if contact_label != null: contact_label.visible = not landed
 	if contact_button != null: contact_button.visible = landed and docked_id == "planet_dock"
-	if dealer_button != null: dealer_button.visible = landed and docked_id == "planet_dock"
+	if dealer_button != null: dealer_button.visible = landed and not market_state.Ships.offers(docked_id).is_empty()
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
 	if ui != null and ui.has_node("SystemChartButton"):
@@ -339,7 +339,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or transitioning or shop_panel.visible or _recovering or contract_panel.visible or (pause_menu != null and pause_menu.visible): return
-	if landed and event.physical_keycode == KEY_4 and docked_id == "planet_dock":
+	if landed and event.physical_keycode == KEY_4 and not market_state.Ships.offers(docked_id).is_empty():
 		open_shop("ships")
 		get_viewport().set_input_as_handled()
 		return

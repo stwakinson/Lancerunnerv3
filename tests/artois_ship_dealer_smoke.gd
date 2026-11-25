@@ -22,7 +22,7 @@ func run() -> void:
 	scene.shop_panel.configure(market)
 	scene.contract_panel.market = market
 	world.combat.configure(world, market)
-	check(market.Ships.catalog.size() == 3, "Exactly three starter/standard ships")
+	check(market.Ships.offers("planet_dock").size() == 3, "Exactly three starter/standard ships")
 	check(market.ship_purchase_error("fighter").contains("already"), "Cannot rebuy current ship")
 	check(market.purchase_ship("interceptor").is_empty() and market.credits == 5500 and market.capacity() == 8, "Kestrel purchase deducts net price and changes hold")
 	scene._apply_loadout()

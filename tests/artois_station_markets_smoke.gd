@@ -28,7 +28,7 @@ func _trade_run(state: LandingMarketState, from: String, to: String, id: String,
 func _run() -> void:
 	var state := LandingMarketState.new()
 	state.save_path = save_path
-	check(state.markets.ports().size() == 14, "Planet and thirteen station/camp ports must have market profiles")
+	check(state.markets.ports().size() == 16, "Planet and fifteen station/camp ports must have market profiles")
 	_trade_run(state, "planet_dock", "embry", "grain", 5)
 	_trade_run(state, "planet_dock", "embry", "oxygen", 3)
 	_trade_run(state, "embry", "planet_dock", "argent_ore", 16)
@@ -124,7 +124,7 @@ func _run() -> void:
 		world.select_target(id)
 		check(not world.docking_error().is_empty(), "Gate or bare wreck must not be treated as a station interior")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
-	if failures == 0: print("PASS: local price routes, stock isolation, legacy saves, fourteen docks, both shops, parallax scenes, GUI trading and local launch")
+	if failures == 0: print("PASS: local price routes, stock isolation, legacy saves, sixteen docks, both shops, parallax scenes, GUI trading and local launch")
 	quit(0 if failures == 0 else 1)
 
 

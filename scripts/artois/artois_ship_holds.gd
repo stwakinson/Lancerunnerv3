@@ -1,7 +1,7 @@
 class_name ArtoisShipHolds
 extends RefCounted
 ## Commodity units, not equipment locker slots. Shared by player saves and NPC hulls.
-const CAPACITIES := {"interceptor": 8, "fighter": 20, "courier": 24, "salvager": 40, "light_freighter": 60, "hauler": 80, "pilgrim": 90, "cog": 120}
+const CAPACITIES := {"longbow": 16, "epervier": 14, "interceptor": 8, "fighter": 20, "courier": 24, "salvager": 40, "light_freighter": 60, "hauler": 80, "pilgrim": 90, "cog": 120}
 
 static func capacity(ship_class: String) -> int:
 	return int(CAPACITIES.get(ship_class, CAPACITIES.fighter))

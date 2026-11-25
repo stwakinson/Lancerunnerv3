@@ -62,7 +62,7 @@ func close_panel() -> void:
 
 
 func refresh() -> void:
-	_body.text = "A freebooter patrol is waiting off the southern wreck field. Fly to the marked test area and destroy all five ships. They will attack when you approach within 420 m.\n\nPayment: 1,500 credits on your return. Docking repairs your hull and shields. Space fires; double-tap a movement key to dodge."
+	_body.text = "A freebooter patrol is waiting off the southern wreck field. Fly to the marked test area and destroy all five ships. They will attack when you approach within 420 m.\n\nPayment: 1,500 credits and +10 Britannian / Valois reputation on your return. Docking repairs your hull and shields. Left mouse fires; double-tap a movement key to dodge."
 	_action.disabled = mission.phase == "active"
 	match mission.phase:
 		"active": _action.text = "IN PROGRESS  /  %d OF 5 DESTROYED" % mission.kills

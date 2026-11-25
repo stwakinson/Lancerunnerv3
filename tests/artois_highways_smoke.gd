@@ -153,7 +153,7 @@ func _run() -> void:
 
 	# Native chart and gate-click geometry are exercised in rendered runs.
 	scene.toggle_chart()
-	check(scene.chart._picker.item_count == 59, "Chart must list highway entrances")
+	check(scene.chart._picker.item_count == 61, "Chart must list highway entrances")
 	await scene._capture(capture_dir, "artois-highways-chart.png")
 	if DisplayServer.get_name() != "headless":
 		await click(scene.chart, scene.chart.target_point(world.layout.target(id)))

@@ -242,6 +242,30 @@
       "destination": null,
       "enabled": false,
       "notes": "OFFLINE / Destination unassigned. Eastern terminus beyond Maroeuil. The demo remains in Artois."
+    },
+    {
+      "id": "valois_carrier",
+      "name": "Valois Carrier / Saint-Denis",
+      "kind": "carrier",
+      "map": [
+        310,
+        354
+      ],
+      "altitude": 60,
+      "faction": "valois",
+      "notes": "Valois fleet carrier near Agincourt Castle. Dock for stores and the Epervier fighter; naval reputation 25 required to purchase."
+    },
+    {
+      "id": "britannian_carrier",
+      "name": "Britannian Carrier / Saint George",
+      "kind": "carrier",
+      "map": [
+        554,
+        48
+      ],
+      "altitude": 100,
+      "faction": "britannian",
+      "notes": "Britannian fleet carrier north of Calais Gate. Dock for stores and the Longbow fighter; naval reputation 25 required to purchase."
     }
   ],
   "fields": [

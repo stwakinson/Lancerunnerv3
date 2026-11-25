@@ -21,7 +21,7 @@
     "armour": 80,
     "ward": 60,
     "speed": 35,
-    "turn": 1.0,
+    "turn": 1.6,
     "minimum_reputation": -19,
     "description": "Balanced combat hull with dependable plating. Two weapon mounts; equipment transfers from your current ship."
   },
@@ -37,5 +37,39 @@
     "turn": 0.7,
     "minimum_reputation": -19,
     "description": "A capacious merchant hull with heavy plating and slower handling. Two weapon mounts; equipment transfers from your current ship."
+  },
+  "longbow": {
+    "name": "Longbow",
+    "role": "Naval fighter",
+    "price": 24000,
+    "cargo": 16,
+    "hull": 155,
+    "armour": 95,
+    "ward": 75,
+    "speed": 38,
+    "turn": 1.8,
+    "minimum_reputation": 25,
+    "required_faction": "britannian",
+    "sold_at": [
+      "britannian_carrier"
+    ],
+    "description": "Licensed Britannian combat hull. Two weapon mounts; cargo and equipment transfer."
+  },
+  "epervier": {
+    "name": "Epervier",
+    "role": "Naval fighter",
+    "price": 24000,
+    "cargo": 14,
+    "hull": 145,
+    "armour": 85,
+    "ward": 85,
+    "speed": 40,
+    "turn": 1.7,
+    "minimum_reputation": 25,
+    "required_faction": "valois",
+    "sold_at": [
+      "valois_carrier"
+    ],
+    "description": "Licensed Valois combat hull. Two weapon mounts; cargo and equipment transfer."
   }
 }

@@ -603,6 +603,96 @@
         "medicine": 60,
         "lamp_oil": 25
       }
+    },
+    "valois_carrier": {
+      "name": "Saint-Denis / Valois Carrier",
+      "faction": "Valois",
+      "theme": "garrison",
+      "notes": "Naval hangar, stores and licensed faction shipwrights.",
+      "quotes": {
+        "grain": [
+          51,
+          46
+        ],
+        "oxygen": [
+          28,
+          24
+        ],
+        "alloy": [
+          124,
+          117
+        ],
+        "medicine": [
+          218,
+          207
+        ],
+        "fuel": [
+          104,
+          97
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "textiles": [
+          155,
+          147
+        ],
+        "wool": [
+          65,
+          60
+        ],
+        "ale": [
+          37,
+          33
+        ]
+      },
+      "stock": {}
+    },
+    "britannian_carrier": {
+      "name": "Saint George / Britannian Carrier",
+      "faction": "Britannian",
+      "theme": "garrison",
+      "notes": "Naval hangar, stores and licensed faction shipwrights.",
+      "quotes": {
+        "grain": [
+          51,
+          46
+        ],
+        "oxygen": [
+          28,
+          24
+        ],
+        "alloy": [
+          124,
+          117
+        ],
+        "medicine": [
+          218,
+          207
+        ],
+        "fuel": [
+          104,
+          97
+        ],
+        "lamp_oil": [
+          56,
+          51
+        ],
+        "textiles": [
+          155,
+          147
+        ],
+        "wool": [
+          65,
+          60
+        ],
+        "ale": [
+          37,
+          33
+        ]
+      },
+      "stock": {}
     }
   }
 }

@@ -361,6 +361,7 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 		actor.node.set_meta("cruise", false)
 	if source == "player":
 		actor.provoked = true
+		if actor.role == "guard": alert_patrol(actor)
 		if actor.hostile: actor.target = "player"
 		else:
 			actor.threat = "player"
@@ -452,3 +453,12 @@ func _load_manifest(actor: Dictionary) -> void:
 		actor.hold[id] = int(actor.hold.get(id, 0)) + amount
 		remaining -= amount
 	actor.cargo = Holds.summary(actor.hold, LandingMarketState.ITEMS)
+
+
+func alert_patrol(victim: Dictionary) -> void:
+	for ally in actors.values():
+		if not ally.alive or ally.role != "guard" or ally.allegiance != victim.allegiance: continue
+		if ally.node.position.distance_to(victim.node.position) > 1500: continue
+		ally.provoked = true
+		ally.target = "player"
+		ally.decision = 0.0
