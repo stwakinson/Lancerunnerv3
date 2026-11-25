@@ -68,7 +68,7 @@ func open_contract(contact_id := "") -> void:
 	if docked_id == "planet_dock":
 		if not in_tavern:
 			enter_tavern()
-			if contact_id.is_empty(): return
+			if not in_tavern or contact_id.is_empty(): return
 		var present: Array = tavern.contacts.map(func(entry: Dictionary) -> String: return str(entry.id))
 		if not contact_id.is_empty() and contact_id not in present: return
 		space_world.reset_taps()
@@ -359,7 +359,7 @@ func _switch_landing(id: String) -> void:
 		var pinned := ""
 		if mission.phase in ["active", "return"] and mission.return_port() == id:
 			pinned = str(mission.active_offer.get("contact", "fluellen"))
-		tavern.begin_visit(mission.board.contacts(id), pinned)
+		if _ensure_tavern(): tavern.begin_visit(mission.board.contacts(id), pinned)
 	if not _landing_cache.has(id):
 		var resource: PackedScene = load(market_state.markets.scene_path(id))
 		var room := resource.instantiate()
@@ -535,13 +535,41 @@ func _centre_cursor() -> void:
 func _patron_pressed(button: Button) -> void:
 	open_contract(str(button.get_meta("contact_id", "")))
 
+func _ensure_tavern() -> bool:
+	if is_instance_valid(tavern) and tavern.has_method("is_room_ready") and tavern.is_room_ready(): return true
+	# A partially initialized/hot-reloaded room must never hide a working market.
+	if is_instance_valid(tavern): tavern.queue_free()
+	var resource: PackedScene = load("res://scenes/artois_tavern.tscn")
+	if resource == null: return false
+	var room: Node2D = resource.instantiate()
+	room.visible = false
+	landing_view.add_child(room)
+	if not room.has_method("is_room_ready") or not room.is_room_ready():
+		room.queue_free()
+		return false
+	tavern = room
+	return true
+
 func enter_tavern() -> void:
 	if not landed or docked_id != "planet_dock" or transitioning or shop_panel.visible or contract_panel.visible: return
-	landing_world.visible = false
-	landing_world = tavern
-	tavern.visible = true
-	in_tavern = true
+	if not _ensure_tavern():
+		_status.text = "TAVERN UNAVAILABLE / CHECK THE GODOT DEBUGGER FOR THE ROOM LOAD ERROR"
+		push_error("Artois tavern scene failed to initialize; retaining the market view.")
+		return
+	# A replacement room needs this visit's roster, but an ordinary re-entry must not reroll.
+	if tavern.visit == 0:
+		var pinned := ""
+		if mission.phase in ["active", "return"] and mission.return_port() == "planet_dock": pinned = str(mission.active_offer.get("contact", "fluellen"))
+		tavern.begin_visit(mission.board.contacts("planet_dock"), pinned)
+	# Prepare the complete independent room before committing the visible switch.
 	tavern.reset_camera()
+	tavern.advance(0, Vector2.ZERO)
+	var market_room: Node2D = _landing_cache["planet_dock"]
+	tavern.show()
+	market_room.hide()
+	landing_world = tavern
+	in_tavern = true
+	landing_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_update_labels()
 	_sync_shop_hotspots()
 	_sync_mouse_mode()
