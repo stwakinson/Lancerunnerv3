@@ -1,4 +1,13 @@
-extends BenchmarkLanding
+extends Node2D
+## Self-contained room: no planet-scene or global-class-cache dependency.
+const Art = preload("res://scripts/benchmark/landing_art_layer.gd")
+var layers: Array[Node2D] = []
+var elapsed := 0.0
+var weather_enabled := true
+var parallax_enabled := true
+var cinematic_motion := true
+var camera_position := Vector2.ZERO
+var manual_pan := 0.0
 ## Independent exterior, empty architecture, staff, furniture, guests and near props.
 const Patron = preload("res://scripts/artois/artois_tavern_patron.gd")
 const ROOM = preload("res://assets/artois/tavern/room_shell.png")
@@ -116,3 +125,21 @@ func advance(delta: float, pointer: Vector2, pan_input := 0.0, camera_frozen := 
 	for i in layers.size(): layers[i].position = (-camera_position * BAR_DEPTHS[i]).round()
 	_lights.set_shader_parameter("clock", elapsed)
 	_lights.set_shader_parameter("rain_enabled", weather_enabled)
+
+
+func _add_art(label: String, texture: Texture2D, frame: Rect2) -> Node2D:
+	var layer := Art.new()
+	layer.name = label
+	layer.texture = texture
+	layer.frame = frame
+	add_child(layer)
+	layers.append(layer)
+	return layer
+
+func reset_camera() -> void:
+	manual_pan = 0
+	camera_position = Vector2.ZERO
+	for layer in layers: layer.position = Vector2.ZERO
+
+func is_room_ready() -> bool:
+	return is_node_ready() and layers.size() == 6 and _lights != null
