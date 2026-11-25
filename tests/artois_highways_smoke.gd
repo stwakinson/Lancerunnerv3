@@ -59,7 +59,10 @@ func _run() -> void:
 			var axis := highway.direction()
 			var target: Vector3 = world.target_position()
 			var peak := 0.0
-			for frame in 150:
+			# Allow the full route at cruise speed, plus entry/exit acceleration.
+			var route: Dictionary = highway.routes[highway.gates[id].route]
+			var travel_frames := ceili((float(route.length) / highway.SPEED + 10.0) / 0.1)
+			for frame in travel_frames:
 				if not highway.attached(): break
 				world.advance(0.1, Vector2.ZERO, 0.0, false, false)
 				if highway.attached(): peak = maxf(peak, world.velocity.dot(axis))
