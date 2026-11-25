@@ -78,10 +78,11 @@ func _button(text: String, at: Vector2, dimensions: Vector2, action: Callable) -
 	add_child(button)
 	return button
 
-func open_panel(at_port := "planet_dock", selected_contact := "") -> void:
+func open_panel(at_port := "planet_dock", selected_contact := "", available_ids: Array = []) -> void:
 	port = at_port
 	_contacts.clear()
 	var local_contacts: Array = mission.board.contacts(port)
+	if not available_ids.is_empty(): local_contacts = local_contacts.filter(func(entry: Dictionary) -> bool: return entry.id in available_ids)
 	for contact in local_contacts:
 		var faction_name: String = market.Factions.data.factions[contact.faction].name
 		_contacts.add_item("%s / %s / Standing %d" % [contact.name, faction_name, int(market.reputation[contact.faction])])

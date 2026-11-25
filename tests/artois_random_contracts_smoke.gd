@@ -63,6 +63,11 @@ func run() -> void:
 	var first: Dictionary = board.offers("fluellen", world)[0]
 	check(not mission.accept_offer("fluellen", first.id, market), "Cannot accept from space using a stale market id")
 	await dock("planet_dock")
+	scene.enter_tavern()
+	# Keep all four contacts in this contract-board fixture; tavern randomness is tested separately.
+	for seed_value in range(1, 32):
+		scene.tavern.begin_visit(board.contacts("planet_dock"), "fluellen", seed_value)
+		if scene.tavern.contacts.size() == 4: break
 	market.reputation.britannian = -20
 	check(not mission.accept_error("fluellen", first.id, market).is_empty(), "Hostile/wary issuers must deny work")
 	market.reputation.britannian = 0
@@ -71,10 +76,10 @@ func run() -> void:
 	else:
 		scene._sync_shop_hotspots()
 		if not capture_dir.is_empty(): await scene._capture(capture_dir, "artois-faction-contacts.png")
-		await click(scene.faction_hotspots[1])
+		await click(patron_button("factor"))
 		check(scene.contract_panel.contact_id == "factor", "Clicking Hanseatic street contact must select their faction")
 		scene.contract_panel.close_panel()
-		await click(scene.contact_hotspot)
+		await click(patron_button("fluellen"))
 	check(scene.contract_panel.visible and scene.contract_panel._contacts.item_count == 4 and scene.contract_panel._offers.get_root().get_child_count() == 3, "Planet contact GUI lists faction givers and three offers")
 	if DisplayServer.get_name() != "headless":
 		var tree: Tree = scene.contract_panel._offers
@@ -195,3 +200,8 @@ func click(control: Control, local := Vector2.INF) -> void:
 		Input.parse_input_event(event)
 	Input.flush_buffered_events()
 	await process_frame
+
+func patron_button(id: String) -> Button:
+	for button in [scene.contact_hotspot] + scene.faction_hotspots:
+		if str(button.get_meta("contact_id", "")) == id: return button
+	return scene.contact_hotspot
