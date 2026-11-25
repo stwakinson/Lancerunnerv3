@@ -97,7 +97,6 @@ func _sync_shop_hotspots() -> void:
 	var buttons: Array = [contact_hotspot] + faction_hotspots
 	for i in buttons.size():
 		var button: Button = buttons[i]
-		button.visible = false
 		if in_tavern and i < tavern.contacts.size():
 			var entry: Dictionary = tavern.contacts[i]
 			var rect: Rect2 = tavern.contact_rect(entry.id)
@@ -111,6 +110,8 @@ func _sync_shop_hotspots() -> void:
 			button.size = Vector2(32, 48) * factor
 			button.set_meta("contact_id", mission.board.contacts(docked_id)[0].id)
 			button.visible = available
+		else:
+			button.visible = false
 	if dealer_hotspot != null:
 		dealer_hotspot.visible = available and docked_id == "planet_dock" and not in_tavern
 		dealer_hotspot.position = offset + (Vector2(452, 190) + landing_world.layers[3].position) * factor

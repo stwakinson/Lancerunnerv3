@@ -16,7 +16,8 @@ func _ready() -> void:
 	_atlas.atlas = ATLAS
 	var cell := Vector2(ATLAS.get_size()) / 4.0
 	_atlas.region = Rect2(Vector2(column, row) * cell, cell)
-	hit_rect = Rect2(Vector2(-dimensions.x * 0.40, -dimensions.y * 0.94), dimensions * Vector2(0.8, 0.90))
+	# Include the gold contact marker as well as the visible figure.
+	hit_rect = Rect2(Vector2(-dimensions.x * 0.42, -dimensions.y - 12), Vector2(dimensions.x * 0.84, dimensions.y + 10))
 	queue_redraw()
 
 func _draw() -> void:
