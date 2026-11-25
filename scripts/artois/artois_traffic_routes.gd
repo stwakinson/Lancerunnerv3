@@ -14,6 +14,9 @@ func configure(space: Node3D) -> void:
 		var prefix: String = "highway_" + str(route.id)
 		for suffix in ["_a", "_b_exit", "_b", "_a_exit"]:
 			nodes.append(world.highways.gates[prefix + suffix].position)
+	# Preserve authored junction connectivity when the system map is rescaled.
+	# This is route planning reach, not a docking, combat or gate capture range.
+	var junction_reach: float = 600.0 * world.layout.scale_factor / 8.0
 	for i in nodes.size():
 		var row := []
 		var next := []
@@ -21,8 +24,8 @@ func configure(space: Node3D) -> void:
 			var distance := nodes[i].distance_to(nodes[j])
 			var opposite_ends := i / 4 == j / 4 and ((i % 4 in [0, 3]) != (j % 4 in [0, 3]))
 			if opposite_ends: distance = INF
-			row.append(0.0 if i == j else (distance / 35.0 if distance < 600 else INF))
-			next.append(j if i != j and distance < 600 else -1)
+			row.append(0.0 if i == j else (distance / 35.0 if distance < junction_reach else INF))
+			next.append(j if i != j and distance < junction_reach else -1)
 		costs.append(row)
 		next_hop.append(next)
 	for i in world.highways.routes.size():

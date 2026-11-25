@@ -8,7 +8,7 @@
     540,
     340
   ],
-  "units_per_map_pixel": 8,
+  "units_per_map_pixel": 16,
   "planet": {
     "name": "Agincourt Planet",
     "map": [
