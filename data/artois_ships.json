@@ -1,0 +1,41 @@
+{
+  "interceptor": {
+    "name": "Kestrel",
+    "role": "Light interceptor",
+    "price": 6000,
+    "cargo": 8,
+    "hull": 85,
+    "armour": 45,
+    "ward": 45,
+    "speed": 45,
+    "turn": 1.25,
+    "minimum_reputation": -19,
+    "description": "Fast and nimble, with a small hold and light plating. Two weapon mounts; equipment transfers from your current ship."
+  },
+  "fighter": {
+    "name": "Warden",
+    "role": "Patrol fighter",
+    "price": 8000,
+    "cargo": 20,
+    "hull": 120,
+    "armour": 80,
+    "ward": 60,
+    "speed": 35,
+    "turn": 1.0,
+    "minimum_reputation": -19,
+    "description": "Balanced combat hull with dependable plating. Two weapon mounts; equipment transfers from your current ship."
+  },
+  "pilgrim": {
+    "name": "Pilgrim",
+    "role": "Light trader",
+    "price": 18000,
+    "cargo": 90,
+    "hull": 200,
+    "armour": 110,
+    "ward": 75,
+    "speed": 28,
+    "turn": 0.7,
+    "minimum_reputation": -19,
+    "description": "A capacious merchant hull with heavy plating and slower handling. Two weapon mounts; equipment transfers from your current ship."
+  }
+}

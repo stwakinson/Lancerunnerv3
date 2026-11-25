@@ -171,7 +171,7 @@ func use_recovery(id: String) -> bool:
 	if recovery_cooldown > 0:
 		notify("RECOVERY SERVITORS RECHARGING")
 		return false
-	var full: bool = (combat.hull >= combat.HULL_MAX and combat.defence.armour >= combat.defence.ARMOUR_MAX) if id == "armourer_mites" else combat.shield >= combat.shield_max
+	var full: bool = (combat.hull >= combat.hull_max and combat.defence.armour >= combat.defence.armour_max) if id == "armourer_mites" else combat.shield >= combat.shield_max
 	if full:
 		notify("HULL ALREADY SOUND" if id == "armourer_mites" else "SHIELDS ALREADY FULL")
 		return false
@@ -180,8 +180,8 @@ func use_recovery(id: String) -> bool:
 		notify(error)
 		return false
 	if id == "armourer_mites":
-		combat.hull = minf(combat.HULL_MAX, combat.hull + 60.0)
-		combat.defence.armour = minf(combat.defence.ARMOUR_MAX, combat.defence.armour + 40.0)
+		combat.hull = minf(combat.hull_max, combat.hull + 60.0)
+		combat.defence.armour = minf(combat.defence.armour_max, combat.defence.armour + 40.0)
 	else:
 		combat.shield = minf(combat.shield_max, combat.shield + 90.0)
 		combat._shield_flash = 0.25

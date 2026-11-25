@@ -14,6 +14,7 @@ const WEAPONS := {
 	"missile_rack": {"damage": 65.0, "interval": 1.2, "speed": 140.0, "colour": "ff926c", "life": 5.0},
 }
 const HULL_MAX := 120.0
+var hull_max := HULL_MAX
 const AGGRO_RANGE := 420.0
 var defence := Defence.new()
 var guard_requested := false
@@ -37,9 +38,13 @@ var _bursts: Array[MeshInstance3D] = []
 
 func configure(space: Node3D, market: LandingMarketState) -> void:
 	world = space
+	var profile: Dictionary = market.Ships.profile(market.ship_class)
+	hull_max = float(profile.hull)
+	defence.armour_max = float(profile.armour)
+	preload("res://scripts/artois/artois_player_hull.gd").apply(world.ship, market.ship_class)
 	weapons = market.weapons.duplicate()
 	ordnance.configure(self, market)
-	shield_max = 180.0 if market.utility == "shield" else 60.0
+	shield_max = 180.0 if market.utility == "shield" else float(profile.ward)
 	shield_regen = 22.0 if market.utility == "shield" else 8.0
 	if _mounts != null: _mounts.free()
 	_mounts = Node3D.new()
@@ -76,7 +81,7 @@ func repair() -> void:
 	defence.repair()
 	if world.ship.has_meta("cargo_dropped"): world.ship.remove_meta("cargo_dropped")
 	guard_requested = false
-	hull = HULL_MAX
+	hull = hull_max
 	shield = shield_max
 	dead = false
 	_since_hit = 10.0

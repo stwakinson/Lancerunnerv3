@@ -67,7 +67,7 @@ func _draw_combat() -> void:
 	var origin := Vector2(size.x - 280, 122)
 	draw_rect(Rect2(origin + Vector2(-12, -20), Vector2(272, 298)), Color(0.025, 0.06, 0.09, 0.7))
 	var values := [combat.shield, combat.defence.armour, combat.hull, combat.defence.energy]
-	var maxima := [combat.shield_max, combat.defence.ARMOUR_MAX, combat.HULL_MAX, combat.defence.ENERGY_MAX]
+	var maxima := [combat.shield_max, combat.defence.armour_max, combat.hull_max, combat.defence.ENERGY_MAX]
 	var names := ["WARD", "ARMOUR", "HULL", "ENERGY"]
 	for i in 4:
 		var colour := Color("78c9e9") if i == 0 else (Color("85dfbf") if i == 3 else Color("e8b879"))
