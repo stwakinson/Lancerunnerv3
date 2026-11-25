@@ -1,13 +1,13 @@
 # Randomized faction contracts
 
-Dock at Agincourt Planet Port, Saint George or Saint-Denis. Press **3**, choose **FACTION CONTRACTS**, or click a faction contact's exclamation marker. The planet has four individual contacts:
+Dock at Agincourt Planet Port, Saint George or Saint-Denis. On the planet, press **3** to enter the tavern, then click a marked patron (or press **3** again for present contacts). Carriers retain their **FACTION CONTRACTS** service. The planet's contact pool has four individuals:
 
 - Captain Fluellen — Britannia
 - Reeve Alice Fenwick — Borderlanders
 - Factor Hinrik Voss — Hanseatic League
 - Envoy Ysabeau de Renty — Valois
 
-Saint George has Marshal Eleanor Talbot (Britannia). Saint-Denis has Capitaine Jehan de Dreux (Valois). Clicking a person selects their contact; the conversation selector also switches between contacts available at that port.
+Saint George has Marshal Eleanor Talbot (Britannia). Saint-Denis has Capitaine Jehan de Dreux (Valois). Clicking a person selects their contact; the conversation selector also switches between contacts currently present. The planet tavern rolls 2–4 contacts per landing and guarantees the pending contract issuer on return; see `artois-tavern.md`.
 
 Each contact maintains three offers:
 

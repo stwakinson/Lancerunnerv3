@@ -9,6 +9,9 @@ const TargetHud = preload("res://scripts/artois/artois_target_hud.gd")
 var free_mouse := false
 var pause_menu: Control
 var docked_id := "planet_dock"
+var tavern: Node2D
+var in_tavern := false
+var market_button: Button
 var _landing_cache := {}
 var mission := Sortie.new()
 var contract_panel: Control
@@ -30,18 +33,15 @@ var _notice_time := 0.0
 func _ready() -> void:
 	super._ready()
 	_landing_cache["planet_dock"] = landing_world
+	tavern = preload("res://scenes/artois_tavern.tscn").instantiate()
+	landing_view.add_child(tavern)
+	tavern.visible = false
 	space_world.combat.configure(space_world, market_state)
 	mission.configure(space_world)
 	mission.changed.connect(_mission_changed)
 	space_world.combat.player_destroyed.connect(func() -> void: _recover_from_defeat.call_deferred())
 	shop_panel.closed.connect(_apply_loadout)
 	shop_panel.ship_purchased.connect(_apply_loadout)
-	var contacts: Array = mission.board.contacts("planet_dock")
-	for i in contacts.size():
-		var contact := Contact.new()
-		contact.position = Vector2(330 + i * 32, 268)
-		contact.coat = Color.html(contacts[i].coat)
-		landing_world.layers[4].add_child(contact)
 	_mission_changed()
 	_sync_shop_hotspots()
 	pause_menu = preload("res://scripts/artois/artois_pause_menu.gd").new()
@@ -65,14 +65,24 @@ func _mission_changed() -> void:
 
 func open_contract(contact_id := "") -> void:
 	if not landed or mission.board.contacts(docked_id).is_empty() or transitioning or shop_panel.visible or contract_panel.visible: return
-	space_world.reset_taps()
-	contract_panel.open_panel(docked_id, contact_id)
+	if docked_id == "planet_dock":
+		if not in_tavern:
+			enter_tavern()
+			if contact_id.is_empty(): return
+		var present: Array = tavern.contacts.map(func(entry: Dictionary) -> String: return str(entry.id))
+		if not contact_id.is_empty() and contact_id not in present: return
+		space_world.reset_taps()
+		contract_panel.open_panel(docked_id, contact_id, present)
+	else:
+		space_world.reset_taps()
+		contract_panel.open_panel(docked_id, contact_id)
 	_sync_shop_hotspots()
 
 
 func open_shop(kind: String) -> void:
 	if kind == "ships" and market_state.Ships.offers(docked_id).is_empty(): return
 	if contract_panel != null and contract_panel.visible: return
+	if in_tavern: leave_tavern()
 	space_world.reset_taps()
 	super.open_shop(kind)
 
@@ -81,18 +91,28 @@ func _sync_shop_hotspots() -> void:
 	super._sync_shop_hotspots()
 	if contact_hotspot == null: return
 	var available := landed and not transitioning and not shop_panel.visible and not contract_panel.visible
-	shop_hotspots.visible = available
-	contact_hotspot.visible = available and not mission.board.contacts(docked_id).is_empty()
+	shop_hotspots.visible = available and not in_tavern
 	var factor := maxf(size.x / 640.0, size.y / 360.0)
 	var offset := (size - Vector2(640, 360) * factor) * 0.5
-	contact_hotspot.position = offset + (Vector2(314, 226) + landing_world.layers[4].position) * factor
-	contact_hotspot.size = Vector2(32, 48) * factor
-	for i in faction_hotspots.size():
-		faction_hotspots[i].visible = available and docked_id == "planet_dock"
-		faction_hotspots[i].position = offset + (Vector2(346 + i * 32, 226) + landing_world.layers[4].position) * factor
-		faction_hotspots[i].size = Vector2(32, 48) * factor
+	var buttons: Array = [contact_hotspot] + faction_hotspots
+	for i in buttons.size():
+		var button: Button = buttons[i]
+		button.visible = false
+		if in_tavern and i < tavern.contacts.size():
+			var entry: Dictionary = tavern.contacts[i]
+			var rect: Rect2 = tavern.contact_rect(entry.id)
+			button.position = offset + rect.position * factor
+			button.size = rect.size * factor
+			button.set_meta("contact_id", entry.id)
+			button.tooltip_text = str(entry.name)
+			button.visible = available
+		elif not in_tavern and docked_id != "planet_dock" and i == 0 and not mission.board.contacts(docked_id).is_empty():
+			button.position = offset + (Vector2(314, 226) + landing_world.layers[4].position) * factor
+			button.size = Vector2(32, 48) * factor
+			button.set_meta("contact_id", mission.board.contacts(docked_id)[0].id)
+			button.visible = available
 	if dealer_hotspot != null:
-		dealer_hotspot.visible = available and docked_id == "planet_dock"
+		dealer_hotspot.visible = available and docked_id == "planet_dock" and not in_tavern
 		dealer_hotspot.position = offset + (Vector2(452, 190) + landing_world.layers[3].position) * factor
 		dealer_hotspot.size = Vector2(155, 65) * factor
 
@@ -160,6 +180,9 @@ func _build_ui() -> void:
 	move_child(dealer_hotspot, get_node("Interface").get_index())
 	contact_button = _button(ui, "3  FACTION CONTRACTS", Vector2(954, 200), 238, open_contract)
 	contact_button.name = "PlanetContactButton"
+	market_button = _button(ui, "5  RETURN TO MARKET", Vector2(954, 294), 238, leave_tavern)
+	market_button.name = "TavernMarketButton"
+	market_button.visible = false
 	contact_hotspot = Button.new()
 	contact_hotspot.name = "PlanetContactHotspot"
 	contact_hotspot.tooltip_text = "Faction contact / Contracts (3)"
@@ -169,11 +192,11 @@ func _build_ui() -> void:
 	contact_hotspot.add_theme_stylebox_override("normal", transparent)
 	contact_hotspot.add_theme_stylebox_override("hover", transparent)
 	contact_hotspot.add_theme_stylebox_override("pressed", transparent)
-	contact_hotspot.pressed.connect(func() -> void: open_contract(str(mission.board.contacts(docked_id)[0].id)))
+	contact_hotspot.pressed.connect(_patron_pressed.bind(contact_hotspot))
 	add_child(contact_hotspot)
 	move_child(contact_hotspot, ui.get_index())
 	var badge := Label.new()
-	badge.text = "FACTION CONTACTS"
+	badge.text = ""
 	badge.position = Vector2(-55, -23)
 	badge.add_theme_font_size_override("font_size", 12)
 	badge.add_theme_color_override("font_color", ACCENT)
@@ -186,7 +209,7 @@ func _build_ui() -> void:
 		hotspot.focus_mode = Control.FOCUS_NONE
 		hotspot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		for state in ["normal", "hover", "pressed"]: hotspot.add_theme_stylebox_override(state, transparent)
-		hotspot.pressed.connect(open_contract.bind(str(local_contacts[i].id)))
+		hotspot.pressed.connect(_patron_pressed.bind(hotspot))
 		add_child(hotspot)
 		move_child(hotspot, ui.get_index())
 		faction_hotspots.append(hotspot)
@@ -228,7 +251,17 @@ func _update_labels() -> void:
 	if radio_label != null: radio_label.visible = not landed
 	if contact_label != null: contact_label.visible = not landed
 	if contact_button != null: contact_button.visible = landed and not mission.board.contacts(docked_id).is_empty()
-	if dealer_button != null: dealer_button.visible = landed and not market_state.Ships.offers(docked_id).is_empty()
+	if dealer_button != null: dealer_button.visible = landed and not in_tavern and not market_state.Ships.offers(docked_id).is_empty()
+	if contact_button != null: contact_button.text = "3  TAVERN / CONTACTS" if docked_id == "planet_dock" and not in_tavern else "3  FACTION CONTRACTS"
+	if market_button != null: market_button.visible = landed and in_tavern
+	if landed and in_tavern:
+		_heading.text = "THE HOLLOW CROWN"
+		_subheading.text = "ARTOIS / SPACEPORT TAVERN"
+		_commodity_service.visible = false
+		_equipment_service.visible = false
+		_status.text = "TAVERN / CLICK A MARKED PATRON FOR FACTION CONTRACTS"
+		_hint.text = "Mouse: look around · A/D: pan · C: drift · L: depth · F: window rain · 3: contacts · 5: market · Enter: launch"
+		_weather_button.text = "F  WINDOW RAIN: " + ("ON" if tavern.weather_enabled else "OFF")
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
 	if ui != null and ui.has_node("SystemChartButton"):
@@ -314,12 +347,19 @@ func toggle_docking() -> void:
 	world.reset_taps()
 	await super.toggle_docking()
 	world.docked = landed
+	if not landed and in_tavern: _show_market()
 	if landed: world.combat.repair()
 	_update_labels()
 
 
 func _switch_landing(id: String) -> void:
+	in_tavern = false
 	landing_world.visible = false
+	if id == "planet_dock":
+		var pinned := ""
+		if mission.phase in ["active", "return"] and mission.return_port() == id:
+			pinned = str(mission.active_offer.get("contact", "fluellen"))
+		tavern.begin_visit(mission.board.contacts(id), pinned)
 	if not _landing_cache.has(id):
 		var resource: PackedScene = load(market_state.markets.scene_path(id))
 		var room := resource.instantiate()
@@ -338,6 +378,7 @@ func _switch_landing(id: String) -> void:
 
 func toggle_weather() -> void:
 	super.toggle_weather()
+	if in_tavern: _update_labels()
 	if landed and docked_id != "planet_dock":
 		_weather_button.text = "F  VENT MIST: " + ("ON" if landing_world.weather_enabled else "OFF")
 
@@ -425,7 +466,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				return
 		get_viewport().set_input_as_handled()
 	else:
-		if event.physical_keycode == KEY_3:
+		if event.physical_keycode == KEY_5 and in_tavern:
+			leave_tavern()
+			get_viewport().set_input_as_handled()
+		elif event.physical_keycode == KEY_3:
 			open_contract()
 			get_viewport().set_input_as_handled()
 		else: super._unhandled_key_input(event)
@@ -486,3 +530,31 @@ func _exit_tree() -> void:
 
 func _centre_cursor() -> void:
 	Input.warp_mouse(get_viewport().get_final_transform() * (get_global_transform_with_canvas() * (size * 0.5)))
+
+
+func _patron_pressed(button: Button) -> void:
+	open_contract(str(button.get_meta("contact_id", "")))
+
+func enter_tavern() -> void:
+	if not landed or docked_id != "planet_dock" or transitioning or shop_panel.visible or contract_panel.visible: return
+	landing_world.visible = false
+	landing_world = tavern
+	tavern.visible = true
+	in_tavern = true
+	tavern.reset_camera()
+	_update_labels()
+	_sync_shop_hotspots()
+	_sync_mouse_mode()
+
+func _show_market() -> void:
+	tavern.visible = false
+	landing_world = _landing_cache["planet_dock"]
+	landing_world.visible = true
+	in_tavern = false
+	landing_world.reset_camera()
+
+func leave_tavern() -> void:
+	if not in_tavern or transitioning or shop_panel.visible or contract_panel.visible: return
+	_show_market()
+	_update_labels()
+	_sync_shop_hotspots()

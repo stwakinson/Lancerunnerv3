@@ -87,10 +87,15 @@ func _run() -> void:
 	# Dock and use the planet contact. Rendered runs click the actual buttons.
 	world.ship.position = world.target_position(world.DOCK_ID) + Vector3(0, 0, 60)
 	await scene.toggle_docking()
-	check(scene.landed and scene.contact_button.visible, "Contact must be available only on the planet")
+	check(scene.landed and scene.contact_button.visible, "Tavern entry must be available on the planet")
+	scene.enter_tavern()
+	# Pin the fixed projectile fixture contact; randomized tavern visits have their own test.
+	scene.tavern.begin_visit([scene.mission.board.contact("fluellen")], "fluellen", 1415)
+	scene._sync_shop_hotspots()
+	scene._sync_mouse_mode()
 	await scene._capture(capture_dir, "artois-contact.png")
 	if DisplayServer.get_name() != "headless": await click(scene.contact_hotspot)
-	else: scene.open_contract()
+	else: scene.open_contract("fluellen")
 	check(scene.contract_panel.visible, "Planet contact must open a conversation")
 	await scene.toggle_docking()
 	check(scene.landed, "Conversation must block launch")
@@ -157,7 +162,7 @@ func _run() -> void:
 	world.ship.position = world.target_position(world.DOCK_ID) + Vector3(0, 0, 60)
 	world.brake()
 	await scene.toggle_docking()
-	scene.open_contract()
+	scene.open_contract("fluellen")
 	var credits := market.credits
 	scene.contract_panel._act()
 	check(market.credits == credits + 1500 and scene.mission.phase == "paid", "Returning to contact must pay the reward")
@@ -189,7 +194,7 @@ func _run() -> void:
 	if not scene.landed or scene.transitioning: await create_timer(1.0).timeout
 	check(scene.landed and not combat.dead and combat.hull == combat.HULL_MAX, "Defeat must recover the player to the repaired planet hub")
 	check(scene.mission.phase == "failed" and combat.enemies.is_empty(), "Defeat must fail and clear the encounter")
-	scene.open_contract()
+	scene.open_contract("fluellen")
 	scene.mission.accept()
 	check(scene.mission.phase == "active" and combat.enemies.size() == 5 and scene.mission.kills == 0, "Failed mission must restart cleanly from the contact")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(market.save_path))
