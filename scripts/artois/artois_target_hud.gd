@@ -118,7 +118,9 @@ func _draw_combat() -> void:
 		if world.ship.position.distance_to(fighter.position) > 900: continue
 		var at := world.camera.unproject_position(fighter.position) * factor + offset
 		if Rect2(origin + Vector2(-12, -20), Vector2(272, 298)).has_point(at): continue
-		var colour := Color("ef715b")
+		var captain := bool(fighter.get_meta("bounty_target", false))
+		var colour := Color("edc38d") if captain else Color("ef715b")
+		if captain: draw_string(_font, at + Vector2(-65, -19), str(fighter.get_meta("display_name")), HORIZONTAL_ALIGNMENT_LEFT, 240, 12, colour)
 		draw_rect(Rect2(at - Vector2(10, 10), Vector2(20, 20)), colour, false, 1)
-		draw_rect(Rect2(at + Vector2(-14, 15), Vector2(28 * float(fighter.get_meta("hull")) / 65.0, 3)), colour)
-		draw_rect(Rect2(at + Vector2(-14, 20), Vector2(28 * float(fighter.get_meta("shield")) / 20.0, 2)), Color("78c9e9"))
+		draw_rect(Rect2(at + Vector2(-14, 15), Vector2(28 * float(fighter.get_meta("hull")) / float(fighter.get_meta("hull_max", 65.0)), 3)), colour)
+		draw_rect(Rect2(at + Vector2(-14, 20), Vector2(28 * float(fighter.get_meta("shield")) / float(fighter.get_meta("shield_max", 20.0)), 2)), Color("78c9e9"))

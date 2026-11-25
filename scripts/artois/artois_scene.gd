@@ -15,6 +15,7 @@ var contract_panel: Control
 var dealer_button: Button
 var dealer_hotspot: Button
 var contact_button: Button
+var faction_hotspots: Array[Button] = []
 var contact_hotspot: Button
 var radio_label: Label
 var contact_label: Label
@@ -35,9 +36,12 @@ func _ready() -> void:
 	space_world.combat.player_destroyed.connect(func() -> void: _recover_from_defeat.call_deferred())
 	shop_panel.closed.connect(_apply_loadout)
 	shop_panel.ship_purchased.connect(_apply_loadout)
-	var contact := Contact.new()
-	contact.position = Vector2(330, 268)
-	landing_world.layers[4].add_child(contact)
+	var contacts: Array = mission.board.contacts("planet_dock")
+	for i in contacts.size():
+		var contact := Contact.new()
+		contact.position = Vector2(330 + i * 32, 268)
+		contact.coat = Color.html(contacts[i].coat)
+		landing_world.layers[4].add_child(contact)
 	_mission_changed()
 	_sync_shop_hotspots()
 	pause_menu = preload("res://scripts/artois/artois_pause_menu.gd").new()
@@ -59,10 +63,10 @@ func _mission_changed() -> void:
 	if contract_panel != null and contract_panel.visible: contract_panel.refresh()
 
 
-func open_contract() -> void:
-	if not landed or docked_id != "planet_dock" or transitioning or shop_panel.visible or contract_panel.visible: return
+func open_contract(contact_id := "") -> void:
+	if not landed or mission.board.contacts(docked_id).is_empty() or transitioning or shop_panel.visible or contract_panel.visible: return
 	space_world.reset_taps()
-	contract_panel.open_panel()
+	contract_panel.open_panel(docked_id, contact_id)
 	_sync_shop_hotspots()
 
 
@@ -78,11 +82,15 @@ func _sync_shop_hotspots() -> void:
 	if contact_hotspot == null: return
 	var available := landed and not transitioning and not shop_panel.visible and not contract_panel.visible
 	shop_hotspots.visible = available
-	contact_hotspot.visible = available and docked_id == "planet_dock"
+	contact_hotspot.visible = available and not mission.board.contacts(docked_id).is_empty()
 	var factor := maxf(size.x / 640.0, size.y / 360.0)
 	var offset := (size - Vector2(640, 360) * factor) * 0.5
-	contact_hotspot.position = offset + (Vector2(314, 226) + landing_world.layers[3].position) * factor
+	contact_hotspot.position = offset + (Vector2(314, 226) + landing_world.layers[4].position) * factor
 	contact_hotspot.size = Vector2(32, 48) * factor
+	for i in faction_hotspots.size():
+		faction_hotspots[i].visible = available and docked_id == "planet_dock"
+		faction_hotspots[i].position = offset + (Vector2(346 + i * 32, 226) + landing_world.layers[4].position) * factor
+		faction_hotspots[i].size = Vector2(32, 48) * factor
 	if dealer_hotspot != null:
 		dealer_hotspot.visible = available and docked_id == "planet_dock"
 		dealer_hotspot.position = offset + (Vector2(452, 190) + landing_world.layers[3].position) * factor
@@ -150,26 +158,38 @@ func _build_ui() -> void:
 	dealer_hotspot.pressed.connect(open_shop.bind("ships"))
 	add_child(dealer_hotspot)
 	move_child(dealer_hotspot, get_node("Interface").get_index())
-	contact_button = _button(ui, "3  FLUELLEN / CONTRACT", Vector2(954, 200), 238, open_contract)
+	contact_button = _button(ui, "3  FACTION CONTRACTS", Vector2(954, 200), 238, open_contract)
 	contact_button.name = "PlanetContactButton"
 	contact_hotspot = Button.new()
 	contact_hotspot.name = "PlanetContactHotspot"
-	contact_hotspot.tooltip_text = "Captain Fluellen / Test sortie contract (3)"
+	contact_hotspot.tooltip_text = "Faction contact / Contracts (3)"
 	contact_hotspot.focus_mode = Control.FOCUS_NONE
 	contact_hotspot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	var transparent := StyleBoxEmpty.new()
 	contact_hotspot.add_theme_stylebox_override("normal", transparent)
 	contact_hotspot.add_theme_stylebox_override("hover", transparent)
 	contact_hotspot.add_theme_stylebox_override("pressed", transparent)
-	contact_hotspot.pressed.connect(open_contract)
+	contact_hotspot.pressed.connect(func() -> void: open_contract(str(mission.board.contacts(docked_id)[0].id)))
 	add_child(contact_hotspot)
 	move_child(contact_hotspot, ui.get_index())
 	var badge := Label.new()
-	badge.text = "FLUELLEN / CONTRACT"
+	badge.text = "FACTION CONTACTS"
 	badge.position = Vector2(-55, -23)
 	badge.add_theme_font_size_override("font_size", 12)
 	badge.add_theme_color_override("font_color", ACCENT)
 	contact_hotspot.add_child(badge)
+	var local_contacts: Array = mission.board.contacts("planet_dock")
+	for i in range(1, local_contacts.size()):
+		var hotspot := Button.new()
+		hotspot.name = "FactionContact_" + str(local_contacts[i].id)
+		hotspot.tooltip_text = str(local_contacts[i].name)
+		hotspot.focus_mode = Control.FOCUS_NONE
+		hotspot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		for state in ["normal", "hover", "pressed"]: hotspot.add_theme_stylebox_override(state, transparent)
+		hotspot.pressed.connect(open_contract.bind(str(local_contacts[i].id)))
+		add_child(hotspot)
+		move_child(hotspot, ui.get_index())
+		faction_hotspots.append(hotspot)
 	contract_panel = ContractPanel.new()
 	ui.add_child(contract_panel)
 	contract_panel.mission = mission
@@ -202,10 +222,12 @@ func _update_labels() -> void:
 			_subheading.text = "%s / STATION MARKET DECK" % str(profile.faction).to_upper()
 			_status.text = "DOCKED / " + str(profile.notes)
 			_hint.text = "Mouse: look around · A/D: pan · R: centre · C: drift · L: depth · F: vent mist · 1/2: shops"
+			if not mission.board.contacts(docked_id).is_empty(): _hint.text += " / 3: contracts"
+			if not market_state.Ships.offers(docked_id).is_empty(): _hint.text += " / 4: shipyard"
 			_weather_button.text = "F  VENT MIST: " + ("ON" if landing_world.weather_enabled else "OFF")
 	if radio_label != null: radio_label.visible = not landed
 	if contact_label != null: contact_label.visible = not landed
-	if contact_button != null: contact_button.visible = landed and docked_id == "planet_dock"
+	if contact_button != null: contact_button.visible = landed and not mission.board.contacts(docked_id).is_empty()
 	if dealer_button != null: dealer_button.visible = landed and not market_state.Ships.offers(docked_id).is_empty()
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
@@ -288,9 +310,10 @@ func toggle_docking() -> void:
 		world.prepare_launch()
 		world.combat.configure(world, market_state)
 		if mission.phase == "active": world.select_target(mission.TARGET_ID)
-		elif mission.phase == "return": world.select_target(world.DOCK_ID)
+		elif mission.phase == "return": world.select_target(mission.return_port())
 	world.reset_taps()
 	await super.toggle_docking()
+	world.docked = landed
 	if landed: world.combat.repair()
 	_update_labels()
 
@@ -302,6 +325,12 @@ func _switch_landing(id: String) -> void:
 		var room := resource.instantiate()
 		landing_view.add_child(room)
 		_landing_cache[id] = room
+		var contacts: Array = mission.board.contacts(id)
+		if not contacts.is_empty():
+			var contact := Contact.new()
+			contact.position = Vector2(330, 268)
+			contact.coat = Color.html(contacts[0].coat)
+			room.layers[4].add_child(contact)
 	landing_world = _landing_cache[id]
 	landing_world.visible = true
 	landing_world.reset_camera()
