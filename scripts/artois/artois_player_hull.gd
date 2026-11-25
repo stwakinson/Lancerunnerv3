@@ -8,10 +8,15 @@ static func apply(ship: Node3D, id: String) -> void:
 		for child in ship.get_children():
 			if child is MeshInstance3D and child not in ship.engines: originals.append(child)
 		ship.set_meta("original_hull_meshes", originals)
-	for child in ship.get_meta("original_hull_meshes"): child.visible = id not in ["pilgrim", "interceptor"]
+	for child in ship.get_meta("original_hull_meshes"): child.visible = id not in ["pilgrim", "interceptor", "longbow", "epervier"]
 	var previous: Node = ship.get_node_or_null("PurchasedHull")
 	if previous != null: previous.free()
-	if id == "pilgrim":
+	if id in ["longbow", "epervier"]:
+		var model: Node3D = preload("res://scripts/artois/artois_local_models.gd").new().make("britannian_guard" if id == "longbow" else "valois_guard")
+		model.name = "PurchasedHull"
+		model.scale = Vector3.ONE * 0.3
+		ship.add_child(model)
+	elif id == "pilgrim":
 		var model: Node3D = Pilgrim.instantiate()
 		model.name = "PurchasedHull"
 		model.scale = Vector3.ONE * 0.27

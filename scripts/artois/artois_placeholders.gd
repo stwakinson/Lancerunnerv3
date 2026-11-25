@@ -90,6 +90,19 @@ func make(entry: Dictionary) -> Node3D:
 				block(node, Vector3(x, 0, 0), Vector3(4, 5, 70), "525463")
 				for z in [-25.0, 0.0, 25.0]: block(node, Vector3(x, 11, z), Vector3(3, 22, 3), "525463")
 			block(node, Vector3(0, -3, 20), Vector3(40, 4, 5), "3d3946")
+		"carrier":
+			var paint := "49628c" if entry.get("faction", "") == "valois" else "d7d0b7"
+			var regalia := "d6b266" if entry.get("faction", "") == "valois" else "ab3029"
+			block(node, Vector3(0, -6, 0), Vector3(36, 12, 108), "343947")
+			for side in [-1.0, 1.0]:
+				block(node, Vector3(side * 19, 4, 0), Vector3(9, 17, 112), paint)
+				block(node, Vector3(side * 19, 14, 0), Vector3(9.5, 2, 107), regalia)
+				for z in [-40, -20, 0, 20, 40]:
+					block(node, Vector3(side * 13.9, 6, z), Vector3(0.3, 2, 6), "e8bc73", true)
+			block(node, Vector3(-18, 22, -15), Vector3(13, 23, 20), paint)
+			block(node, Vector3(-18, 30, -26), Vector3(11, 3, 0.4), "e9c37c", true)
+			block(node, Vector3(0, -1, 50), Vector3(22, 1, 8), "79d9ed", true)
+			for x in [-9, 9]: block(node, Vector3(x, -5, 55), Vector3(7, 5, 1), "79d9ed", true)
 		"capital_ship", "wreck":
 			block(node, Vector3.ZERO, Vector3(14, 10, 75), "675a68")
 			block(node, Vector3(0, 9, -18), Vector3(8, 10, 17), "858397")

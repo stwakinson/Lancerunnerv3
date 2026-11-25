@@ -46,9 +46,13 @@ func fail() -> void:
 
 func claim(market: LandingMarketState) -> bool:
 	if phase != "return" or market.credits > 1000000000 - REWARD: return false
+	var previous_reputation: Dictionary = market.reputation.duplicate()
+	for faction in ["britannian", "valois"]:
+		market.reputation[faction] = mini(100, int(market.reputation[faction]) + 10)
 	market.credits += REWARD
 	# Claim only succeeds if the existing atomic economy save succeeds.
 	if not market.save_state():
+		market.reputation = previous_reputation
 		market.credits -= REWARD
 		return false
 	phase = "paid"
@@ -59,7 +63,7 @@ func claim(market: LandingMarketState) -> bool:
 func summary() -> String:
 	match phase:
 		"active": return "TEST SORTIE  /  DESTROY FREEBOOTERS  %d / 5  /  M: MISSION WAYPOINT" % kills
-		"return": return "TEST SORTIE COMPLETE  /  RETURN TO PLANET CONTACT FOR 1,500 CREDITS"
+		"return": return "TEST SORTIE COMPLETE  /  RETURN TO PLANET CONTACT FOR 1,500 CREDITS + NAVAL REPUTATION"
 		"failed": return "TEST SORTIE FAILED  /  ASK THE PLANET CONTACT TO RETRY"
 		"paid": return "TEST SORTIE  /  PAYMENT RECEIVED"
 	return "TEST SORTIE  /  TALK TO THE PLANET CONTACT TO ACCEPT"

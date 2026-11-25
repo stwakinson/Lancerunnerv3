@@ -52,7 +52,7 @@ func _run() -> void:
 	var route: Dictionary = world.layout.highways.back()
 	check(route.id == "junction_east" and world.layout.world({"map": route.to}).distance_to(world.layout.world(east)) < 200, "East highway must terminate near its hyper gate")
 	scene.toggle_chart()
-	check(scene.chart._picker.item_count == 59, "Chart must list the new gate and eastern highway entrances")
+	check(scene.chart._picker.item_count == 61, "Chart must list the new gate and eastern highway entrances")
 	await scene._capture(capture_dir, "artois-hyper-gates-chart.png")
 	scene.toggle_chart()
 	world.ship.position = world.layout.world(east) + Vector3(-240, 50, 70)

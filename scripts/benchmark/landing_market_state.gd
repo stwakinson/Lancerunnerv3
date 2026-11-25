@@ -274,8 +274,8 @@ func set_ship_class(id: String) -> String:
 
 
 func ship_purchase_error(id: String) -> String:
-	if market_id != "planet_dock": return "Ships are sold at the planet shipyard."
 	if not Ships.catalog.has(id): return "Unknown ship."
+	if id not in Ships.offers(market_id): return "This hull is not sold at this port."
 	var access := Factions.access_error(reputation, market_id)
 	if not access.is_empty(): return access
 	var offer: Dictionary = Ships.catalog[id]

@@ -20,7 +20,7 @@ func hostile(faction: String) -> bool:
 	return score(faction) <= HOSTILE
 
 func relation(faction: String) -> String:
-	return "HOSTILE / SHOOT ON SIGHT" if hostile(faction) else ("WARY" if score(faction) <= -20 else "NEUTRAL")
+	return "HOSTILE / SHOOT ON SIGHT" if hostile(faction) else ("WARY" if score(faction) <= -20 else ("TRUSTED" if score(faction) >= 25 else "NEUTRAL"))
 
 func enemy(actor: Dictionary) -> bool:
 	return bool(actor.provoked) or hostile(str(actor.allegiance))

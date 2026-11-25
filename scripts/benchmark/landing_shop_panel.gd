@@ -45,7 +45,7 @@ func configure(state: LandingMarketState) -> void:
 
 func open_shop(kind: String) -> void:
 	shop_kind = kind
-	selected_id = "fighter" if kind == "ships" else ("grain" if kind == "commodities" else "pulse_laser")
+	selected_id = str(market.Ships.offers(market.market_id)[0]) if kind == "ships" and not market.Ships.offers(market.market_id).is_empty() else ("grain" if kind == "commodities" else "pulse_laser")
 	_quantity.value = 1
 	_message.text = "Select a hull to compare its capacity and protection." if kind == "ships" else "Select an item to inspect prices and availability."
 	visible = true
@@ -270,14 +270,14 @@ static func _money(amount: int) -> String:
 
 
 func _refresh_ships() -> void:
-	_venue.text = "AGINCOURT / BORDERLANDER SHIPWRIGHTS"
+	_venue.text = "%s / SHIPWRIGHTS" % market.markets.profile(market.market_id).name.to_upper()
 	_title.text = "SHIP DEALER"
 	_account.text = "%s cr / %s\nCARGO %d / %d" % [_money(market.credits), market.Ships.profile(market.ship_class).name, market.cargo_used(), market.capacity()]
 	var titles := ["SHIP", "PRICE", "HOLD", "HULL", "ARMOUR"]
 	for i in 5: _tree.set_column_title(i, titles[i])
 	_tree.clear()
 	var root := _tree.create_item()
-	for id in market.Ships.catalog:
+	for id in market.Ships.offers(market.market_id):
 		var offer: Dictionary = market.Ships.catalog[id]
 		var row := _tree.create_item(root)
 		row.set_metadata(0, id)

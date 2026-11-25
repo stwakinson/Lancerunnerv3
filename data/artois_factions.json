@@ -47,7 +47,9 @@
     "merchant_guild": "hanseatic",
     "acheau": "valois",
     "southern_outpost": "valois",
-    "southern_ship": "valois"
+    "southern_ship": "valois",
+    "valois_carrier": "valois",
+    "britannian_carrier": "britannian"
   },
   "docking_minimum": -19
 }
