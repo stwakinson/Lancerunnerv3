@@ -83,7 +83,14 @@ func _run() -> void:
 	check(uses_filament, "Long trips must plan through the authored highway network")
 	var from: Vector3 = cog.node.position
 	var saw_filament := false
-	for i in 1800:
+	# Budget the authored trip at actual flight/filament speeds at any map scale.
+	var trip_seconds := 30.0
+	var last_position: Vector3 = cog.node.position
+	for leg in cog.path:
+		var speed: float = 350.0 if leg.mode == "filament" else minf(float(traffic.profiles[cog.faction].speed), world.NORMAL_SPEED)
+		trip_seconds += last_position.distance_to(leg.position) / speed + 3.0
+		last_position = leg.position
+	for i in ceili(trip_seconds / 0.1):
 		traffic.advance(0.1)
 		if cog.state == "FILAMENT TRANSIT": saw_filament = true
 		if cog.trips > 0: break
