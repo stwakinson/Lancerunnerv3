@@ -42,7 +42,7 @@ func _run() -> void:
 	await key(KEY_A, false)
 	await key(KEY_A, true)
 	await key(KEY_A, false)
-	check(world.dodge_velocity.x < -100, "AA must dodge left through actual input")
+	check(world.dodge_velocity.x < -10, "AA must dodge left through actual input")
 	var before := world.ship.position
 	world.advance(0.2, Vector2.ZERO, 0, false, false)
 	check(world.ship.position.x < before.x - 10, "Dodge must move the ship rather than just change a flag")

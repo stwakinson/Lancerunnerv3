@@ -106,7 +106,7 @@ func try_enter(from: Vector3, to: Vector3) -> bool:
 	travel_sign = gate.sign
 	world.cancel_cruise()
 	world.autopilot = false
-	world.dodge_velocity = Vector3.ZERO
+	world.cancel_dodge()
 	world.reset_taps()
 	var destination := "highway_" + str(routes[active_route].id) + ("_b_exit" if travel_sign > 0 else "_a_exit")
 	world.select_target(destination)

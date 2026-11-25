@@ -38,6 +38,7 @@ var _bursts: Array[MeshInstance3D] = []
 
 func configure(space: Node3D, market: LandingMarketState) -> void:
 	world = space
+	world.cancel_dodge()
 	var profile: Dictionary = market.Ships.profile(market.ship_class)
 	hull_max = float(profile.hull)
 	defence.armour_max = float(profile.armour)
@@ -74,6 +75,7 @@ func configure(space: Node3D, market: LandingMarketState) -> void:
 		_bubble.material_override = mat
 		world.ship.add_child(_bubble)
 	defence.configure(world.ship)
+	world.dodge.configure(world.ship)
 	repair()
 
 

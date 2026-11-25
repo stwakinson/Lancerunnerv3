@@ -10,7 +10,13 @@
     "speed": 45,
     "turn": 1.25,
     "minimum_reputation": -19,
-    "description": "Fast and nimble, with a small hold and light plating. Two weapon mounts; equipment transfers from your current ship."
+    "description": "Fast and nimble, with a small hold and light plating. Two weapon mounts; equipment transfers from your current ship.",
+    "dodge": {
+      "speed": 130,
+      "kick": 0.07,
+      "slide": 0.1,
+      "recovery": 0.27
+    }
   },
   "fighter": {
     "name": "Warden",
@@ -23,7 +29,13 @@
     "speed": 35,
     "turn": 1.6,
     "minimum_reputation": -19,
-    "description": "Balanced combat hull with dependable plating. Two weapon mounts; equipment transfers from your current ship."
+    "description": "Balanced combat hull with dependable plating. Two weapon mounts; equipment transfers from your current ship.",
+    "dodge": {
+      "speed": 110,
+      "kick": 0.1,
+      "slide": 0.12,
+      "recovery": 0.34
+    }
   },
   "pilgrim": {
     "name": "Pilgrim",
@@ -36,7 +48,13 @@
     "speed": 28,
     "turn": 0.7,
     "minimum_reputation": -19,
-    "description": "A capacious merchant hull with heavy plating and slower handling. Two weapon mounts; equipment transfers from your current ship."
+    "description": "A capacious merchant hull with heavy plating and slower handling. Two weapon mounts; equipment transfers from your current ship.",
+    "dodge": {
+      "speed": 75,
+      "kick": 0.16,
+      "slide": 0.18,
+      "recovery": 0.52
+    }
   },
   "longbow": {
     "name": "Longbow",
@@ -53,7 +71,13 @@
     "sold_at": [
       "britannian_carrier"
     ],
-    "description": "Licensed Britannian combat hull. Two weapon mounts; cargo and equipment transfer."
+    "description": "Licensed Britannian combat hull. Two weapon mounts; cargo and equipment transfer.",
+    "dodge": {
+      "speed": 120,
+      "kick": 0.09,
+      "slide": 0.12,
+      "recovery": 0.32
+    }
   },
   "epervier": {
     "name": "Epervier",
@@ -70,6 +94,12 @@
     "sold_at": [
       "valois_carrier"
     ],
-    "description": "Licensed Valois combat hull. Two weapon mounts; cargo and equipment transfer."
+    "description": "Licensed Valois combat hull. Two weapon mounts; cargo and equipment transfer.",
+    "dodge": {
+      "speed": 125,
+      "kick": 0.08,
+      "slide": 0.11,
+      "recovery": 0.3
+    }
   }
 }

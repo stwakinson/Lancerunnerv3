@@ -25,6 +25,7 @@ var traffic: ArtoisTraffic
 var highways: ArtoisHighways
 var combat: ArtoisCombat
 var disruption_remaining := 0.0
+var dodge := preload("res://scripts/artois/artois_dodge.gd").new()
 var dodge_velocity := Vector3.ZERO
 var dodge_cooldown := 0.0
 var _last_taps := {}
@@ -78,11 +79,18 @@ func tap_direction(key: int, now: float) -> bool:
 	autopilot = false
 	if highways.attached():
 		highways.escape(ship.basis * DIRECTIONS[key])
-		dodge_velocity = Vector3.ZERO
+		cancel_dodge()
 	else:
-		dodge_velocity = ship.basis * DIRECTIONS[key] * 135.0
-	dodge_cooldown = 0.65
+		var profile: Dictionary = combat.ordnance.market.Ships.profile(combat.ordnance.market.ship_class).dodge
+		dodge.start(ship.basis * DIRECTIONS[key], profile)
+		dodge_velocity = dodge.velocity
+	dodge_cooldown = maxf(0.65, dodge.duration() + 0.15)
 	return true
+
+
+func cancel_dodge() -> void:
+	dodge.reset()
+	dodge_velocity = Vector3.ZERO
 
 
 func reset_taps() -> void:
@@ -222,7 +230,7 @@ func brake() -> void:
 	autopilot = false
 	velocity = Vector3.ZERO
 	speed = 0.0
-	dodge_velocity = Vector3.ZERO
+	cancel_dodge()
 	reset_taps()
 
 
@@ -289,6 +297,7 @@ func advance(delta: float, steering: Vector2, thrust: float, boosting: bool, fir
 	else:
 		_advance_manual(delta, steering, thrust, boosting)
 		highways.try_enter(previous, ship.position)
+	dodge.visualise(delta)
 	_avoid_planet()
 	speed = (velocity + dodge_velocity).length()
 	for i in ship.engines.size():
@@ -333,9 +342,9 @@ func _advance_manual(delta: float, steering: Vector2, thrust: float, boosting: b
 	if cruise: desired = desired.limit_length(float(combat.ordnance.market.Ships.profile(combat.ordnance.market.ship_class).speed) * 5.0)
 	if disruption_remaining > 0: desired = desired.limit_length(12.0)
 	velocity = velocity.move_toward(desired, (110.0 if autopilot or cruise else 85.0) * delta)
-	# Integrate exponential dodge decay independently of normal thrust.
-	ship.position += velocity * delta + dodge_velocity * ((1.0 - exp(-delta * 6.0)) / 6.0)
-	dodge_velocity *= exp(-delta * 6.0)
+	# Integrate thrust in world space; turning does not rotate existing momentum.
+	ship.position += velocity * delta + dodge.advance(delta)
+	dodge_velocity = dodge.velocity
 
 
 func _fire_shot() -> void:
@@ -396,7 +405,7 @@ func apply_disruption(duration: float) -> void:
 	highways.reset()
 	cancel_cruise()
 	autopilot = false
-	dodge_velocity = Vector3.ZERO
+	cancel_dodge()
 	velocity = velocity.limit_length(12.0)
 	reset_taps()
 	combat.ordnance.reset_lock()
