@@ -36,6 +36,18 @@
     "east_gate": "valois",
     "picardie_gate": "valois",
     "calais_gate": "britannian",
-    "freebooter_base": "freebooter"
-  }
+    "freebooter_base": "freebooter",
+    "planet_dock": "borderlander",
+    "border_post": "britannian",
+    "renty": "britannian",
+    "embry": "borderlander",
+    "caulers": "hanseatic",
+    "fressin": "borderlander",
+    "wrecked_shipyard": "borderlander",
+    "merchant_guild": "hanseatic",
+    "acheau": "valois",
+    "southern_outpost": "valois",
+    "southern_ship": "valois"
+  },
+  "docking_minimum": -19
 }

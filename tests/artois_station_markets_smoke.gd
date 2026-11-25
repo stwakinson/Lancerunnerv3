@@ -75,6 +75,9 @@ func _run() -> void:
 	scene.shop_panel.configure(state)
 	scene.contract_panel.market = state
 	var world := scene.space_world as ArtoisSpace
+	# Exercise interiors with docking permission, including the outlaw port.
+	state.reputation.freebooter = 0
+	world.combat.configure(world, state)
 	var population := world.traffic
 	for id in state.markets.ports():
 		world.highways.reset()

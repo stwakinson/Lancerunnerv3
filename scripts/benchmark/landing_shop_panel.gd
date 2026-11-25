@@ -2,6 +2,7 @@ class_name LandingShopPanel
 extends Control
 
 signal closed
+signal ship_purchased
 
 const State = preload("res://scripts/benchmark/landing_market_state.gd")
 const GOLD := Color("edc38d")
@@ -20,6 +21,8 @@ var _totals: Label
 var _message: Label
 var _venue: Label
 var _scope: Label
+var _slots_label: Label
+var _quantity_label: Label
 var _quantity: SpinBox
 var _buy: Button
 var _sell: Button
@@ -42,9 +45,9 @@ func configure(state: LandingMarketState) -> void:
 
 func open_shop(kind: String) -> void:
 	shop_kind = kind
-	selected_id = "grain" if kind == "commodities" else "pulse_laser"
+	selected_id = "fighter" if kind == "ships" else ("grain" if kind == "commodities" else "pulse_laser")
 	_quantity.value = 1
-	_message.text = "Select an item to inspect prices and availability."
+	_message.text = "Select a hull to compare its capacity and protection." if kind == "ships" else "Select an item to inspect prices and availability."
 	visible = true
 	_refresh()
 	_close.grab_focus()
@@ -134,7 +137,7 @@ func _build() -> void:
 	_description = _label("", Vector2(782, 234), Vector2(400, 104), 15, MUTED)
 	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_description.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	_label("QUANTITY", Vector2(782, 349), Vector2(130, 25), 12, MUTED)
+	_quantity_label = _label("QUANTITY", Vector2(782, 349), Vector2(130, 25), 12, MUTED)
 	_quantity = SpinBox.new()
 	_quantity.position = Vector2(920, 341)
 	_quantity.size = Vector2(130, 38)
@@ -148,7 +151,7 @@ func _build() -> void:
 	_buy = _button("BUY", Vector2(782, 429), Vector2(190, 42), _trade.bind(true))
 	_sell = _button("SELL", Vector2(986, 429), Vector2(190, 42), _trade.bind(false))
 	_fit = _button("FIT TO SHIP", Vector2(782, 485), Vector2(394, 38), _fit_selected)
-	_label("FITTED EQUIPMENT  /  CLICK A SLOT TO UNMOUNT", Vector2(90, 520), Vector2(660, 20), 11, MUTED)
+	_slots_label = _label("FITTED EQUIPMENT  /  CLICK A SLOT TO UNMOUNT", Vector2(90, 520), Vector2(660, 20), 11, MUTED)
 	for i in 3:
 		var slot := _button("", Vector2(88 + i * 224, 548), Vector2(212, 35), _unmount.bind(i))
 		slot.add_theme_font_size_override("font_size", 12)
@@ -160,6 +163,16 @@ func _build() -> void:
 
 func _refresh() -> void:
 	_refreshing = true
+	var ships := shop_kind == "ships"
+	_slots_label.visible = not ships
+	_quantity.visible = not ships
+	_quantity_label.visible = not ships
+	_sell.visible = not ships
+	_buy.text = "PURCHASE / TRADE IN" if ships else "BUY"
+	for slot in _slots: slot.visible = not ships
+	if ships:
+		_refresh_ships()
+		return
 	_venue.text = "%s / %s" % [market.markets.profile(market.market_id).name.to_upper(), market.markets.profile(market.market_id).faction.to_upper()]
 	_title.text = "COMMODITIES EXCHANGE" if shop_kind == "commodities" else "WEAPONS, UTILITIES & SUPPLIES"
 	_account.text = "%s cr\nCARGO  %d / %d" % [_money(market.credits), market.cargo_used(), market.capacity()]
@@ -202,9 +215,13 @@ func _selected() -> void:
 
 
 func _details() -> void:
+	if shop_kind == "ships":
+		_ship_details()
+		return
 	if market == null or not State.ITEMS.has(selected_id): return
 	var item := market.quote(selected_id)
 	var quantity := int(_quantity.value)
+	_item_name.add_theme_font_size_override("font_size", 23)
 	_item_name.text = item.name
 	_description.text = str(item.kind).to_upper() + "\n" + str(item.description)
 	_totals.text = "BUY  %s cr     /     SELL  %s cr" % [_money(int(item.buy) * quantity), _money(int(item.sell) * quantity)]
@@ -225,6 +242,12 @@ func _finish(error: String, success: String) -> void:
 
 
 func _trade(buying: bool) -> void:
+	if shop_kind == "ships":
+		var error := market.purchase_ship(selected_id)
+		_message.text = error if not error.is_empty() else "Ship exchanged. Cargo and equipment transferred."
+		if error.is_empty(): ship_purchased.emit()
+		_refresh()
+		return
 	var quantity := int(_quantity.value)
 	_finish(market.trade(selected_id, quantity, buying), "%s %d × %s." % ["Bought" if buying else "Sold", quantity, State.ITEMS[selected_id].name])
 
@@ -244,3 +267,39 @@ static func _money(amount: int) -> String:
 		result = "," + text.right(3) + result
 		text = text.left(text.length() - 3)
 	return text + result
+
+
+func _refresh_ships() -> void:
+	_venue.text = "AGINCOURT / BORDERLANDER SHIPWRIGHTS"
+	_title.text = "SHIP DEALER"
+	_account.text = "%s cr / %s\nCARGO %d / %d" % [_money(market.credits), market.Ships.profile(market.ship_class).name, market.cargo_used(), market.capacity()]
+	var titles := ["SHIP", "PRICE", "HOLD", "HULL", "ARMOUR"]
+	for i in 5: _tree.set_column_title(i, titles[i])
+	_tree.clear()
+	var root := _tree.create_item()
+	for id in market.Ships.catalog:
+		var offer: Dictionary = market.Ships.catalog[id]
+		var row := _tree.create_item(root)
+		row.set_metadata(0, id)
+		row.set_text(0, offer.name + (" / CURRENT" if market.ship_class == id else ""))
+		row.set_text(1, _money(int(offer.price)))
+		row.set_text(2, str(int(offer.cargo)))
+		row.set_text(3, str(int(offer.hull)))
+		row.set_text(4, str(int(offer.armour)))
+		if id == selected_id: row.select(0)
+	_scope.text = "Trade-in at 50% retail. Cargo, fitted weapons, utilities and supplies transfer. No hangar storage."
+	_refreshing = false
+	_details()
+
+func _ship_details() -> void:
+	if market == null or not market.Ships.catalog.has(selected_id): return
+	var offer: Dictionary = market.Ships.catalog[selected_id]
+	_item_name.text = offer.name + " / " + offer.role
+	_item_name.add_theme_font_size_override("font_size", 21)
+	_description.text = "%s\nSpeed %d / Ward %d\n%s" % [offer.description, int(offer.speed), int(offer.ward), "Normal reputation required" if int(offer.minimum_reputation) <= 0 else "Faction reputation %d required" % int(offer.minimum_reputation)]
+	var net: int = int(offer.price) - market.Ships.trade_in(market.ship_class)
+	_totals.text = "TRADE-IN %s / %s %s cr" % [_money(market.Ships.trade_in(market.ship_class)), "PAY" if net >= 0 else "RECEIVE", _money(absi(net))]
+	_buy.tooltip_text = market.ship_purchase_error(selected_id)
+	_buy.disabled = not _buy.tooltip_text.is_empty()
+	_fit.visible = false
+	if _buy.disabled: _totals.text = _buy.tooltip_text

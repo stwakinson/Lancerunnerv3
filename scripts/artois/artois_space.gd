@@ -255,6 +255,8 @@ func docking_error() -> String:
 			return "HYPER GATE OFFLINE / NO DESTINATION LINK / ARTOIS DEMO"
 	if highways != null and highways.attached(): return "BREAK FREE OF THE FILAMENT BEFORE DOCKING"
 	var port := docking_port()
+	var access: String = law.Factions.access_error(combat.ordnance.market.reputation, port)
+	if not access.is_empty(): return access
 	if ship.position.distance_to(target_position(port)) > DOCK_RANGE:
 		return "APPROACH %s / WITHIN 90 m TO DOCK" % str(port_catalog.profile(port).name).to_upper()
 	if (velocity + dodge_velocity).length() > DOCK_SPEED:
@@ -324,10 +326,11 @@ func _advance_manual(delta: float, steering: Vector2, thrust: float, boosting: b
 			arrival_message = "ARRIVED  /  " + str(target_entry().name).to_upper()
 		_sync_angles()
 	else:
-		var top_speed := CRUISE_SPEED if cruise else (105.0 if boosting else NORMAL_SPEED)
+		var normal: float = combat.ordnance.market.Ships.profile(combat.ordnance.market.ship_class).speed
+		var top_speed := normal * (5.0 if cruise else (3.0 if boosting else 1.0))
 		desired = forward * (1.0 if cruise else thrust) * top_speed
 		desired += (ship.basis.x * steering.x + ship.basis.y * steering.y) * (40.0 if boosting else 25.0)
-	if cruise: desired = desired.limit_length(CRUISE_SPEED)
+	if cruise: desired = desired.limit_length(float(combat.ordnance.market.Ships.profile(combat.ordnance.market.ship_class).speed) * 5.0)
 	if disruption_remaining > 0: desired = desired.limit_length(12.0)
 	velocity = velocity.move_toward(desired, (110.0 if autopilot or cruise else 85.0) * delta)
 	# Integrate exponential dodge decay independently of normal thrust.
@@ -364,7 +367,7 @@ func _sync_angles() -> void:
 
 func orbit(relative: Vector2) -> void:
 	autopilot = false
-	var turn_scale := 0.18 if cruise else 1.0
+	var turn_scale: float = (0.18 if cruise else 1.0) * float(combat.ordnance.market.Ships.profile(combat.ordnance.market.ship_class).turn)
 	_yaw -= relative.x * 0.004 * turn_scale
 	_pitch = clampf(_pitch - relative.y * 0.003 * turn_scale, -1.35, 1.35)
 	ship.rotation = Vector3(_pitch, _yaw, 0)

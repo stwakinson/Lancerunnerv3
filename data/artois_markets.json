@@ -228,7 +228,7 @@
     },
     "agincourt": {
       "name": "Agincourt Castle",
-      "faction": "Border Garrison",
+      "faction": "Valois",
       "theme": "garrison",
       "notes": "A provision hall serving the fortress.",
       "quotes": {

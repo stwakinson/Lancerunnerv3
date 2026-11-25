@@ -6,6 +6,7 @@ extends RefCounted
 
 const ShipHolds = preload("res://scripts/artois/artois_ship_holds.gd")
 const Markets = preload("res://scripts/artois/artois_markets.gd")
+const Ships = preload("res://scripts/artois/artois_ships.gd")
 const Factions = preload("res://scripts/artois/artois_factions.gd")
 const VERSION := 1
 var reputation := Factions.defaults()
@@ -269,4 +270,33 @@ func set_ship_class(id: String) -> String:
 	if not save_state():
 		ship_class = before
 		return "Ship class could not be saved."
+	return ""
+
+
+func ship_purchase_error(id: String) -> String:
+	if market_id != "planet_dock": return "Ships are sold at the planet shipyard."
+	if not Ships.catalog.has(id): return "Unknown ship."
+	var access := Factions.access_error(reputation, market_id)
+	if not access.is_empty(): return access
+	var offer: Dictionary = Ships.catalog[id]
+	var faction: String = str(offer.get("required_faction", Factions.data.owners[market_id]))
+	if not Factions.data.factions.has(faction): return "Ship licence unavailable."
+	if int(reputation.get(faction, 0)) < int(offer.minimum_reputation):
+		return "%s reputation %d required for this ship." % [Factions.data.factions[faction].name, int(offer.minimum_reputation)]
+	if id == ship_class: return "You already fly this ship."
+	if cargo_used() > ShipHolds.capacity(id) + (10 if utility == "cargo_expander" else 0): return "Cargo will not fit. Sell or unload cargo first."
+	if credits < int(offer.price) - Ships.trade_in(ship_class): return "Insufficient credits after trade-in."
+	return ""
+
+func purchase_ship(id: String) -> String:
+	var error := ship_purchase_error(id)
+	if not error.is_empty(): return error
+	var before_class := ship_class
+	var before_credits := credits
+	credits -= int(Ships.catalog[id].price) - Ships.trade_in(ship_class)
+	ship_class = id
+	if not save_state():
+		ship_class = before_class
+		credits = before_credits
+		return "Ship purchase could not be saved; no credits spent."
 	return ""

@@ -5,6 +5,7 @@ const ENERGY_MAX := 100.0
 const ARMOUR_MAX := 80.0
 const GUARD_COS := 0.5 # 120 degree forward arc.
 var energy := ENERGY_MAX
+var armour_max := ARMOUR_MAX
 var armour := ARMOUR_MAX
 var guard_active := false
 var guard_direction := Vector3.ZERO
@@ -79,7 +80,7 @@ func configure(ship: Node3D) -> void:
 
 func repair() -> void:
 	energy = ENERGY_MAX
-	armour = ARMOUR_MAX
+	armour = armour_max
 	guard_active = false
 	_quiet = 1.0
 	_broken = 0.0

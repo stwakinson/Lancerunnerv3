@@ -12,6 +12,8 @@ var docked_id := "planet_dock"
 var _landing_cache := {}
 var mission := Sortie.new()
 var contract_panel: Control
+var dealer_button: Button
+var dealer_hotspot: Button
 var contact_button: Button
 var contact_hotspot: Button
 var radio_label: Label
@@ -32,6 +34,7 @@ func _ready() -> void:
 	mission.changed.connect(_mission_changed)
 	space_world.combat.player_destroyed.connect(func() -> void: _recover_from_defeat.call_deferred())
 	shop_panel.closed.connect(_apply_loadout)
+	shop_panel.ship_purchased.connect(_apply_loadout)
 	var contact := Contact.new()
 	contact.position = Vector2(330, 268)
 	landing_world.layers[4].add_child(contact)
@@ -64,6 +67,7 @@ func open_contract() -> void:
 
 
 func open_shop(kind: String) -> void:
+	if kind == "ships" and docked_id != "planet_dock": return
 	if contract_panel != null and contract_panel.visible: return
 	space_world.reset_taps()
 	super.open_shop(kind)
@@ -79,6 +83,10 @@ func _sync_shop_hotspots() -> void:
 	var offset := (size - Vector2(640, 360) * factor) * 0.5
 	contact_hotspot.position = offset + (Vector2(314, 226) + landing_world.layers[3].position) * factor
 	contact_hotspot.size = Vector2(32, 48) * factor
+	if dealer_hotspot != null:
+		dealer_hotspot.visible = available and docked_id == "planet_dock"
+		dealer_hotspot.position = offset + (Vector2(452, 190) + landing_world.layers[3].position) * factor
+		dealer_hotspot.size = Vector2(155, 65) * factor
 
 
 func _recover_from_defeat() -> void:
@@ -87,12 +95,14 @@ func _recover_from_defeat() -> void:
 	mission.fail()
 	space_world.highways.reset()
 	space_world.brake()
-	space_world.ship.position = space_world.target_position(space_world.DOCK_ID) + Vector3(0, 0, 50)
-	space_world.select_target(space_world.DOCK_ID)
+	var refuge: String = space_world.DOCK_ID
+	if not market_state.Factions.access_error(market_state.reputation, refuge).is_empty(): refuge = "st_paul"
+	space_world.ship.position = space_world.target_position(refuge) + Vector3(0, 0, 50)
+	space_world.select_target(refuge)
 	await toggle_docking()
 	space_world.combat.repair()
 	_recovering = false
-	_notice = "SHIP RECOVERED AT PORT / REPAIRED / CONTACT FLUELLEN TO RETRY"
+	_notice = "SHIP RECOVERED AT %s / REPAIRED" % str(market_state.markets.profile(docked_id).name).to_upper()
 	_notice_time = 6.0
 
 
@@ -130,6 +140,16 @@ func _build_ui() -> void:
 	contact_label.size = Vector2(850, 46)
 	contact_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	mission_label = _text(ui, "", Vector2(38, 238), 12, ACCENT)
+	dealer_button = _button(ui, "4  SHIP DEALER", Vector2(954, 248), 238, open_shop.bind("ships"))
+	dealer_button.name = "PlanetShipDealerButton"
+	dealer_hotspot = Button.new()
+	dealer_hotspot.name = "PlanetShipDealerHotspot"
+	dealer_hotspot.tooltip_text = "Ship dealer / Browse ships (4)"
+	dealer_hotspot.focus_mode = Control.FOCUS_NONE
+	dealer_hotspot.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	dealer_hotspot.pressed.connect(open_shop.bind("ships"))
+	add_child(dealer_hotspot)
+	move_child(dealer_hotspot, get_node("Interface").get_index())
 	contact_button = _button(ui, "3  FLUELLEN / CONTRACT", Vector2(954, 200), 238, open_contract)
 	contact_button.name = "PlanetContactButton"
 	contact_hotspot = Button.new()
@@ -186,6 +206,7 @@ func _update_labels() -> void:
 	if radio_label != null: radio_label.visible = not landed
 	if contact_label != null: contact_label.visible = not landed
 	if contact_button != null: contact_button.visible = landed and docked_id == "planet_dock"
+	if dealer_button != null: dealer_button.visible = landed and docked_id == "planet_dock"
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
 	if ui != null and ui.has_node("SystemChartButton"):
@@ -318,6 +339,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or transitioning or shop_panel.visible or _recovering or contract_panel.visible or (pause_menu != null and pause_menu.visible): return
+	if landed and event.physical_keycode == KEY_4 and docked_id == "planet_dock":
+		open_shop("ships")
+		get_viewport().set_input_as_handled()
+		return
 	if chart.visible:
 		if event.physical_keycode in [KEY_M, KEY_ESCAPE]:
 			chart.close_chart()
