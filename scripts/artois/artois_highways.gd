@@ -31,17 +31,17 @@ func configure(space: Node3D) -> void:
 		for endpoint in ["a", "b"]:
 			for entrance in [true, false]:
 				var id: String = "highway_" + str(entry.id) + "_" + endpoint + ("" if entrance else "_exit")
-				var sign := (1.0 if endpoint == "a" else -1.0) * (1.0 if entrance else -1.0)
-				var at := (start if endpoint == "a" else end) + Vector3.UP * LANE_HEIGHT * sign
-				var inward := axis * sign
-				gates[id] = {"position": at, "axis": inward, "route": routes.size() - 1, "sign": sign, "entrance": entrance}
+				var lane_sign := (1.0 if endpoint == "a" else -1.0) * (1.0 if entrance else -1.0)
+				var at := (start if endpoint == "a" else end) + Vector3.UP * LANE_HEIGHT * lane_sign
+				var inward := axis * lane_sign
+				gates[id] = {"position": at, "axis": inward, "route": routes.size() - 1, "sign": lane_sign, "entrance": entrance}
 				var gate := _gate(id, at, inward)
 				world.landmarks[id] = gate
-		for sign in [1.0, -1.0]:
+		for lane_sign in [1.0, -1.0]:
 			var visual: Dictionary = route.duplicate()
-			visual.start += Vector3.UP * LANE_HEIGHT * sign
-			visual.end += Vector3.UP * LANE_HEIGHT * sign
-			visual.sign = sign
+			visual.start += Vector3.UP * LANE_HEIGHT * lane_sign
+			visual.end += Vector3.UP * LANE_HEIGHT * lane_sign
+			visual.sign = lane_sign
 			_build_filament(visual)
 	joining = Joining.new()
 	add_child(joining)
@@ -70,13 +70,13 @@ func tick(delta: float) -> void:
 		material.set_shader_parameter("clock", _time)
 	joining.advance(delta)
 	for i in _sparks.size():
-		var route := routes[i / 2]
-		var sign := 1.0 if i % 2 == 0 else -1.0
-		var basis := _axis_basis(route.axis)
+		var route := routes[floori(i / 2.0)]
+		var lane_sign := 1.0 if i % 2 == 0 else -1.0
+		var lane_basis := _axis_basis(route.axis)
 		for j in _sparks[i].multimesh.instance_count:
-			var phase := fposmod(float(j) / 28.0 + _time * (0.14 * sign), 1.0)
-			var offset := basis.x * sin(j * 2.4 + _time) * 3 + basis.z * cos(j * 1.7 + _time) * 3
-			var at: Vector3 = lane_point(i / 2, route.length * phase, sign) + offset
+			var phase := fposmod(float(j) / 28.0 + _time * (0.14 * lane_sign), 1.0)
+			var offset := lane_basis.x * sin(j * 2.4 + _time) * 3 + lane_basis.z * cos(j * 1.7 + _time) * 3
+			var at: Vector3 = lane_point(floori(i / 2.0), route.length * phase, lane_sign) + offset
 			_sparks[i].multimesh.set_instance_transform(j, Transform3D(Basis.IDENTITY, at))
 
 
@@ -86,17 +86,17 @@ func try_enter(from: Vector3, to: Vector3) -> bool:
 	var best := INF
 	var chosen := ""
 	for id in gates:
-		var gate: Dictionary = gates[id]
-		if not gate.entrance: continue
-		var towards: float = movement.dot(gate.axis)
+		var candidate_gate: Dictionary = gates[id]
+		if not candidate_gate.entrance: continue
+		var towards: float = movement.dot(candidate_gate.axis)
 		if towards <= 0.00001: continue
-		var before: float = (from - gate.position).dot(gate.axis)
-		var after: float = (to - gate.position).dot(gate.axis)
+		var before: float = (from - candidate_gate.position).dot(candidate_gate.axis)
+		var after: float = (to - candidate_gate.position).dot(candidate_gate.axis)
 		if before > 0 or after < 0: continue
-		if (-world.ship.basis.z).dot(gate.axis) < 0.2: continue
+		if (-world.ship.basis.z).dot(candidate_gate.axis) < 0.2: continue
 		var fraction := -before / towards
 		var crossing := from.lerp(to, fraction)
-		if crossing.distance_to(gate.position) > ENTRY_RADIUS: continue
+		if crossing.distance_to(candidate_gate.position) > ENTRY_RADIUS: continue
 		if fraction < best:
 			best = fraction
 			chosen = id
@@ -206,7 +206,7 @@ func _gate(id: String, at: Vector3, axis: Vector3) -> Node3D:
 
 
 func _build_filament(route: Dictionary) -> void:
-	var basis := _axis_basis(route.axis)
+	var lane_basis := _axis_basis(route.axis)
 	var centre: Vector3 = (route.start + route.end) * 0.5
 	for radius in [0.65, 2.8, 7.0]:
 		var mesh := CylinderMesh.new()
@@ -218,7 +218,7 @@ func _build_filament(route: Dictionary) -> void:
 		var node := MeshInstance3D.new()
 		node.mesh = mesh
 		node.position = centre
-		node.basis = basis
+		node.basis = lane_basis
 		var material := ShaderMaterial.new()
 		material.shader = preload("res://shaders/artois/filament.gdshader")
 		material.set_shader_parameter("span", route.length)
@@ -244,11 +244,11 @@ func _build_filament(route: Dictionary) -> void:
 	_sparks.append(motes)
 
 
-func lane_point(route_index: int, along: float, sign: float) -> Vector3:
+func lane_point(route_index: int, along: float, lane_sign: float) -> Vector3:
 	var route := routes[route_index]
 	var distance := clampf(along, 0, route.length)
 	var envelope := sin(PI * distance / float(route.length))
-	var basis := _axis_basis(route.axis)
+	var lane_basis := _axis_basis(route.axis)
 	var weave_x := (sin(distance * 0.025 + _time * 0.65) * 3.0 + sin(distance * 0.061 - _time * 0.8) * 1.1) * envelope
 	var weave_z := cos(distance * 0.019 - _time * 0.5) * 2.3 * envelope
-	return route.start + route.axis * distance + Vector3.UP * LANE_HEIGHT * sign + basis.x * weave_x + basis.z * weave_z
+	return route.start + route.axis * distance + Vector3.UP * LANE_HEIGHT * lane_sign + lane_basis.x * weave_x + lane_basis.z * weave_z

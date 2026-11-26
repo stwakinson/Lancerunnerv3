@@ -45,11 +45,11 @@ static func launch(from: Transform3D, body: Node3D, at: Node3D) -> Missile:
 	# stays unscaled and only its mesh is sized to match.
 	m.global_transform = Transform3D(from.basis.orthonormalized(), from.origin)
 	m.velocity = -from.basis.z.normalized() * m.start_speed
-	var scale := from.basis.get_scale().x
-	var body_scale := Vector3.ONE * scale
+	var launch_scale := from.basis.get_scale().x
+	var body_scale := Vector3.ONE * launch_scale
 	if body != null:
 		# Keep the rack's own stretch (longer missiles), times the turret's size.
-		body_scale = body.scale * scale
+		body_scale = body.scale * launch_scale
 		body.transform = Transform3D.IDENTITY
 		body.scale = body_scale
 		m.add_child(body)
@@ -81,10 +81,10 @@ var homing: bool:
 		return burning and is_instance_valid(target)
 
 
-# `scale` is the missile mesh's lengthwise scale (its body is ~0.44 long at 1).
-func _build_exhaust(scale: float) -> void:
+# `exhaust_scale` is the missile mesh's lengthwise scale (its body is ~0.44 long at 1).
+func _build_exhaust(exhaust_scale: float) -> void:
 	var tail := Node3D.new()
-	tail.position = Vector3(0, 0, 0.25 * scale)
+	tail.position = Vector3(0, 0, 0.25 * exhaust_scale)
 	tail.rotation_degrees = Vector3(0, 180, 0)   # emit backwards
 	add_child(tail)
 	_flame = FxParticles.new()

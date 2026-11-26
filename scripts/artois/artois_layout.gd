@@ -67,10 +67,10 @@ func highway_targets() -> Array:
 	for lane in highways:
 		for endpoint in ["a", "b"]:
 			for entrance in [true, false]:
-				var sign := (1.0 if endpoint == "a" else -1.0) * (1.0 if entrance else -1.0)
+				var lane_sign := (1.0 if endpoint == "a" else -1.0) * (1.0 if entrance else -1.0)
 				result.append({"id": "highway_" + str(lane.id) + "_" + endpoint + ("" if entrance else "_exit"),
-					"name": str(lane.name) + " / " + endpoint.to_upper() + (" Upper" if sign > 0 else " Lower") + (" Entrance" if entrance else " Exit"),
+					"name": str(lane.name) + " / " + endpoint.to_upper() + (" Upper" if lane_sign > 0 else " Lower") + (" Entrance" if entrance else " Exit"),
 					"kind": "highway_gate", "map": lane["from" if endpoint == "a" else "to"],
-					"altitude": sign * 40.0, "entrance": entrance, "chart_axis": point(lane.to) - point(lane.from),
+					"altitude": lane_sign * 40.0, "entrance": entrance, "chart_axis": point(lane.to) - point(lane.from),
 					"notes": "ONE WAY / " + ("G: approach. W: enter. Tab + direction: break free." if entrance else "Outbound only. Use the other ring to enter.")})
 	return result

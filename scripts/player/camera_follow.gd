@@ -214,8 +214,8 @@ func _process(delta: float) -> void:
 		# On foot the world is person-sized, so the same shake is much smaller.
 		var strength := _trauma * _trauma * max_shake_offset * (0.1 if first_person else 1.0)
 		var t := _time * shake_frequency
-		var shake := Vector3(_noise.get_noise_2d(t, 0.0) * 0.5, _noise.get_noise_2d(0.0, t) * 0.5, 0.0) * (2.0 * strength)
-		global_position += global_basis * shake
+		var shake_offset := Vector3(_noise.get_noise_2d(t, 0.0) * 0.5, _noise.get_noise_2d(0.0, t) * 0.5, 0.0) * (2.0 * strength)
+		global_position += global_basis * shake_offset
 		_trauma = move_toward(_trauma, 0.0, shake_decay * delta)
 
 	_keep_above_ground()
@@ -249,9 +249,9 @@ func _update_up_frame(snap := false) -> void:
 	if snap:
 		_up_frame = Quaternion(Vector3.UP, ground)
 		return
-	var current := _up_frame * Vector3.UP
-	if current.dot(ground) < 0.9999999:
-		_up_frame = (Quaternion(current, ground) * _up_frame).normalized()
+	var current_up := _up_frame * Vector3.UP
+	if current_up.dot(ground) < 0.9999999:
+		_up_frame = (Quaternion(current_up, ground) * _up_frame).normalized()
 
 
 # Looking up while landed would swing the camera under the surface; hold it just above.
@@ -292,18 +292,18 @@ func snap_to_target() -> void:
 
 
 # Unity's Vector3.SmoothDamp (critically damped spring).
-func _smooth_damp(current: Vector3, goal: Vector3, smooth_time: float, dt: float) -> Vector3:
+func _smooth_damp(current_position: Vector3, goal: Vector3, smooth_time: float, dt: float) -> Vector3:
 	smooth_time = maxf(0.0001, smooth_time)
 	var omega := 2.0 / smooth_time
 	var x := omega * dt
 	var e := 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x)
-	var change := current - goal
+	var change := current_position - goal
 	var original_to := goal
-	goal = current - change
+	goal = current_position - change
 	var temp := (_velocity + omega * change) * dt
 	_velocity = (_velocity - omega * temp) * e
 	var output := goal + (change + temp) * e
-	if (original_to - current).dot(output - original_to) > 0.0:
+	if (original_to - current_position).dot(output - original_to) > 0.0:
 		output = original_to
 		_velocity = (output - original_to) / dt if dt > 0.0 else Vector3.ZERO
 	return output

@@ -204,7 +204,7 @@ func _draw_health_and_kills(gm: GameManager, pad: float, w: float, h: float) -> 
 		var bar_w := h * 0.32
 		var bar_h := s * 0.6
 		var x := w - pad - bar_w
-		var y := pad + (s - bar_h) * 0.5
+		var bar_y := pad + (s - bar_h) * 0.5
 		var frac := float(gm.health) / float(gm.max_health)
 		var trail := gm.health_trail / float(gm.max_health)
 		# Blend around the color wheel so in-between shades stay vivid: red -> orange at half -> green.
@@ -213,10 +213,10 @@ func _draw_health_and_kills(gm: GameManager, pad: float, w: float, h: float) -> 
 		if frac <= 0.3:
 			# Low health: the bar throbs a little brighter.
 			fill = fill.lerp(Color(1.0, 0.55, 0.5), 0.25 + 0.25 * sin(Time.get_ticks_msec() * 0.012))
-		draw_rect(Rect2(x - 2, y - 2, bar_w + 4, bar_h + 4), Color(0, 0, 0, 0.45))
-		draw_rect(Rect2(x, y, bar_w, bar_h), Color(1, 1, 1, 0.12))
-		draw_rect(Rect2(x, y, bar_w * trail, bar_h), Color(1, 1, 1, 0.8))
-		draw_rect(Rect2(x, y, bar_w * frac, bar_h), fill)
+		draw_rect(Rect2(x - 2, bar_y - 2, bar_w + 4, bar_h + 4), Color(0, 0, 0, 0.45))
+		draw_rect(Rect2(x, bar_y, bar_w, bar_h), Color(1, 1, 1, 0.12))
+		draw_rect(Rect2(x, bar_y, bar_w * trail, bar_h), Color(1, 1, 1, 0.8))
+		draw_rect(Rect2(x, bar_y, bar_w * frac, bar_h), fill)
 		_label(Rect2(0, pad, x - s * 0.3, s), "HEALTH", right_size, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT, 1, true)
 
 	var y := pad + s * 1.2
@@ -501,7 +501,7 @@ func _draw_enemy_indicators(cam: Camera3D, w: float, h: float) -> void:
 	var me: Node3D = null
 	var range_units := radar_range_ship
 	if gm != null and gm.player != null:
-		me = gm.player.pilot if gm.player.on_foot else gm.player
+		me = (gm.player.pilot as Node3D) if gm.player.on_foot else (gm.player as Node3D)
 		range_units = radar_range_on_foot if gm.player.on_foot else radar_range_ship
 	for enemy in Enemy.active(get_tree()):
 		if not enemy.attacking or enemy is GroundRobot or enemy is MissileTurret:

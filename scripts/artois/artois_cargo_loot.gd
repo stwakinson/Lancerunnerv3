@@ -125,11 +125,11 @@ func _make_mesh() -> void:
 			var b := Vector3(cos((i + 1) * TAU / 6), 0, sin((i + 1) * TAU / 6)) * float(band[2])
 			surface.set_color(band[3])
 			for point in [a + Vector3.UP * band[0], a + Vector3.UP * band[1], b + Vector3.UP * band[1], a + Vector3.UP * band[0], b + Vector3.UP * band[1], b + Vector3.UP * band[0]]: surface.add_vertex(point)
-	for sign in [-1.0, 1.0]:
+	for cap_sign in [-1.0, 1.0]:
 		for i in 6:
 			surface.set_color(Color("b99561"))
-			var points := [Vector3.UP * sign, Vector3(cos(i * TAU / 6) * 0.65, sign, sin(i * TAU / 6) * 0.65), Vector3(cos((i + 1) * TAU / 6) * 0.65, sign, sin((i + 1) * TAU / 6) * 0.65)]
-			if sign > 0: points.reverse()
+			var points := [Vector3.UP * cap_sign, Vector3(cos(i * TAU / 6) * 0.65, cap_sign, sin(i * TAU / 6) * 0.65), Vector3(cos((i + 1) * TAU / 6) * 0.65, cap_sign, sin((i + 1) * TAU / 6) * 0.65)]
+			if cap_sign > 0: points.reverse()
 			for point in points: surface.add_vertex(point)
 	surface.generate_normals()
 	_mesh = surface.commit()

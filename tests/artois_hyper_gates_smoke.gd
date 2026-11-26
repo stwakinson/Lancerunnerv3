@@ -50,7 +50,8 @@ func _run() -> void:
 	check(north.direction == "north" and south.direction == "south" and east.direction == "east", "Gate directions must match requested termini")
 	check(world.layout.world(east).x > world.layout.world(world.layout.target("maroeuil_field")).x, "East gate must be beyond Maroeuil")
 	var route: Dictionary = world.layout.highways.back()
-	check(route.id == "junction_east" and world.layout.world({"map": route.to}).distance_to(world.layout.world(east)) < 200, "East highway must terminate near its hyper gate")
+	# Measure the authored terminal gap in map units so system-scale changes remain valid.
+	check(route.id == "junction_east" and world.layout.world({"map": route.to}).distance_to(world.layout.world(east)) / world.layout.scale_factor < 25, "East highway must terminate near its hyper gate")
 	scene.toggle_chart()
 	check(scene.chart._picker.item_count == 61, "Chart must list the new gate and eastern highway entrances")
 	await scene._capture(capture_dir, "artois-hyper-gates-chart.png")

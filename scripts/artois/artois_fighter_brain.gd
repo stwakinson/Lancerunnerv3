@@ -168,7 +168,7 @@ func advance(delta: float, target: Node3D, target_velocity: Vector3, may_attack:
 	pilot.set_meta("cruise", cruise)
 	pilot.set_meta("cruise_charge", charge)
 	pilot.set_meta("tactic", state)
-	defence.update_visual(maxf(0, (world.CRUISE_SPOOL_TIME - charge) / world.CRUISE_SPOOL_TIME) if charge > 0 and not cruise else 0)
+	defence.update_visual(maxf(0, (world.CRUISE_SPOOL_TIME - charge) / world.CRUISE_SPOOL_TIME) if charge > 0 and not cruise else 0.0)
 	_tell.visible = state == "WINDUP"
 	_tell.scale = Vector3.ONE * (1 + 0.3 * sin(clock * 16))
 	var aim := _observed + _observed_velocity * minf(distance / 125.0, 0.6) * 0.65

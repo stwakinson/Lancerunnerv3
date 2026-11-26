@@ -115,7 +115,7 @@ func _guest(slot: Dictionary, column: int, title: String, id: String, local_cell
 		actor.atlas_texture = preload("res://assets/artois/tavern/locals.png")
 		actor.atlas_grid = Vector2i(4, 2)
 	actor.column = local_cell % 4 if local_cell >= 0 else column
-	actor.row = int(local_cell / 4) if local_cell >= 0 else int(slot.row)
+	actor.row = floori(local_cell / 4.0) if local_cell >= 0 else int(slot.row)
 	actor.position = slot.position
 	actor.dimensions = slot.size
 	actor.contact_id = id

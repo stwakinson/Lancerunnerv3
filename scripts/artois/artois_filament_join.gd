@@ -4,7 +4,7 @@ const LIFETIME := 1.0
 var highways: Node3D
 var branches: Array[Dictionary] = []
 
-func emit_join(ship: Node3D, route: int, sign: float) -> void:
+func emit_join(ship: Node3D, route: int, lane_sign: float) -> void:
 	var node := MeshInstance3D.new()
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -15,7 +15,7 @@ func emit_join(ship: Node3D, route: int, sign: float) -> void:
 	material.emission_energy_multiplier = 3.0
 	node.material_override = material
 	add_child(node)
-	branches.append({"ship": ship, "route": route, "sign": sign, "age": 0.0, "node": node})
+	branches.append({"ship": ship, "route": route, "sign": lane_sign, "age": 0.0, "node": node})
 	_rebuild(branches.back())
 
 func advance(delta: float) -> void:

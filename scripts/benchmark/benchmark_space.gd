@@ -212,10 +212,10 @@ func _make_rocks() -> void:
 	distant.material_override = _rock_material("514254")
 	for i in instances.instance_count:
 		var side := -1.0 if i % 2 else 1.0
-		var position := Vector3(side * _rng.randf_range(30, 380), _rng.randf_range(-150, 180), _rng.randf_range(-1000, -220))
-		var rotation := Basis.from_euler(Vector3(_rng.randf() * TAU, _rng.randf() * TAU, _rng.randf() * TAU))
+		var rock_position := Vector3(side * _rng.randf_range(30, 380), _rng.randf_range(-150, 180), _rng.randf_range(-1000, -220))
+		var rock_basis := Basis.from_euler(Vector3(_rng.randf() * TAU, _rng.randf() * TAU, _rng.randf() * TAU))
 		var radius := _rng.randf_range(0.5, 4.0)
-		instances.set_instance_transform(i, Transform3D(rotation.scaled(Vector3.ONE * radius), position))
+		instances.set_instance_transform(i, Transform3D(rock_basis.scaled(Vector3.ONE * radius), rock_position))
 		asteroid_count += 1
 	add_child(distant)
 

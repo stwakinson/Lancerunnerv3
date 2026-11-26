@@ -22,7 +22,7 @@ func configure(space: Node3D) -> void:
 		var next := []
 		for j in nodes.size():
 			var distance := nodes[i].distance_to(nodes[j])
-			var opposite_ends := i / 4 == j / 4 and ((i % 4 in [0, 3]) != (j % 4 in [0, 3]))
+			var opposite_ends := floori(i / 4.0) == floori(j / 4.0) and ((i % 4 in [0, 3]) != (j % 4 in [0, 3]))
 			if opposite_ends: distance = INF
 			row.append(0.0 if i == j else (distance / 35.0 if distance < junction_reach else INF))
 			next.append(j if i != j and distance < junction_reach else -1)
