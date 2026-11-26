@@ -71,7 +71,7 @@ func run() -> void:
 	market.reputation.britannian = -20
 	check(not mission.accept_error("fluellen", first.id, market).is_empty(), "Hostile/wary issuers must deny work")
 	market.reputation.britannian = 0
-	check(mission.accept_error("fluellen", board.offers("fluellen", world)[2].id, market).contains("10"), "Harder bounties need standing")
+	check(mission.accept_error("fluellen", board.offers("fluellen", world)[2].id, market).contains("25"), "Elite bounties need standing")
 	if DisplayServer.get_name() == "headless": scene.open_contract("fluellen")
 	else:
 		scene._sync_shop_hotspots()
@@ -123,13 +123,14 @@ func run() -> void:
 	await dock("valois_carrier")
 	scene.open_contract()
 	check(scene.contact_button.visible and scene.contract_panel._contacts.item_count == 1, "Carrier exposes its naval quest giver")
+	market.reputation.valois = 10
 	var raid: Dictionary = board.offers("valois_captain", world)[1]
 	check(mission.accept_offer("valois_captain", raid.id, market), "Valois raider contract accepts")
 	scene.contract_panel.close_panel()
 	await scene.toggle_docking()
 	check(world.combat.enemies[0].get_meta("faction") == "raider" and world.combat.enemies[0].get_meta("display_name").begins_with("Unidentified"), "Raider identity must remain public")
 	for enemy in world.combat.enemies.duplicate(): kill(str(enemy.get_meta("id")))
-	check(mission.return_port() == "valois_carrier" and world.selected_id == "valois_carrier" and market.reputation.valois == 0, "Raid completion returns to carrier without Valois crime penalties")
+	check(mission.return_port() == "valois_carrier" and world.selected_id == "valois_carrier" and market.reputation.valois == 10, "Raid completion returns to carrier without Valois crime penalties")
 	check(not mission.claim(market, "valois_captain"), "Carrier contract cannot be paid remotely")
 	await dock("planet_dock")
 	check(not mission.claim(market, "valois_captain"), "Planet visit cannot substitute for carrier return")
@@ -139,9 +140,9 @@ func run() -> void:
 	var path: String = market.save_path
 	market.save_path = "user://missing_random_contract_folder/save.json"
 	old_credits = market.credits
-	check(not mission.claim(market, "valois_captain") and mission.phase == "return" and market.credits == old_credits and market.reputation.valois == 0, "Failed reward save rolls back money and standing without losing claim")
+	check(not mission.claim(market, "valois_captain") and mission.phase == "return" and market.credits == old_credits and market.reputation.valois == 10, "Failed reward save rolls back money and standing without losing claim")
 	market.save_path = path
-	check(mission.claim(market, "valois_captain") and market.reputation.valois == int(raid.reputation), "Carrier can pay successful retry")
+	check(mission.claim(market, "valois_captain") and market.reputation.valois == 10 + int(raid.reputation), "Carrier can pay successful retry")
 	# Named captain is the sole bounty objective; escorts are optional.
 	scene.contract_panel.close_panel()
 	await dock("britannian_carrier")

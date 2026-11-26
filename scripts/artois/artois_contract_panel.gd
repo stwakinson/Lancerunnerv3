@@ -37,7 +37,7 @@ func _ready() -> void:
 	_offers.size = Vector2(460, 280)
 	_offers.hide_root = true
 	_offers.add_theme_font_size_override("font_size", 17)
-	_offers.add_theme_constant_override("v_separation", 14)
+	_offers.add_theme_constant_override("v_separation", 8)
 	_offers.item_selected.connect(func() -> void:
 		if _refreshing or _offers.get_selected() == null: return
 		offer_id = str(_offers.get_selected().get_metadata(0))
@@ -121,10 +121,19 @@ func refresh() -> void:
 		row.select(0)
 	else:
 		var offers: Array = mission.board.offers(contact_id, mission.world)
-		if not offers.any(func(offer: Dictionary) -> bool: return offer.id == offer_id): offer_id = str(offers[0].id) if not offers.is_empty() else ""
+		if not offers.any(func(offer: Dictionary) -> bool: return offer.id == offer_id):
+			offer_id = str(offers[0].id) if not offers.is_empty() else ""
+			for offer in offers:
+				if mission.accept_error(contact_id, offer.id, market).is_empty():
+					offer_id = str(offer.id)
+					break
 		for offer in offers:
 			var row := _offers.create_item(root)
-			row.set_text(0, "%s\n%d cr / +%d standing" % [offer.title, int(offer.reward), int(offer.reputation)])
+			var issuer: Dictionary = mission.board.contact(contact_id)
+			var standing := int(market.reputation[issuer.faction])
+			var eligibility := "AVAILABLE" if standing >= int(offer.minimum_reputation) else "LOCKED"
+			row.set_text(0, "%s / %s / %d standing\n%s\n%d cr / +%d standing" % [str(offer.get("tier", "Contract")).to_upper(), eligibility, int(offer.minimum_reputation), offer.title, int(offer.reward), int(offer.reputation)])
+			row.set_custom_color(0, Color("edc38d") if eligibility == "AVAILABLE" else Color("8296a0"))
 			row.set_metadata(0, offer.id)
 			if offer.id == offer_id: row.select(0)
 	_refreshing = false

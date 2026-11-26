@@ -1,5 +1,6 @@
 extends RefCounted
 ## Authored templates plus bounded random offers. Cached until a contract resolves.
+const BASIC_FALLBACK := {"id": "clearance", "title": "Freebooter clearance", "tier": "Basic", "enemy_faction": "freebooter", "minimum_reputation": 0, "minimum_ships": 2, "maximum_ships": 3, "base_pay": 500, "per_ship": 200, "reputation": 7, "hull_scale": 0.85, "brief": "Freebooters are threatening local traffic. Destroy the entire marked patrol."}
 var config: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/artois_contracts.json"))
 var _random := RandomNumberGenerator.new()
 var _cache := {}
@@ -24,9 +25,13 @@ func offers(id: String, world: Node3D) -> Array:
 	var issuer := contact(id)
 	if issuer.is_empty(): return []
 	var result := []
-	for template in config.templates:
+	var templates: Array = config.templates.duplicate(true)
+	# Every board must retain an entry-level contract, independent of template edits.
+	if not templates.any(func(entry: Dictionary) -> bool: return int(entry.get("minimum_reputation", 0)) == 0): templates.append(BASIC_FALLBACK.duplicate(true))
+	templates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.minimum_reputation) < int(b.minimum_reputation))
+	for template in templates:
 		_serial += 1
-		var count := _random.randi_range(int(template.minimum_ships), int(template.maximum_ships))
+		var count := clampi(_random.randi_range(int(template.minimum_ships), int(template.maximum_ships)), 1, 6)
 		var position := _site(world, str(issuer.port))
 		var distance: float = position.distance_to(world.target_position(issuer.port))
 		var captain := "%s %s" % [config.first[_random.randi_range(0, config.first.size() - 1)], config.last[_random.randi_range(0, config.last.size() - 1)]]
