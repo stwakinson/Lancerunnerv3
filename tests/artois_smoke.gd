@@ -162,7 +162,7 @@ func _run() -> void:
 		check(samples.is_empty(), "Launch must clear old exhaust history")
 	scene._menu()
 	check(scene.pause_menu.visible, "Menu action must open pause before quitting")
-	scene.pause_menu.get_child(0).get_child(2).pressed.emit()
+	scene.pause_menu.get_node("MenuOptions/Quit").pressed.emit()
 	await process_frame
 	await process_frame
 	var menu := current_scene

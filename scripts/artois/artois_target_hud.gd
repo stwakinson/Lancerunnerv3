@@ -17,7 +17,7 @@ func _draw() -> void:
 	if world == null: return
 	_draw_combat()
 	Scanner.draw_scope(self, world, _font)
-	draw_string(_font, Vector2(24, 280), "F2 / FACTION STANDINGS", HORIZONTAL_ALIGNMENT_LEFT, 340, 13, Color("edc38d"))
+	draw_string(_font, Vector2(24, 280), "I / F2: CHARACTER & FACTIONS", HORIZONTAL_ALIGNMENT_LEFT, 340, 13, Color("edc38d"))
 	if world.law.ledger_visible:
 		draw_rect(Rect2(16, 294, 460, 220), Color(0.02, 0.04, 0.06, 0.95))
 		var row := 0

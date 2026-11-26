@@ -13,9 +13,11 @@ Each contact maintains three offers:
 
 | Type | Objective | Enemy wing | Required issuer standing | Reputation reward |
 | --- | --- | --- | ---: | ---: |
-| Freebooter clearance | Destroy the patrol | 3–6 freebooters | -19 | +7 |
-| Raider interception | Destroy the wing | 2–4 stronger unidentified raiders | 0 | +9 |
-| Captain bounty | Destroy the named captain; escorts optional | Captain plus 2–3 escorts | 10 | +12 |
+| Freebooter clearance | Destroy the patrol | 2–3 lighter freebooters | 0 (Basic) | +7 |
+| Raider interception | Destroy the wing | 3–4 stronger unidentified raiders | 10 (Veteran) | +9 |
+| Captain bounty | Destroy the named captain; escorts optional | Captain plus 3–4 escorts | 25 (Elite) | +12 |
+
+Every contact always retains a Basic offer available at 0 issuer standing. Tavern visits include an eligible contact whenever at least one planet faction is at 0 or better, while retaining a pending issuer. Higher tiers increase enemy strength and payment. Offers explicitly show their tier, required standing and whether they are locked; conversations initially select an eligible offer. Existing negative reputation is preserved.
 
 Locations, wing size, captain names and credit payments vary. Payments combine a template base, wing size and distance. Offers are cached while browsing and remain unchanged when closing/reopening the conversation. Resolving a contact's job refreshes that contact's board. Other contacts keep their existing offers.
 

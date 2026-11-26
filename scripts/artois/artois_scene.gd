@@ -8,6 +8,9 @@ const Chart = preload("res://scripts/artois/artois_chart.gd")
 const TargetHud = preload("res://scripts/artois/artois_target_hud.gd")
 var free_mouse := false
 var pause_menu: Control
+var character_sheet: Control
+var _sheet_from_pause := false
+var _sheet_previous_mode := Node.PROCESS_MODE_INHERIT
 var docked_id := "planet_dock"
 var tavern: Node2D
 var in_tavern := false
@@ -47,6 +50,7 @@ func _ready() -> void:
 	pause_menu = preload("res://scripts/artois/artois_pause_menu.gd").new()
 	add_child(pause_menu)
 	pause_menu.resumed.connect(_resume_game)
+	pause_menu.character_requested.connect(open_character_sheet)
 	pause_menu.quit_requested.connect(func() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		get_tree().change_scene_to_file("res://scenes/menu.tscn"))
@@ -222,6 +226,15 @@ func _build_ui() -> void:
 	shop_panel.move_to_front()
 	chart.move_to_front()
 	contract_panel.move_to_front()
+	character_sheet = preload("res://scripts/artois/artois_character_sheet.gd").new()
+	character_sheet.world = space_world
+	character_sheet.mission = mission
+	ui.add_child(character_sheet)
+	character_sheet.closed.connect(_character_sheet_closed)
+	var character_button := _button(ui, "I  CHARACTER", Vector2(884, 634), 150, open_character_sheet)
+	character_button.name = "CharacterSheetButton"
+	character_button.add_theme_font_size_override("font_size", 12)
+	character_sheet.move_to_front()
 	# Chart and target presentation sit below the transition fade.
 	_fade.move_to_front()
 
@@ -278,6 +291,7 @@ func _fire_held() -> bool:
 
 
 func _process(delta: float) -> void:
+	if character_sheet != null and character_sheet.visible: return
 	if pause_menu != null and pause_menu.visible: return
 	_sync_mouse_mode()
 	space_world.combat.guard_requested = not free_mouse and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and not (landed or transitioning or _recovering or chart.visible or shop_panel.visible or contract_panel.visible)
@@ -360,7 +374,7 @@ func _switch_landing(id: String) -> void:
 		var pinned := ""
 		if mission.phase in ["active", "return"] and mission.return_port() == id:
 			pinned = str(mission.active_offer.get("contact", "fluellen"))
-		if _ensure_tavern(): tavern.begin_visit(mission.board.contacts(id), pinned)
+		if _ensure_tavern(): tavern.begin_visit(mission.board.contacts(id), pinned, -1, _tavern_eligible_ids())
 	if not _landing_cache.has(id):
 		var resource: PackedScene = load(market_state.markets.scene_path(id))
 		var room := resource.instantiate()
@@ -391,6 +405,7 @@ func _space_pixel(local: Vector2) -> Vector2:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if character_sheet != null and character_sheet.visible: return
 	if landed or transitioning or shop_panel.visible or (chart != null and chart.visible) or (pause_menu != null and pause_menu.visible): return
 	if event is InputEventMouseMotion:
 		if not free_mouse and event.relative.length_squared() > 0: space_world.autopilot = false
@@ -431,7 +446,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			world.tap_direction(event.physical_keycode, Time.get_ticks_msec() / 1000.0)
 		match event.physical_keycode:
 			KEY_F2:
-				world.law.ledger_visible = not world.law.ledger_visible
+				open_character_sheet()
 			KEY_SPACE:
 				free_mouse = not free_mouse
 				if not free_mouse: _centre_cursor()
@@ -477,6 +492,15 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if character_sheet != null and character_sheet.visible:
+		if event is InputEventKey:
+			if event.pressed and not event.echo and event.physical_keycode in [KEY_I, KEY_F2, KEY_ESCAPE]: character_sheet.close_sheet()
+			get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode in [KEY_I, KEY_F2] and not transitioning and not _recovering:
+		open_character_sheet()
+		get_viewport().set_input_as_handled()
+		return
 	if pause_menu != null and pause_menu.visible:
 		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE: _resume_game()
 		if event is InputEventKey or event is InputEventMouse:
@@ -490,6 +514,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _menu() -> void:
+	if character_sheet != null and character_sheet.visible:
+		character_sheet.close_sheet()
+		return
 	if contract_panel != null and contract_panel.visible:
 		contract_panel.close_panel()
 		return
@@ -517,7 +544,7 @@ func _resume_game() -> void:
 
 
 func _sync_mouse_mode() -> void:
-	var interactive := landed or free_mouse or transitioning or chart.visible or shop_panel.visible or contract_panel.visible or (pause_menu != null and pause_menu.visible)
+	var interactive := landed or free_mouse or transitioning or chart.visible or shop_panel.visible or contract_panel.visible or (pause_menu != null and pause_menu.visible) or (character_sheet != null and character_sheet.visible)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if interactive else Input.MOUSE_MODE_HIDDEN
 	var ui := get_node_or_null("Interface")
 	if ui != null:
@@ -561,7 +588,7 @@ func enter_tavern() -> void:
 	if tavern.visit == 0:
 		var pinned := ""
 		if mission.phase in ["active", "return"] and mission.return_port() == "planet_dock": pinned = str(mission.active_offer.get("contact", "fluellen"))
-		tavern.begin_visit(mission.board.contacts("planet_dock"), pinned)
+		tavern.begin_visit(mission.board.contacts("planet_dock"), pinned, -1, _tavern_eligible_ids())
 	# Prepare the complete independent room before committing the visible switch.
 	tavern.reset_camera()
 	tavern.advance(0, Vector2.ZERO)
@@ -587,3 +614,31 @@ func leave_tavern() -> void:
 	_show_market()
 	_update_labels()
 	_sync_shop_hotspots()
+
+
+func open_character_sheet() -> void:
+	if character_sheet == null or character_sheet.visible or transitioning or _recovering: return
+	_sheet_from_pause = pause_menu != null and pause_menu.visible
+	_sheet_previous_mode = space_world.process_mode
+	if _sheet_from_pause: pause_menu.hide()
+	space_world.process_mode = Node.PROCESS_MODE_DISABLED
+	space_world.reset_taps()
+	space_world.combat.guard_requested = false
+	space_world.combat.defence.guard_active = false
+	space_world.combat.defence.update_visual(space_world.cruise_spool / space_world.CRUISE_SPOOL_TIME)
+	character_sheet.move_to_front()
+	character_sheet.open_sheet()
+	_sync_mouse_mode()
+
+func _character_sheet_closed() -> void:
+	space_world.process_mode = _sheet_previous_mode
+	if _sheet_from_pause: pause_menu.show()
+	_sync_mouse_mode()
+	if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN: _centre_cursor()
+
+
+func _tavern_eligible_ids() -> Array:
+	var result := []
+	for contact in mission.board.contacts("planet_dock"):
+		if int(market_state.reputation.get(contact.faction, 0)) >= 0: result.append(str(contact.id))
+	return result

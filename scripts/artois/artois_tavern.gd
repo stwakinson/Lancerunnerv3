@@ -48,7 +48,7 @@ func _ready() -> void:
 	layers[3].add_child(facade)
 	_add_art("NearTablesAndLeaves", preload("res://assets/artois/tavern/foreground.png"), FRAME)
 
-func begin_visit(profiles: Array, pinned_id := "", seed_value := -1) -> void:
+func begin_visit(profiles: Array, pinned_id := "", seed_value := -1, eligible_ids: Array = []) -> void:
 	if seed_value >= 0: _random.seed = seed_value
 	visit += 1
 	clear_people()
@@ -61,6 +61,15 @@ func begin_visit(profiles: Array, pinned_id := "", seed_value := -1) -> void:
 			if entry.id == pinned_id:
 				if contacts.is_empty(): contacts.append(entry)
 				else: contacts[0] = entry
+	# Preserve turn-in contacts while guaranteeing a neutral quest giver when one exists.
+	if not eligible_ids.is_empty() and not contacts.any(func(entry: Dictionary) -> bool: return entry.id in eligible_ids):
+		for entry in available:
+			if entry.id not in eligible_ids: continue
+			for i in contacts.size():
+				if contacts[i].id != pinned_id:
+					contacts[i] = entry
+					break
+			break
 	var slots := [0, 1, 2, 3]
 	_shuffle(slots)
 	var entries := []

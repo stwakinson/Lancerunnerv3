@@ -90,7 +90,7 @@ func run() -> void:
 			scene._menu()
 			await scene._capture(arg.trim_prefix("--capture-dir="), "artois-pause-menu.png")
 	if not scene.pause_menu.visible: scene._menu()
-	var quit_button: Button = scene.pause_menu.get_child(0).get_child(2)
+	var quit_button: Button = scene.pause_menu.get_node("MenuOptions/Quit")
 	await click(quit_button)
 	await process_frame
 	await process_frame
