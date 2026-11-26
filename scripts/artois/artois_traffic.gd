@@ -40,30 +40,30 @@ func configure(space: Node3D) -> void:
 func _spawn(profile: Dictionary, index: int, port_counts: Dictionary) -> void:
 	var id := "local_%s_%02d" % [profile.id, index + 1]
 	var home: String = profile.ports[index % profile.ports.size()]
-	var hostile: bool = profile.role in ["pirate", "raider", "guard"]
+	var armed_role: bool = profile.role in ["pirate", "raider", "guard"]
 	var role: String = "salvager" if profile.id == "borderlander" and index >= 5 else profile.role
 	var pilot: String = str(profile.first[index % profile.first.size()]) + " " + str(profile.last[(index * 3 + 1) % profile.last.size()])
-	var position := routes.harbour(home)
+	var spawn_position := routes.harbour(home)
 	var count := int(port_counts.get(home, 0))
 	port_counts[home] = count + 1
-	position += Vector3([0.0, -70.0, 70.0][count % 3], (count % 2) * 12, -40.0 - floorf(count / 3.0) * 55.0)
+	spawn_position += Vector3([0.0, -70.0, 70.0][count % 3], (count % 2) * 12, -40.0 - floorf(count / 3.0) * 55.0)
 	var node := models.make(profile.model)
 	node.name = id
 	add_child(node)
-	node.position = position
+	node.position = spawn_position
 	node.set_meta("id", id)
 	node.set_meta("local", true)
 	var actor := {"id": id, "pilot": pilot.strip_edges(), "name": profile.ships[index], "faction": profile.id,
 		"allegiance": str(profile.get("allegiance", profile.id)),
 		"hold": {}, "ship_class": "salvager" if role == "salvager" else profile.ship_class, "cargo_capacity": Holds.capacity("salvager" if role == "salvager" else str(profile.ship_class)),
-		"role": role, "hostile": hostile, "node": node, "home": home, "origin": home, "destination": home,
+		"role": role, "hostile": armed_role, "node": node, "home": home, "origin": home, "destination": home,
 		"cargo": "Empty recovery hold" if role == "salvager" else profile.cargo[index % profile.cargo.size()], "hull": float(profile.hull), "shield": float(profile.shield),
 		"radius": float(profile.radius), "alive": true, "velocity": Vector3.ZERO, "state": "DEPARTING", "path": [],
 		"join_leg": -1, "cruise_charge": 0.0, "cruise": false, "energy": 100.0, "leg": 0, "timer": 0.0, "decision": float(index) * 0.17, "target": "", "provoked": false,
 		"threat": "", "disruption": 0.0, "fire_wait": 0.8 + index * 0.25, "trips": 0, "distance": 0.0,
 		"salvage_next": role == "salvager", "patrol_step": index}
 	actors[id] = actor
-	if hostile:
+	if armed_role:
 		_load_manifest(actor)
 		actor.brain = FighterBrain.new()
 		actor.brain.configure(world, node, "valois" if role in ["raider", "guard"] else "freebooter", index)
@@ -343,12 +343,12 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 	if actor.is_empty() or not actor.node.visible or shield_damage <= 0: return
 	if source == "player": world.law.record(actor.node, actor.allegiance, not actor.hostile)
 	if actor.hostile:
-		var position: Vector3 = source_position
-		if not position.is_finite():
+		var attacker_position: Vector3 = source_position
+		if not attacker_position.is_finite():
 			var known: Variant = _target_position(source)
-			if known != null: position = known
+			if known != null: attacker_position = known
 		var original := shield_damage
-		shield_damage = actor.brain.block_damage(shield_damage, position)
+		shield_damage = actor.brain.block_damage(shield_damage, attacker_position)
 		hull_damage *= shield_damage / original
 	var absorbed := minf(actor.shield, shield_damage)
 	actor.shield -= absorbed
@@ -449,7 +449,7 @@ func _load_manifest(actor: Dictionary) -> void:
 	var remaining := _cargo_random.randi_range(maxi(2, int(actor.cargo_capacity * (0.2 if actor.hostile else 0.5))), maxi(2, int(actor.cargo_capacity * (0.6 if actor.hostile else 0.85))))
 	for i in mini(2, goods.size()):
 		var id: String = goods[(int(_cargo_random.randi()) + i) % goods.size()]
-		var amount := remaining if i == mini(2, goods.size()) - 1 else maxi(1, remaining / 2)
+		var amount := remaining if i == mini(2, goods.size()) - 1 else maxi(1, floori(remaining / 2.0))
 		actor.hold[id] = int(actor.hold.get(id, 0)) + amount
 		remaining -= amount
 	actor.cargo = Holds.summary(actor.hold, LandingMarketState.ITEMS)

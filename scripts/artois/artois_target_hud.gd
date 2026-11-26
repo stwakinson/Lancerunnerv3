@@ -28,9 +28,9 @@ func _draw() -> void:
 	for crate in world.loot.canisters.values():
 		if crate.id == world.selected_id or world.camera.is_position_behind(crate.node.position): continue
 		if world.ship.position.distance_to(crate.node.position) > 500: continue
-		var factor := maxf(size.x / source_view.size.x, size.y / source_view.size.y)
-		var offset := (size - Vector2(source_view.size) * factor) * 0.5
-		var at := world.camera.unproject_position(crate.node.position) * factor + offset
+		var cargo_factor := maxf(size.x / source_view.size.x, size.y / source_view.size.y)
+		var cargo_offset := (size - Vector2(source_view.size) * cargo_factor) * 0.5
+		var at := world.camera.unproject_position(crate.node.position) * cargo_factor + cargo_offset
 		draw_rect(Rect2(at - Vector2(4, 4), Vector2(8, 8)), Color("b7e6a3"), false, 1)
 	var target := world.target_position()
 	var camera := world.camera

@@ -8,10 +8,10 @@ func begin_visit(random: RandomNumberGenerator) -> void:
 	var pool: Array = data.patrons.duplicate(true)
 	_shuffle(pool, random)
 	patrons = pool.slice(0, 3)
-	for patron in patrons:
-		var topics: Array = patron.topics
-		var first := random.randi_range(0, topics.size() - 1)
-		patron.topics = [topics[first], topics[(first + 1) % topics.size()]]
+	for person in patrons:
+		var available_topics: Array = person.topics
+		var first := random.randi_range(0, available_topics.size() - 1)
+		person.topics = [available_topics[first], available_topics[(first + 1) % available_topics.size()]]
 	var articles: Array = data.news.duplicate(true)
 	_shuffle(articles, random)
 	news = articles.slice(0, 4)

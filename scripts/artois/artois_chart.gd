@@ -140,12 +140,12 @@ func _draw() -> void:
 	for lane in world.layout.highways:
 		var start := map_point(ArtoisLayout.point(lane.from))
 		var end := map_point(ArtoisLayout.point(lane.to))
-		for sign in [1.0, -1.0]:
+		for lane_sign in [1.0, -1.0]:
 			var flat_axis := start.direction_to(end)
-			var shift: Vector2 = Vector2(flat_axis.y, -flat_axis.x) * 8 * sign
+			var shift: Vector2 = Vector2(flat_axis.y, -flat_axis.x) * 8 * lane_sign
 			draw_line(start + shift, end + shift, Color(1.0, 0.69, 0.28, 0.15), 4, true)
 			draw_line(start + shift, end + shift, Color("eab562"), 1.0, true)
-			var direction: Vector2 = start.direction_to(end) * sign
+			var direction: Vector2 = start.direction_to(end) * lane_sign
 			var side := Vector2(-direction.y, direction.x)
 			var middle := (start + end) * 0.5 + shift
 			draw_colored_polygon(PackedVector2Array([middle + direction * 5, middle - direction * 4 + side * 3, middle - direction * 4 - side * 3]), Color("ffd18a"))
@@ -170,11 +170,11 @@ func _draw() -> void:
 		if entry.id == world.selected_id: draw_arc(at, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
 		var offset := Vector2(8, 14) if entry.kind == "planet_dock" else Vector2(8, 3)
 		if entry.id == "east_gate": offset = Vector2(-112, -10)
-		var name: String = entry.name
-		if entry.id == "arras": name = "Arras (Ruined Gate)"
-		if entry.id == "southern_outpost": name = "Unnamed Outpost"
-		if entry.id == "southern_ship": name = "Unnamed Capital Ship"
-		draw_string(_font, at + offset, name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, colour)
+		var display_name: String = entry.name
+		if entry.id == "arras": display_name = "Arras (Ruined Gate)"
+		if entry.id == "southern_outpost": display_name = "Unnamed Outpost"
+		if entry.id == "southern_ship": display_name = "Unnamed Capital Ship"
+		draw_string(_font, at + offset, display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, colour)
 	if world.target_entry().kind == "field": draw_arc(target, 7, 0, TAU, 24, Color("ffd18a"), 1.5, true)
 	draw_rect(MAP_RECT, Color("4b6475"), false, 1)
 

@@ -212,7 +212,7 @@ func hit(damage: int, hit_point: Vector3, bullet: Bullet = null) -> void:
 	if dead:
 		return
 	var from_ship := bullet == null or not bullet.from_pilot
-	var amount := damage * (foot_shots_to_kill / ship_shots_to_kill if from_ship else 1)
+	var amount := damage * (int(float(foot_shots_to_kill) / float(ship_shots_to_kill)) if from_ship else 1)
 	super.hit(amount, hit_point, bullet)
 
 

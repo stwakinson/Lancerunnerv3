@@ -122,10 +122,10 @@ func _build_world() -> void:
 
 func _build_field(field: Dictionary) -> void:
 	if field.get("visual_profile", "") == "column_canyon":
-		var node := embry_art.make_field(self, field)
-		add_child(node)
-		field_nodes[field.id] = node
-		asteroid_count += node.multimesh.instance_count
+		var canyon := embry_art.make_field(self, field)
+		add_child(canyon)
+		field_nodes[field.id] = canyon
+		asteroid_count += canyon.multimesh.instance_count
 		return
 	var random := RandomNumberGenerator.new()
 	random.seed = int(field.seed)
@@ -156,9 +156,9 @@ func _build_field(field: Dictionary) -> void:
 					clear = false
 					break
 			if clear: break
-		var rotation := Basis.from_euler(Vector3(random.randf() * TAU, random.randf() * TAU, random.randf() * TAU))
+		var rock_basis := Basis.from_euler(Vector3(random.randf() * TAU, random.randf() * TAU, random.randf() * TAU))
 		var size := random.randf_range(2.0, 8.0)
-		instances.set_instance_transform(i, Transform3D(rotation.scaled(Vector3(size, size * 0.75, size * 1.2)), local))
+		instances.set_instance_transform(i, Transform3D(rock_basis.scaled(Vector3(size, size * 0.75, size * 1.2)), local))
 		asteroid_count += 1
 	add_child(node)
 	field_nodes[field.id] = node
@@ -244,7 +244,7 @@ func prepare_launch() -> void:
 	disruption_remaining = 0.0
 	highways.reset()
 	ship.position = launch_position()
-	ship.rotation = Vector3(0, 0 if active_port == DOCK_ID else PI, 0)
+	ship.rotation = Vector3(0, 0.0 if active_port == DOCK_ID else PI, 0)
 	_yaw = ship.rotation.y
 	_pitch = 0
 	brake()
@@ -391,14 +391,14 @@ func reset_view() -> void:
 func target_entry() -> Dictionary:
 	if loot != null and loot.has(selected_id): return loot.entry(selected_id)
 	if traffic != null:
-		var entry := traffic.target_entry(selected_id)
-		if not entry.is_empty(): return entry
+		var traffic_entry := traffic.target_entry(selected_id)
+		if not traffic_entry.is_empty(): return traffic_entry
 	var hostile := combat.enemy(selected_id) if combat != null else null
 	if hostile != null:
 		return {"id": selected_id, "name": str(hostile.get_meta("display_name", "Freebooter " + selected_id.trim_prefix("patrol_"))), "kind": "hostile", "notes": "%s / Hull %d / Shield %d / HOLD %d/%d" % [str(hostile.get_meta("tactic", "WAITING")), roundi(hostile.get_meta("hull")), roundi(hostile.get_meta("shield")), Holds.used(hostile.get_meta("cargo_hold", {})), int(hostile.get_meta("cargo_capacity", 0))]}
 	var entry: Dictionary = layout.target(selected_id).duplicate()
-	var owner: String = law.territory_owner(selected_id)
-	if not owner.is_empty(): entry["notes"] = str(entry.get("notes", "")) + " / " + law.description(owner)
+	var territory_faction: String = law.territory_owner(selected_id)
+	if not territory_faction.is_empty(): entry["notes"] = str(entry.get("notes", "")) + " / " + law.description(territory_faction)
 	return entry
 
 

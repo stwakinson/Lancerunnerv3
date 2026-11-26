@@ -84,9 +84,9 @@ func hold(anchor: Vector3, up: Vector3, velocity: Vector3) -> void:
 	if _cut:
 		return
 	_up = up
-	var basis := _basis_up(up)
+	var up_basis := _basis_up(up)
 	var sideways := velocity - up * velocity.dot(up)
-	var sway := (basis.x * sin(_age * 1.1 + _phase) + basis.z * sin(_age * 0.8 + _phase * 2.0)) * 0.05
+	var sway := (up_basis.x * sin(_age * 1.1 + _phase) + up_basis.z * sin(_age * 0.8 + _phase * 2.0)) * 0.05
 	var lean := (up - sideways * TRAIL + sway).normalized()
 	var open := openness
 	# The canopy breathes a little as it flies.

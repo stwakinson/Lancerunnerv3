@@ -36,7 +36,7 @@ func draw_scope(canvas: Control, ship: PlayerShipController, cam: CameraFollow,
 	var pad := h * 0.025
 	var r := radar_size * h
 	var c := Vector2(w - pad - r, h - pad - r)
-	var me: Node3D = ship.pilot if ship.on_foot else ship
+	var me: Node3D = (ship.pilot as Node3D) if ship.on_foot else (ship as Node3D)
 
 	# Scope: dark glass, rim, range rings and crosshair.
 	canvas.draw_circle(c, r + 3.0, Color(0, 0, 0, 0.5))

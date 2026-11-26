@@ -10,7 +10,7 @@ func _init() -> void:
 	_random.randomize()
 
 func contacts(port: String) -> Array:
-	return config.contacts.filter(func(contact: Dictionary) -> bool: return contact.port == port)
+	return config.contacts.filter(func(issuer: Dictionary) -> bool: return issuer.port == port)
 
 func contact(id: String) -> Dictionary:
 	for entry in config.contacts:

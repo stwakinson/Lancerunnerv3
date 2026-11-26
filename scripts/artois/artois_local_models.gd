@@ -70,7 +70,7 @@ func _build(profile: String) -> ArrayMesh:
 			for side in [-1.0, 1.0]:
 				_box(Vector3(side * 3, -0.3, 1.5), Vector3(4, 0.6, 4), body)
 				_box(Vector3(side * 4.5, 0, 1), Vector3(0.8, 1.7, 5), "9c4e35" if profile == "freebooter" else "8a8792")
-	_box(Vector3(0, 0, 14 if profile == "cog" else (10 if profile == "britannian" else (9.5 if profile == "valois" else (7.5 if profile == "borderlander" else 4.3)))), Vector3(2.2, 1, 0.5), "76cee1")
+	_box(Vector3(0, 0, 14.0 if profile == "cog" else (10.0 if profile == "britannian" else (9.5 if profile == "valois" else (7.5 if profile == "borderlander" else 4.3)))), Vector3(2.2, 1, 0.5), "76cee1")
 	if profile.ends_with("_guard"):
 		for side in [-1.0, 1.0]:
 			_box(Vector3(side * 5, 0, -7), Vector3(1.4, 1.4, 8), "343e57")

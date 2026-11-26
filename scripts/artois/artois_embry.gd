@@ -44,8 +44,8 @@ func make_field(world: Node3D, field: Dictionary) -> MultiMeshInstance3D:
 				var flat := Vector2(random.randf_range(-1, 1), random.randf_range(-1, 1))
 				if flat.length_squared() > 1: continue
 				position = centre + Vector3(flat.x * float(field.radii[0]) * world.layout.scale_factor, random.randf_range(-90, 90), flat.y * float(field.radii[1]) * world.layout.scale_factor)
-			var transform := Transform3D(rotation.scaled(scale), position)
-			var bounds: AABB = transform * instances.mesh.get_aabb()
+			var world_transform := Transform3D(rotation.scaled(scale), position)
+			var bounds: AABB = world_transform * instances.mesh.get_aabb()
 			if _clear(bounds, world, station): break
 		# Keep transforms field-local; stored bounds remain world-local for checks.
 		var transform := Transform3D(rotation.scaled(scale), position - centre)
@@ -138,14 +138,14 @@ func make_station() -> Node3D:
 			var box := BoxMesh.new()
 			box.size = part.size
 			surface.append_from(box, 0, Transform3D(Basis.IDENTITY, part.position))
-		var material := StandardMaterial3D.new()
-		material.albedo_color = Color.html(colour)
-		material.roughness = 0.95
+		var part_material := StandardMaterial3D.new()
+		part_material.albedo_color = Color.html(colour)
+		part_material.roughness = 0.95
 		if colour in ["f3c46c", "d7782e", "c36329", "b65d2e"]:
-			material.emission_enabled = true
-			material.emission = Color.html(colour)
-			material.emission_energy_multiplier = 1.4 if colour == "f3c46c" else 0.35
-		surface.set_material(material)
+			part_material.emission_enabled = true
+			part_material.emission = Color.html(colour)
+			part_material.emission_energy_multiplier = 1.4 if colour == "f3c46c" else 0.35
+		surface.set_material(part_material)
 		surface.commit(mesh)
 	var root := Node3D.new()
 	root.name = "embry"
