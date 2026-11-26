@@ -9,6 +9,14 @@ var cinematic_motion := true
 var camera_position := Vector2.ZERO
 var manual_pan := 0.0
 ## Independent exterior, empty architecture, staff, furniture, guests and near props.
+const Stories = preload("res://scripts/artois/artois_tavern_stories.gd")
+var stories := Stories.new()
+const LOCAL_SLOTS := [
+	{"position": Vector2(118, 246), "row": 0, "size": Vector2(68, 82)},
+	{"position": Vector2(303, 264), "row": 0, "size": Vector2(69, 84)},
+	{"position": Vector2(505, 302), "row": 1, "size": Vector2(78, 94)}]
+const NOTICE_AT := Vector2(352, 118)
+const Notice = preload("res://scripts/artois/artois_tavern_notice.gd")
 const Patron = preload("res://scripts/artois/artois_tavern_patron.gd")
 const ROOM = preload("res://assets/artois/tavern/room_shell.png")
 const FRAME := Rect2(-32, -18, 704, 396)
@@ -33,6 +41,9 @@ func _ready() -> void:
 	_lights = ShaderMaterial.new()
 	_lights.shader = preload("res://shaders/artois/tavern_lights.gdshader")
 	room.material = _lights
+	var notice := Notice.new()
+	notice.position = NOTICE_AT
+	room.add_child(notice)
 	for label in ["BarStaff", "CounterFront", "Patrons"]:
 		var layer := Node2D.new()
 		layer.name = label
@@ -78,25 +89,33 @@ func begin_visit(profiles: Array, pinned_id := "", seed_value := -1, eligible_id
 		var actor := _guest(SLOTS[slots[i]], int(COLUMNS[entry.faction]), str(entry.name), str(entry.id))
 		actor.profile = entry
 		entries.append(str(entry.id) + "@" + str(slots[i]))
-	# Optional passers-by occupy spare seats, independently of faction contracts.
-	var extra := _random.randi_range(0, 4 - contacts.size())
-	for i in extra:
-		var name: String = ["A travelling shipwright", "A local pilot", "A wool factor", "A pilgrim"][ _random.randi_range(0, 3)]
-		_guest(SLOTS[slots[contacts.size() + i]], _random.randi_range(0, 3), name, "")
+	# Three ordinary locals carry separate rumours; mission contacts retain their seats.
+	stories.begin_visit(_random)
+	for i in stories.patrons.size():
+		var profile: Dictionary = stories.patrons[i]
+		var actor := _guest(LOCAL_SLOTS[i], int(profile.cell) % 4, str(profile.name), "", int(profile.cell))
+		actor.profile = profile
+		actor.talk_id = str(profile.id)
+		actor.queue_redraw()
+		entries.append(str(profile.id))
 	var staff := Patron.new()
 	staff.row = 3
 	staff.column = _random.randi_range(0, 3)
 	staff.dimensions = Vector2(66, 82)
 	staff.position = Vector2(465, 185)
 	staff.guest_name = "The innkeeper"
+	staff.talk_id = "innkeeper"
 	layers[2].add_child(staff)
 	guests.append(staff)
-	signature = ",".join(entries) + ":" + str(extra) + ":" + str(staff.column)
+	signature = ",".join(entries) + ":" + str(staff.column)
 
-func _guest(slot: Dictionary, column: int, title: String, id: String) -> Node2D:
+func _guest(slot: Dictionary, column: int, title: String, id: String, local_cell := -1) -> Node2D:
 	var actor := Patron.new()
-	actor.column = column
-	actor.row = int(slot.row)
+	if local_cell >= 0:
+		actor.atlas_texture = preload("res://assets/artois/tavern/locals.png")
+		actor.atlas_grid = Vector2i(4, 2)
+	actor.column = local_cell % 4 if local_cell >= 0 else column
+	actor.row = int(local_cell / 4) if local_cell >= 0 else int(slot.row)
 	actor.position = slot.position
 	actor.dimensions = slot.size
 	actor.contact_id = id
@@ -152,3 +171,11 @@ func reset_camera() -> void:
 
 func is_room_ready() -> bool:
 	return is_node_ready() and layers.size() == 6 and _lights != null
+
+func social_rect(id: String) -> Rect2:
+	if id == "news": return Rect2(NOTICE_AT + layers[1].position + Vector2(-20, -36), Vector2(40, 61))
+	for guest in guests:
+		if guest.talk_id == id:
+			var layer: Node2D = guest.get_parent()
+			return Rect2(guest.position + layer.position + guest.hit_rect.position, guest.hit_rect.size)
+	return Rect2()

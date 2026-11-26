@@ -1,0 +1,198 @@
+{
+  "patrons": [
+    {
+      "id": "local_copper",
+      "name": "Mabel Copperweight",
+      "role": "Copper factor",
+      "cell": 0,
+      "topics": [
+        {
+          "title": "The lord’s new pennies",
+          "text": "The lord calls them pennies. I call them copper with ambitions. He takes his dues by the old weight and pays his workmen by the new count.\n\nMind, that is my grievance, not proof of a crooked mint. A merchant who accuses a lord should have either witnesses or a faster ship.",
+          "kind": "TAVERN TALK"
+        },
+        {
+          "title": "Metal and manners",
+          "text": "Every clerk wants a fee to weigh my metal, a fee to seal the weight, and another to admire the seal. At this rate I shall sell the scales and carry feathers.",
+          "kind": "TAVERN TALK"
+        }
+      ]
+    },
+    {
+      "id": "local_miner",
+      "name": "Osei Bellows",
+      "role": "Embry miner",
+      "cell": 1,
+      "topics": [
+        {
+          "title": "A shift beneath the stone",
+          "text": "Embry’s pillars look grand from a cockpit. Inside one, you spend a shift listening for cracks and another wondering whether the foreman heard them too.\n\nThe station is built against the rock for shelter. Shelter is a fine word until the rock starts moving.",
+          "kind": "TAVERN TALK"
+        },
+        {
+          "title": "Ore for a song",
+          "text": "They call us the wealth of Artois when a ship needs plating. When wages are due, suddenly we are a drain upon the works. I should like the accounts explained over a very large ale.",
+          "kind": "TAVERN TALK"
+        }
+      ]
+    },
+    {
+      "id": "local_farmer",
+      "name": "Agnes Harrow",
+      "role": "Grain grower",
+      "cell": 2,
+      "topics": [
+        {
+          "title": "A lord who eats well",
+          "text": "His lordship has never seen a poor harvest. The tithe arrives in his granary whether the fields flourish or fail.\n\nMy neighbour says the castle needs provisions for the soldiers. I say the soldiers are welcome to supper if the tax collector stays outside.",
+          "kind": "TAVERN TALK"
+        },
+        {
+          "title": "The price of bread",
+          "text": "People in orbit tell me grain is dear. People at the port tell me grain is cheap. Between the two stands a man with a ledger, growing remarkably comfortable.",
+          "kind": "TAVERN TALK"
+        }
+      ]
+    },
+    {
+      "id": "local_docker",
+      "name": "Martin Quay",
+      "role": "Dockworker",
+      "cell": 3,
+      "topics": [
+        {
+          "title": "Waiting for a berth",
+          "text": "Three captains shouting, one berth clear, and every cargo supposedly urgent. If those barrels of ale are military stores, I have been serving the realm for years.",
+          "kind": "DOCKSIDE HEARSAY"
+        },
+        {
+          "title": "Quiet cargo",
+          "text": "A ship with no painted allegiance came in for repairs. Its crew kept excellent watch and spoke very little. Could have been soldiers. Could have been men who owed the innkeeper money.\n\nThat is dockside talk, mind. I saw no orders and no uniforms.",
+          "kind": "DOCKSIDE HEARSAY"
+        }
+      ]
+    },
+    {
+      "id": "local_taxpayer",
+      "name": "Walter Penn",
+      "role": "Local smallholder",
+      "cell": 4,
+      "topics": [
+        {
+          "title": "The levy upon the levy",
+          "text": "I paid a gate due, a quay due, and a contribution toward the officer who collects the other two. Next week I expect a levy upon my patience.\n\nDo not repeat that at the castle. My patience has no money left.",
+          "kind": "TAVERN TALK"
+        },
+        {
+          "title": "The lord’s improvement",
+          "text": "They say the lord will improve the road to market. So far he has improved the toll. The road remains a heroic test of suspension.",
+          "kind": "TAVERN TALK"
+        }
+      ]
+    },
+    {
+      "id": "local_wool",
+      "name": "Awa Threadgold",
+      "role": "Wool merchant",
+      "cell": 5,
+      "topics": [
+        {
+          "title": "Bales and banners",
+          "text": "Britannian wool, Valois dyes, Borderlander hands at the loom. Then some herald tells me trade ought to take sides.\n\nI tell him to try weaving a coat out of a banner.",
+          "kind": "TAVERN TALK"
+        },
+        {
+          "title": "A promise on parchment",
+          "text": "A captain offered me protection in exchange for a share of the cargo. A freebooter made much the same offer last month. The captain’s parchment was considerably finer.",
+          "kind": "TAVERN TALK"
+        }
+      ]
+    },
+    {
+      "id": "local_veteran",
+      "name": "Jehan Ash",
+      "role": "Discharged soldier",
+      "cell": 6,
+      "topics": [
+        {
+          "title": "The wages of service",
+          "text": "I was promised a purse when the fighting ended. The purse has apparently continued its service elsewhere.\n\nThe lads still on patrol are not all villains. Most are tired, hungry, and waiting on the same paymaster.",
+          "kind": "DOCKSIDE HEARSAY"
+        },
+        {
+          "title": "Raiders who keep formation",
+          "text": "I have heard pilots say some raiders wheel as neatly as drilled cavalry. Men learn discipline in more than one place. It is a suspicion, not a banner you can point to.\n\nKeep your shield ready and leave the heraldry to somebody paid to argue.",
+          "kind": "DOCKSIDE HEARSAY"
+        }
+      ]
+    },
+    {
+      "id": "local_wright",
+      "name": "Elin Rivet",
+      "role": "Shipwright",
+      "cell": 7,
+      "topics": [
+        {
+          "title": "Good iron, poor excuses",
+          "text": "A captain asked for cheap armour, light armour, and armour that would stop a lance. I offered him two of the three. He seemed offended.",
+          "kind": "TAVERN TALK"
+        },
+        {
+          "title": "The expense of staying alive",
+          "text": "A patched hull does not care who owns the castle. It cares whether the work was done properly. Spend your money on sound plate before you spend it on gilt.\n\nAnd never let a man test a ward generator while you are holding it.",
+          "kind": "TAVERN TALK"
+        }
+      ]
+    }
+  ],
+  "news": [
+    {
+      "id": "quay",
+      "title": "Quay office: provisions for the orbital ports",
+      "kind": "PORT NOTICE",
+      "text": "Agincourt’s fields and airworks supply grain and oxygen to orbital settlements. Independent captains may consult current commodity quotes before committing cargo.\n\nAsk local traders about posted buy and sell prices. A narrow margin is still a margin, if the cargo reaches its buyer."
+    },
+    {
+      "id": "copper",
+      "title": "Copper accounts draw fresh complaints",
+      "kind": "LOCAL CORRESPONDENCE",
+      "text": "Merchants at the lower market complain of weighing fees, small coin and the cost of doing business. Several would prefer their payments in good silver; the collectors would prefer them on time.\n\nThe argument concerns the coins in their purses: what a penny weighs, and what a penny will buy."
+    },
+    {
+      "id": "lord",
+      "title": "Petitioners seek an audience at the castle",
+      "kind": "LOCAL CORRESPONDENCE",
+      "text": "A petition concerning tolls and levies is said to be circulating among smallholders and factors. The petitioners demand plain accounts and fewer fees. Whether their lord will grant an audience remains a subject of vigorous tavern opinion."
+    },
+    {
+      "id": "embry",
+      "title": "Embry works: respect the station approaches",
+      "kind": "WORKS NOTICE",
+      "text": "Pilots approaching Embry are asked to keep clear of the tall asteroid pillars and leave room for laden haulers. The settlement rests among the stone; a clear approach is worth more than a fast arrival."
+    },
+    {
+      "id": "patrol",
+      "title": "Armed patrols maintain faction watch",
+      "kind": "PUBLIC ADVISORY",
+      "text": "Britannian forces guard the northern approach. Valois forces hold their castle position and the eastern and southern approaches.\n\nAttacking merchant traffic damages your standing with lawful factions. Consult the Character / Factions sheet before approaching a hostile port."
+    },
+    {
+      "id": "raiders",
+      "title": "Unidentified raiders: claims remain unproven",
+      "kind": "UNCONFIRMED REPORT",
+      "text": "Dockside accounts describe disciplined raiders operating without declared colours. Speculation about their patron is widespread, but no public identification has been established.\n\nTreat claims heard over ale as hearsay, and armed ships as armed ships."
+    },
+    {
+      "id": "contracts",
+      "title": "Captains sought for local contracts",
+      "kind": "FACTION NOTICE",
+      "text": "Faction representatives offer entry-level clearance work at neutral standing. Veteran contracts require 10 standing; Elite work requires 25. Larger rewards accompany stronger opposition.\n\nAccept a job from a contact and return to that same issuing port and person to claim payment."
+    },
+    {
+      "id": "hansa",
+      "title": "Hanseatic factors call for safe passage",
+      "kind": "MERCHANT CORRESPONDENCE",
+      "text": "Hanseatic factors ask captains to remember that a cog carrying food or cloth is a livelihood before it is a prize. Safe trade benefits settlements on both sides of the frontier.\n\nGrain, wool, lamp oil and oxygen make less stirring songs than battles. They keep considerably more people alive."
+    }
+  ]
+}
