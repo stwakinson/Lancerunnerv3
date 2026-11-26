@@ -14,6 +14,9 @@ var _sheet_previous_mode := Node.PROCESS_MODE_INHERIT
 var docked_id := "planet_dock"
 var tavern: Node2D
 var in_tavern := false
+var stories_panel: Control
+var news_button: Button
+var social_hotspots: Array[Button] = []
 var market_button: Button
 var _landing_cache := {}
 var mission := Sortie.new()
@@ -68,7 +71,7 @@ func _mission_changed() -> void:
 
 
 func open_contract(contact_id := "") -> void:
-	if not landed or mission.board.contacts(docked_id).is_empty() or transitioning or shop_panel.visible or contract_panel.visible: return
+	if not landed or mission.board.contacts(docked_id).is_empty() or transitioning or shop_panel.visible or contract_panel.visible or (stories_panel != null and stories_panel.visible): return
 	if docked_id == "planet_dock":
 		if not in_tavern:
 			enter_tavern()
@@ -85,7 +88,7 @@ func open_contract(contact_id := "") -> void:
 
 func open_shop(kind: String) -> void:
 	if kind == "ships" and market_state.Ships.offers(docked_id).is_empty(): return
-	if contract_panel != null and contract_panel.visible: return
+	if (contract_panel != null and contract_panel.visible) or (stories_panel != null and stories_panel.visible): return
 	if in_tavern: leave_tavern()
 	space_world.reset_taps()
 	super.open_shop(kind)
@@ -94,7 +97,7 @@ func open_shop(kind: String) -> void:
 func _sync_shop_hotspots() -> void:
 	super._sync_shop_hotspots()
 	if contact_hotspot == null: return
-	var available := landed and not transitioning and not shop_panel.visible and not contract_panel.visible
+	var available := landed and not transitioning and not shop_panel.visible and not contract_panel.visible and not (stories_panel != null and stories_panel.visible) and not (character_sheet != null and character_sheet.visible) and not (pause_menu != null and pause_menu.visible)
 	shop_hotspots.visible = available and not in_tavern
 	var factor := maxf(size.x / 640.0, size.y / 360.0)
 	var offset := (size - Vector2(640, 360) * factor) * 0.5
@@ -114,6 +117,18 @@ func _sync_shop_hotspots() -> void:
 			button.size = Vector2(32, 48) * factor
 			button.set_meta("contact_id", mission.board.contacts(docked_id)[0].id)
 			button.visible = available
+		else:
+			button.visible = false
+	for i in social_hotspots.size():
+		var button: Button = social_hotspots[i]
+		if in_tavern and (i >= 3 or i < tavern.stories.patrons.size()):
+			var id := str(tavern.stories.patrons[i].id) if i < 3 else ("innkeeper" if i == 3 else "news")
+			var rect: Rect2 = tavern.social_rect(id)
+			button.position = offset + rect.position * factor
+			button.size = rect.size * factor
+			button.set_meta("talk_id", id)
+			button.tooltip_text = "%s / Local talk" % tavern.stories.patrons[i].name if i < 3 else "Read the Artois Gazette"
+			button.visible = available and rect.has_area()
 		else:
 			button.visible = false
 	if dealer_hotspot != null:
@@ -223,6 +238,22 @@ func _build_ui() -> void:
 	contract_panel.mission = mission
 	contract_panel.market = market_state
 	contract_panel.closed.connect(_sync_shop_hotspots)
+	stories_panel = preload("res://scripts/artois/artois_tavern_panel.gd").new()
+	ui.add_child(stories_panel)
+	stories_panel.closed.connect(_sync_shop_hotspots)
+	news_button = _button(ui, "6  ARTOIS GAZETTE", Vector2(954, 342), 238, open_news)
+	news_button.name = "TavernNewsButton"
+	news_button.hide()
+	for i in 5:
+		var hotspot := Button.new()
+		hotspot.name = "TavernTalkHotspot%d" % i
+		hotspot.focus_mode = Control.FOCUS_NONE
+		hotspot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		for state in ["normal", "hover", "pressed"]: hotspot.add_theme_stylebox_override(state, transparent)
+		hotspot.pressed.connect(_social_pressed.bind(hotspot))
+		add_child(hotspot)
+		move_child(hotspot, ui.get_index())
+		social_hotspots.append(hotspot)
 	shop_panel.move_to_front()
 	chart.move_to_front()
 	contract_panel.move_to_front()
@@ -268,13 +299,14 @@ func _update_labels() -> void:
 	if dealer_button != null: dealer_button.visible = landed and not in_tavern and not market_state.Ships.offers(docked_id).is_empty()
 	if contact_button != null: contact_button.text = "3  TAVERN / CONTACTS" if docked_id == "planet_dock" and not in_tavern else "3  FACTION CONTRACTS"
 	if market_button != null: market_button.visible = landed and in_tavern
+	if news_button != null: news_button.visible = landed and in_tavern
 	if landed and in_tavern:
 		_heading.text = "THE HOLLOW CROWN"
 		_subheading.text = "ARTOIS / SPACEPORT TAVERN"
 		_commodity_service.visible = false
 		_equipment_service.visible = false
-		_status.text = "TAVERN / CLICK A MARKED PATRON FOR FACTION CONTRACTS"
-		_hint.text = "Mouse: look around · A/D: pan · C: drift · L: depth · F: window rain · 3: contacts · 5: market · Enter: launch"
+		_status.text = "TAVERN / GOLD: CONTRACTS / BLUE: LOCAL TALK / BOARD: NEWS"
+		_hint.text = "Mouse: look around · A/D: pan · C: drift · L: depth · F: window rain · 3: contacts · 5: market · 6: news · Enter: launch"
 		_weather_button.text = "F  WINDOW RAIN: " + ("ON" if tavern.weather_enabled else "OFF")
 	if target_hud != null: target_hud.visible = not landed
 	var ui := get_node_or_null("Interface")
@@ -294,7 +326,7 @@ func _process(delta: float) -> void:
 	if character_sheet != null and character_sheet.visible: return
 	if pause_menu != null and pause_menu.visible: return
 	_sync_mouse_mode()
-	space_world.combat.guard_requested = not free_mouse and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and not (landed or transitioning or _recovering or chart.visible or shop_panel.visible or contract_panel.visible)
+	space_world.combat.guard_requested = not free_mouse and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and not (landed or transitioning or _recovering or chart.visible or shop_panel.visible or contract_panel.visible or stories_panel.visible)
 	if not space_world.combat.guard_requested: space_world.combat.defence.guard_active = false
 	if space_world.traffic != null:
 		space_world.traffic.player_present = not landed and not transitioning and not _recovering
@@ -302,7 +334,7 @@ func _process(delta: float) -> void:
 			space_world.traffic.advance(delta)
 			space_world.loot.advance(delta)
 	if _recovering: return
-	if contract_panel != null and contract_panel.visible:
+	if (contract_panel != null and contract_panel.visible) or (stories_panel != null and stories_panel.visible):
 		landing_world.advance(delta, Vector2.ZERO, 0.0, true)
 		_sync_shop_hotspots()
 		return
@@ -341,6 +373,7 @@ func toggle_chart() -> void:
 
 
 func toggle_docking() -> void:
+	if stories_panel != null and stories_panel.visible: return
 	if transitioning or shop_panel.visible or (contract_panel != null and contract_panel.visible) or (chart != null and chart.visible): return
 	var world := space_world as ArtoisSpace
 	if not landed:
@@ -482,7 +515,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				return
 		get_viewport().set_input_as_handled()
 	else:
-		if event.physical_keycode == KEY_5 and in_tavern:
+		if event.physical_keycode == KEY_6 and in_tavern:
+			open_news()
+			get_viewport().set_input_as_handled()
+		elif event.physical_keycode == KEY_5 and in_tavern:
 			leave_tavern()
 			get_viewport().set_input_as_handled()
 		elif event.physical_keycode == KEY_3:
@@ -506,6 +542,11 @@ func _input(event: InputEvent) -> void:
 		if event is InputEventKey or event is InputEventMouse:
 			if event is InputEventKey: get_viewport().set_input_as_handled()
 		return
+	if stories_panel != null and stories_panel.visible:
+		if event is InputEventKey:
+			if event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE: stories_panel.close_panel()
+			get_viewport().set_input_as_handled()
+		return
 	if contract_panel != null and contract_panel.visible and event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
 		contract_panel.close_panel()
 		get_viewport().set_input_as_handled()
@@ -514,6 +555,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _menu() -> void:
+	if stories_panel != null and stories_panel.visible and not character_sheet.visible:
+		stories_panel.close_panel()
+		return
 	if character_sheet != null and character_sheet.visible:
 		character_sheet.close_sheet()
 		return
@@ -544,7 +588,7 @@ func _resume_game() -> void:
 
 
 func _sync_mouse_mode() -> void:
-	var interactive := landed or free_mouse or transitioning or chart.visible or shop_panel.visible or contract_panel.visible or (pause_menu != null and pause_menu.visible) or (character_sheet != null and character_sheet.visible)
+	var interactive := (stories_panel != null and stories_panel.visible) or landed or free_mouse or transitioning or chart.visible or shop_panel.visible or contract_panel.visible or (pause_menu != null and pause_menu.visible) or (character_sheet != null and character_sheet.visible)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if interactive else Input.MOUSE_MODE_HIDDEN
 	var ui := get_node_or_null("Interface")
 	if ui != null:
@@ -579,7 +623,7 @@ func _ensure_tavern() -> bool:
 	return true
 
 func enter_tavern() -> void:
-	if not landed or docked_id != "planet_dock" or transitioning or shop_panel.visible or contract_panel.visible: return
+	if not landed or docked_id != "planet_dock" or transitioning or shop_panel.visible or contract_panel.visible or (stories_panel != null and stories_panel.visible): return
 	if not _ensure_tavern():
 		_status.text = "TAVERN UNAVAILABLE / CHECK THE GODOT DEBUGGER FOR THE ROOM LOAD ERROR"
 		push_error("Artois tavern scene failed to initialize; retaining the market view.")
@@ -610,7 +654,7 @@ func _show_market() -> void:
 	landing_world.reset_camera()
 
 func leave_tavern() -> void:
-	if not in_tavern or transitioning or shop_panel.visible or contract_panel.visible: return
+	if not in_tavern or transitioning or shop_panel.visible or contract_panel.visible or (stories_panel != null and stories_panel.visible): return
 	_show_market()
 	_update_labels()
 	_sync_shop_hotspots()
@@ -642,3 +686,29 @@ func _tavern_eligible_ids() -> Array:
 	for contact in mission.board.contacts("planet_dock"):
 		if int(market_state.reputation.get(contact.faction, 0)) >= 0: result.append(str(contact.id))
 	return result
+
+
+func _social_pressed(button: Button) -> void:
+	var id := str(button.get_meta("talk_id", ""))
+	if id in ["news", "innkeeper"]: open_news()
+	else: open_local_talk(id)
+
+func _can_read_stories() -> bool:
+	return landed and in_tavern and not transitioning and not _recovering and not shop_panel.visible and not contract_panel.visible and not stories_panel.visible and not character_sheet.visible and not pause_menu.visible
+
+func open_local_talk(id: String) -> void:
+	if not _can_read_stories(): return
+	var person: Dictionary = tavern.stories.patron(id)
+	if person.is_empty(): return
+	stories_panel.move_to_front()
+	stories_panel.open_panel("%s / %s" % [person.name, person.role], tavern.stories.topics(id, market_state))
+	_sync_shop_hotspots()
+
+func open_news() -> void:
+	if not _can_read_stories(): return
+	var articles: Array = tavern.stories.news.duplicate(true)
+	# This one entry reports actual current player state, distinct from authored correspondence.
+	articles.append({"id": "captain_notice", "title": "Your captain’s docket", "kind": "PERSONAL RECORD", "text": "%s\n\nCredits: %d. Cargo hold: %d / %d units.\n\nBritannia standing: %d. Valois standing: %d. Open Character / Factions (I) for the full ledger." % [mission.summary(), market_state.credits, market_state.cargo_used(), market_state.capacity(), int(market_state.reputation.britannian), int(market_state.reputation.valois)]})
+	stories_panel.move_to_front()
+	stories_panel.open_panel("THE ARTOIS GAZETTE / LOCAL DISPATCHES", articles)
+	_sync_shop_hotspots()

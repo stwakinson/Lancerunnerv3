@@ -29,7 +29,7 @@ func run() -> void:
 	var signatures := {}
 	for seed_value in 12:
 		bar.begin_visit(profiles, "factor", seed_value)
-		check(bar.contacts.size() >= 2 and bar.contacts.size() <= 4 and bar.guests.size() <= 5, "Bounded randomized contacts, optional guests and separate staff")
+		check(bar.contacts.size() >= 2 and bar.contacts.size() <= 4 and bar.guests.size() >= 6 and bar.guests.size() <= 8, "Bounded randomized contacts, three local speakers and separate staff")
 		check(bar.contacts.any(func(entry: Dictionary) -> bool: return entry.id == "factor"), "Pending issuer must always be present")
 		var ids := {}
 		for entry in bar.contacts:
