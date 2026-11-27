@@ -351,6 +351,7 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 		shield_damage = actor.brain.block_damage(shield_damage, attacker_position)
 		hull_damage *= shield_damage / original
 	var absorbed := minf(actor.shield, shield_damage)
+	world.combat.impact(actor.node.position, source_position, float(actor.radius), absorbed > 0)
 	actor.shield -= absorbed
 	actor.hull = maxf(0.0, actor.hull - hull_damage * (1.0 - absorbed / shield_damage))
 	actor.disruption = maxf(actor.disruption, disruption)
@@ -385,7 +386,7 @@ func damage(id: String, shield_damage: float, hull_damage: float, source := "pla
 	if actor.hull <= 0:
 		if source == "player": world.law.record(actor.node, actor.allegiance, not actor.hostile, true)
 		world.loot.drop_ship(actor.node, actor.hold, actor.velocity)
-		world.combat._explosion(actor.node.position)
+		world.combat._explosion(actor.node.position, clampf(float(actor.radius), 5.5, 14.0), actor.velocity)
 		actor.alive = false
 		actor.state = "DESTROYED"
 		actor.node.visible = false
