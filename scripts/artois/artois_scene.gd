@@ -333,6 +333,7 @@ func _process(delta: float) -> void:
 		if landed and not transitioning:
 			space_world.traffic.advance(delta)
 			space_world.loot.advance(delta)
+			space_world.combat.effects.advance(delta)
 	if _recovering: return
 	if (contract_panel != null and contract_panel.visible) or (stories_panel != null and stories_panel.visible):
 		landing_world.advance(delta, Vector2.ZERO, 0.0, true)

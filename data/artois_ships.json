@@ -27,7 +27,7 @@
     "armour": 80,
     "ward": 60,
     "speed": 35,
-    "turn": 1.6,
+    "turn": 2.0,
     "minimum_reputation": -19,
     "description": "Balanced combat hull with dependable plating. Two weapon mounts; equipment transfers from your current ship.",
     "dodge": {
